@@ -2,394 +2,808 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WorkLog">
+<meta name="theme-color" content="#0d0b1a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
 <title>WorkLog</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#f2f2f0; --surface:#fff; --border:#e2e2de; --border-md:#c8c8c2;
-  --muted:#96968e; --text:#0f0f0e; --text2:#46463e; --accent:#0f0f0e;
-  --green:#15803d; --green-bg:#f0fdf4; --green-bd:#bbf7d0;
-  --amber:#b45309; --amber-bg:#fffbeb; --amber-bd:#fcd34d;
-  --red:#b91c1c;   --red-bg:#fef2f2;   --red-bd:#fecaca;
-  --blue:#1d4ed8;  --blue-bg:#eff6ff;  --blue-bd:#bfdbfe;
-  --purple:#7c3aed;--purple-bg:#faf5ff;
-  --cat-ops:#15803d; --cat-ops-bg:#f0fdf4;
-  --cat-adm:#1d4ed8; --cat-adm-bg:#eff6ff;
-  --cat-mtg:#b45309; --cat-mtg-bg:#fffbeb;
-  --cat-ext:#b91c1c; --cat-ext-bg:#fef2f2;
-  --tab-h:42px; --sb-h:46px;
-  --font:'IBM Plex Sans',sans-serif; --mono:'IBM Plex Mono',monospace;
-  --r:6px; --t:130ms ease;
+  /* ── Dark Space Purple Palette ── */
+  --bg-deep:    #0d0b1a;
+  --bg-mid:     #12102a;
+  --bg-card:    #1a1733;
+  --bg-card2:   #201d3d;
+  --border:     rgba(139,92,246,.18);
+  --border-md:  rgba(139,92,246,.35);
+  --border-bright: rgba(139,92,246,.6);
+
+  /* ── Text ── */
+  --text:       #f0eeff;
+  --text2:      #b8b0d8;
+  --muted:      #6b6490;
+
+  /* ── Accent Colors ── */
+  --cyan:       #00e5ff;
+  --cyan-dim:   rgba(0,229,255,.15);
+  --cyan-glow:  rgba(0,229,255,.3);
+  --magenta:    #ff2d78;
+  --magenta-dim:rgba(255,45,120,.15);
+  --amber:      #ffb700;
+  --amber-dim:  rgba(255,183,0,.15);
+  --green:      #00e676;
+  --green-dim:  rgba(0,230,118,.15);
+  --purple:     #8b5cf6;
+  --purple-dim: rgba(139,92,246,.2);
+
+  /* ── Category Colors ── */
+  --cat-ops: #00e676; --cat-ops-bg: rgba(0,230,118,.12);
+  --cat-adm: #00e5ff; --cat-adm-bg: rgba(0,229,255,.12);
+  --cat-mtg: #ffb700; --cat-mtg-bg: rgba(255,183,0,.12);
+  --cat-ext: #ff2d78; --cat-ext-bg: rgba(255,45,120,.12);
+
+  /* ── Dimensions — iPhone SE 2020 ── */
+  --w: 375px;
+  --tab-h: 56px;       /* bottom tab bar */
+  --sb-h: 52px;        /* status bar */
+  --header-h: 50px;
+
+  --font: 'Rajdhani', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --r: 12px;
+  --r-sm: 7px;
+  --t: 150ms ease;
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;overflow:hidden;}
-body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px;}
 
-.shell{display:flex;flex-direction:column;height:100vh;width:100vw;max-width:900px;margin:0 auto;background:var(--surface);border-left:1px solid var(--border);border-right:1px solid var(--border);}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: var(--bg-deep); }
+body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
 
-/* ── TABBAR ── */
-.tabbar{height:var(--tab-h);flex-shrink:0;display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--surface);}
-.tab-brand{display:flex;align-items:center;padding:0 16px;border-right:1px solid var(--border);font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.5px;gap:6px;user-select:none;flex-shrink:0;}
-.brand-dot{width:6px;height:6px;border-radius:50%;background:var(--text);}
-.tabs{display:flex;flex:1;}
-.tab-btn{display:flex;align-items:center;gap:5px;padding:0 16px;border:none;background:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;transition:all var(--t);white-space:nowrap;}
-.tab-btn:hover{color:var(--text2);}
-.tab-btn.active{color:var(--text);border-bottom-color:var(--text);}
-.tab-badge{min-width:15px;height:15px;border-radius:8px;background:var(--red);color:#fff;font-size:9px;font-weight:700;font-family:var(--mono);display:flex;align-items:center;justify-content:center;padding:0 3px;}
-.tab-badge.hidden{display:none;}
-.tab-clock{display:flex;align-items:center;padding:0 14px;border-left:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted);flex-shrink:0;}
+/* ══ SHELL ══ */
+.shell {
+  width: var(--w);
+  height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-deep);
+  position: relative;
+  overflow: hidden;
+}
 
-/* ── STATUS BAR ── */
-.statusbar{height:var(--sb-h);flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--border);background:var(--bg);}
-.sb-idle{font-size:11px;color:var(--muted);font-family:var(--mono);}
-.sb-active{display:none;flex:1;align-items:center;gap:10px;}
-.sb-active.on{display:flex;}
-.sb-pulse{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
-.sb-name{font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.sb-timer{font-family:var(--mono);font-size:20px;font-weight:300;letter-spacing:-1px;flex-shrink:0;}
-.sb-btn{font-size:11px;font-weight:500;padding:4px 10px;border:1px solid var(--border-md);border-radius:4px;background:var(--surface);cursor:pointer;color:var(--text2);transition:all var(--t);white-space:nowrap;}
-.sb-btn:hover{background:var(--green-bg);border-color:var(--green-bd);color:var(--green);}
-.sb-btn.brk:hover{background:var(--amber-bg);border-color:var(--amber-bd);color:var(--amber);}
+/* subtle grid texture */
+.shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  width: var(--w);
+  margin: 0 auto;
+  background-image:
+    linear-gradient(rgba(139,92,246,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,92,246,.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
 
-/* ── PANELS ── */
-.panel{display:none;flex:1;overflow-y:auto;flex-direction:column;}
-.panel.active{display:flex;}
-.panel-inner{padding:18px 22px;flex:1;}
+/* ══ HEADER ══ */
+.header {
+  height: var(--header-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--bg-mid);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 10;
+}
+.brand {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font); font-size: 18px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text);
+}
+.brand-orb {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan), 0 0 16px var(--cyan-glow);
+  animation: orb-pulse 3s ease-in-out infinite;
+}
+@keyframes orb-pulse {
+  0%,100% { box-shadow: 0 0 6px var(--cyan), 0 0 12px var(--cyan-glow); }
+  50%      { box-shadow: 0 0 12px var(--cyan), 0 0 24px var(--cyan-glow), 0 0 40px var(--cyan-glow); }
+}
+.header-clock {
+  font-family: var(--mono); font-size: 13px; color: var(--cyan);
+  letter-spacing: 1px;
+}
+.header-date {
+  font-size: 10px; color: var(--muted); font-family: var(--mono);
+  letter-spacing: .5px; text-align: right;
+}
 
-/* ── RUNNING INTERRUPT ROW ── */
-.int-row{display:flex;align-items:center;gap:4px;padding:9px 20px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;}
-.int-row-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-right:6px;}
-.int-btn{width:34px;height:34px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:all var(--t);position:relative;}
-.int-btn:hover{background:var(--bg);border-color:var(--border-md);transform:scale(1.08);}
-.int-tip{position:absolute;bottom:-26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:3px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 120ms;z-index:50;}
-.int-btn:hover .int-tip{opacity:1;}
-.int-div{width:1px;height:18px;background:var(--border-md);margin:0 5px;}
-.btn-pulang{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid var(--border-md);border-radius:var(--r);background:none;cursor:pointer;font-family:var(--font);font-size:11px;font-weight:600;color:var(--text2);transition:all var(--t);}
-.btn-pulang:hover{background:var(--red-bg);border-color:var(--red-bd);color:var(--red);}
+/* ══ STATUS BAR ══ */
+.statusbar {
+  height: var(--sb-h); flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 14px;
+  background: var(--bg-mid);
+  border-bottom: 1px solid var(--border);
+  position: relative; z-index: 9;
+}
+.sb-idle { font-size: 12px; color: var(--muted); font-family: var(--mono); letter-spacing: .3px; }
+.sb-active { display: none; flex: 1; align-items: center; gap: 8px; }
+.sb-active.on { display: flex; }
+.sb-pulse {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.5)} }
+.sb-name {
+  flex: 1; font-size: 13px; font-weight: 600; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; color: var(--text);
+}
+.sb-timer {
+  font-family: var(--mono); font-size: 22px; font-weight: 300;
+  letter-spacing: -1px; color: var(--cyan);
+  text-shadow: 0 0 12px var(--cyan-glow);
+  flex-shrink: 0;
+}
+.sb-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.sb-btn {
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  padding: 5px 11px; border-radius: 20px;
+  border: 1px solid var(--border-md);
+  background: var(--purple-dim); color: var(--text2);
+  cursor: pointer; transition: all var(--t); letter-spacing: .5px;
+}
+.sb-btn:active { transform: scale(.95); }
+.sb-btn.done:active, .sb-btn.done:hover { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.sb-btn.brk:active,  .sb-btn.brk:hover  { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
 
-/* ── TASK CARDS ── */
-.tasks-section{padding:14px 20px;}
-.section-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.section-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);}
-.task-cards{display:flex;flex-direction:column;gap:6px;}
-.task-empty{text-align:center;padding:32px 20px;color:var(--muted);font-size:12px;border:1.5px dashed var(--border);border-radius:8px;}
+/* ══ PANELS ══ */
+.panels { flex: 1; overflow: hidden; position: relative; z-index: 1; }
+.panel { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.panel.active { display: block; }
+.panel-inner { padding: 14px 14px 20px; }
 
-.tc{border:1px solid var(--border);border-radius:7px;background:var(--surface);display:flex;align-items:stretch;overflow:hidden;transition:border-color var(--t),box-shadow var(--t);}
-.tc:hover{border-color:var(--border-md);}
-.tc.is-active{border-color:var(--text);box-shadow:0 0 0 3px rgba(15,15,14,.06);}
-.tc.is-done{opacity:.45;}
-.tc.is-done .tc-title{text-decoration:line-through;}
-.tc-start{width:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border);cursor:pointer;background:var(--bg);transition:background var(--t);font-size:15px;}
-.tc-start:hover{background:var(--green-bg);}
-.tc.is-active .tc-start{background:var(--text);border-color:var(--text);color:#fff;}
-.tc-body{flex:1;padding:9px 13px;min-width:0;}
-.tc-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tc-meta{display:flex;align-items:center;gap:7px;margin-top:4px;flex-wrap:wrap;}
-.tc-pic{font-size:11px;color:var(--muted);font-family:var(--mono);}
-.tc-dept{font-size:10px;font-weight:500;padding:1px 7px;border-radius:10px;background:var(--blue-bg);color:var(--blue);}
-.tc-elapsed{font-size:11px;color:var(--muted);font-family:var(--mono);}
-.tc.is-active .tc-elapsed{color:var(--text);font-weight:500;}
-.tc-unplanned{font-size:9px;font-family:var(--mono);background:var(--red-bg);color:var(--red);padding:1px 5px;border-radius:3px;}
-.tc-actions{display:flex;align-items:center;gap:4px;padding:0 10px;flex-shrink:0;}
-.btn-tc{font-size:11px;padding:4px 8px;border-radius:4px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--muted);transition:all var(--t);white-space:nowrap;}
-.btn-tc:hover{border-color:var(--border-md);color:var(--text2);}
-.btn-tc.done:hover{background:var(--green-bg);border-color:var(--green-bd);color:var(--green);}
-.btn-tc.del:hover{background:var(--red-bg);border-color:var(--red-bd);color:var(--red);}
-.btn-tc.resub{color:var(--blue);border-color:var(--blue-bd);}
-.btn-tc.resub:hover{background:var(--blue-bg);}
+/* scrollbar hidden on mobile */
+.panel::-webkit-scrollbar { display: none; }
 
-.completed-divider{display:flex;align-items:center;gap:10px;margin:18px 20px 10px;flex-shrink:0;}
-.cd-line{flex:1;height:1px;background:var(--border);}
-.cd-label{font-family:var(--mono);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+/* ══ BOTTOM TAB BAR ══ */
+.tabbar {
+  height: var(--tab-h); flex-shrink: 0;
+  display: flex; align-items: stretch;
+  background: var(--bg-mid);
+  border-top: 1px solid var(--border);
+  position: relative; z-index: 20;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  border: none; background: none; cursor: pointer;
+  color: var(--muted); transition: all var(--t);
+  position: relative; padding: 0;
+}
+.tab-btn.active { color: var(--cyan); }
+.tab-icon { font-size: 18px; line-height: 1; }
+.tab-label {
+  font-family: var(--font); font-size: 9px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.tab-btn.active .tab-icon {
+  filter: drop-shadow(0 0 6px var(--cyan));
+}
+.tab-badge {
+  position: absolute; top: 5px; right: calc(50% - 18px);
+  min-width: 14px; height: 14px; border-radius: 7px;
+  background: var(--magenta); color: #fff;
+  font-size: 8px; font-weight: 700; font-family: var(--mono);
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 3px; box-shadow: 0 0 8px var(--magenta);
+}
+.tab-badge.hidden { display: none; }
+/* active indicator line */
+.tab-btn.active::before {
+  content: '';
+  position: absolute; top: 0; left: 20%; right: 20%;
+  height: 2px; border-radius: 0 0 2px 2px;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
 
-/* ── SUBMIT ── */
-.submit-wrap{max-width:480px;}
-.field{margin-bottom:14px;position:relative;}
-.field label{display:block;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;font-family:var(--mono);}
-.field input,.field select{width:100%;font-family:var(--font);font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;outline:none;transition:border-color var(--t),background var(--t);}
-.field input:focus,.field select:focus{border-color:var(--border-md);background:var(--surface);}
-.field input::placeholder{color:var(--muted);}
-.field input[readonly]{background:var(--bg);color:var(--text2);cursor:default;border-color:var(--border);}
+/* ══ SECTION LABELS ══ */
+.sec-label {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+}
 
-/* autocomplete dropdown */
-.ac-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border-md);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:100;max-height:200px;overflow-y:auto;display:none;}
-.ac-dropdown.open{display:block;}
-.ac-item{padding:9px 12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background var(--t);}
-.ac-item:hover,.ac-item.focused{background:var(--bg);}
-.ac-name{font-size:13px;font-weight:500;}
-.ac-dept{font-size:10px;font-family:var(--mono);color:var(--muted);}
-.ac-empty{padding:10px 12px;font-size:12px;color:var(--muted);font-family:var(--mono);}
+/* ══ INTERRUPT ROW ══ */
+.int-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 14px; flex-shrink: 0;
+  background: var(--bg-mid); border-bottom: 1px solid var(--border);
+}
+.int-row-lbl {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--muted); margin-right: 2px; flex-shrink: 0;
+}
+.int-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-card); cursor: pointer;
+  font-size: 18px; display: flex; align-items: center; justify-content: center;
+  transition: all var(--t); flex-shrink: 0;
+}
+.int-btn:active { transform: scale(.88); background: var(--purple-dim); border-color: var(--border-bright); }
+.int-div { width: 1px; height: 20px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
+.btn-pulang {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 12px; border: 1px solid rgba(255,45,120,.4);
+  border-radius: 20px; background: var(--magenta-dim);
+  cursor: pointer; font-family: var(--font); font-size: 11px;
+  font-weight: 700; color: var(--magenta); letter-spacing: .5px;
+  transition: all var(--t); white-space: nowrap; flex-shrink: 0;
+}
+.btn-pulang:active { transform: scale(.95); background: rgba(255,45,120,.25); }
 
-.dept-display{display:none;}
-.dept-display.visible{display:block;}
-.dept-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:4px 10px;border-radius:10px;background:var(--blue-bg);color:var(--blue);margin-top:4px;}
-.dept-tag span{font-size:10px;font-family:var(--mono);}
+/* ══ TASK CARDS ══ */
+.task-stack { display: flex; flex-direction: column; gap: 8px; }
+.task-empty {
+  text-align: center; padding: 40px 20px;
+  color: var(--muted); font-size: 12px; font-family: var(--mono);
+  border: 1px dashed var(--border); border-radius: var(--r);
+  line-height: 1.8;
+}
 
-.form-footer{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);}
-.btn-primary{font-family:var(--font);font-size:13px;font-weight:600;padding:9px 22px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:opacity var(--t);}
-.btn-primary:hover{opacity:.82;}
-.btn-ghost{font-family:var(--font);font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;transition:color var(--t);padding:4px;}
-.btn-ghost:hover{color:var(--red);}
+.tc {
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--bg-card);
+  display: flex; align-items: stretch; overflow: hidden;
+  transition: border-color var(--t), box-shadow var(--t);
+}
+.tc.is-active {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px var(--cyan-dim), 0 4px 20px rgba(0,229,255,.1);
+}
+.tc.is-done { opacity: .4; }
+.tc.is-done .tc-title { text-decoration: line-through; }
 
-/* ── EDIT LOG ── */
-.event-list{display:flex;flex-direction:column;gap:5px;}
-.ev-item{border:1px solid var(--border);border-radius:6px;background:var(--surface);display:flex;align-items:center;overflow:hidden;transition:border-color var(--t);}
-.ev-item.incomplete{border-color:var(--amber-bd);background:var(--amber-bg);}
-.ev-type-col{width:80px;flex-shrink:0;padding:9px 10px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:3px;}
-.ev-badge{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.4px;padding:2px 5px;border-radius:3px;text-transform:uppercase;}
-.ev-START{background:var(--green-bg);color:var(--green);}
-.ev-STOP{background:var(--bg);color:var(--muted);}
-.ev-PAUSE{background:var(--amber-bg);color:var(--amber);}
-.ev-RESUME{background:var(--blue-bg);color:var(--blue);}
-.ev-DONE{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
-.ev-BREAK{background:var(--purple-bg);color:var(--purple);}
-.ev-INT{background:var(--red-bg);color:var(--red);}
-.ev-EOD{background:var(--accent);color:#fff;}
-.ev-ts{font-family:var(--mono);font-size:9px;color:var(--muted);}
-.ev-body{flex:1;padding:9px 12px;min-width:0;}
-.ev-title{font-size:12px;font-weight:500;}
-.ev-sub{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px;}
-.ev-incomplete-lbl{font-size:9px;color:var(--amber);font-weight:600;font-family:var(--mono);letter-spacing:.3px;margin-top:3px;}
-.ev-actions{padding:0 10px;flex-shrink:0;}
-.btn-edit-ev{font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--amber-bd);background:var(--surface);cursor:pointer;color:var(--amber);font-weight:500;transition:all var(--t);}
-.btn-edit-ev:hover{background:var(--amber-bg);}
+.tc-start {
+  width: 48px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid var(--border); cursor: pointer;
+  background: var(--bg-card2); font-size: 16px;
+  transition: all var(--t);
+}
+.tc-start:active { background: var(--cyan-dim); }
+.tc.is-active .tc-start { background: var(--cyan-dim); color: var(--cyan); }
 
-/* ── SETTINGS ── */
-.settings-wrap{max-width:600px;}
-.settings-section-title{font-size:15px;font-weight:600;margin-bottom:4px;}
-.settings-section-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:20px;}
-.emp-add-row{display:flex;gap:8px;margin-bottom:16px;}
-.emp-add-row input{flex:1;font-family:var(--font);font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 11px;outline:none;transition:border-color var(--t);}
-.emp-add-row input:focus{border-color:var(--border-md);}
-.emp-add-row input::placeholder{color:var(--muted);}
-.btn-add-emp{font-family:var(--font);font-size:12px;font-weight:600;padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);cursor:pointer;white-space:nowrap;transition:opacity var(--t);}
-.btn-add-emp:hover{opacity:.82;}
+.tc-body { flex: 1; padding: 10px 12px; min-width: 0; }
+.tc-title {
+  font-size: 14px; font-weight: 600; letter-spacing: .3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text);
+}
+.tc-meta { display: flex; align-items: center; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+.tc-pic { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.tc-dept {
+  font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 8px;
+  background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,229,255,.25);
+}
+.tc-elapsed { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.tc.is-active .tc-elapsed { color: var(--cyan); }
+.tc-unplanned {
+  font-size: 9px; font-family: var(--mono); letter-spacing: .3px;
+  background: var(--magenta-dim); color: var(--magenta);
+  padding: 1px 6px; border-radius: 4px;
+  border: 1px solid rgba(255,45,120,.3);
+}
 
-.emp-table{width:100%;border-collapse:collapse;font-size:12px;}
-.emp-table th{font-family:var(--mono);font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);font-weight:400;background:var(--bg);}
-.emp-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text2);}
-.emp-table tr:last-child td{border-bottom:none;}
-.emp-table td:first-child{font-weight:500;color:var(--text);}
-.emp-dept-badge{font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px;background:var(--blue-bg);color:var(--blue);}
-.btn-del-emp{font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--muted);transition:all var(--t);}
-.btn-del-emp:hover{background:var(--red-bg);border-color:var(--red-bd);color:var(--red);}
-.emp-empty{text-align:center;padding:32px;color:var(--muted);font-size:12px;border:1.5px dashed var(--border);border-radius:8px;}
+.tc-actions { display: flex; align-items: center; gap: 4px; padding: 0 10px; flex-shrink: 0; }
+.btn-tc {
+  font-size: 11px; padding: 5px 9px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg-card2);
+  cursor: pointer; color: var(--muted); font-family: var(--font);
+  font-weight: 600; letter-spacing: .3px; transition: all var(--t);
+}
+.btn-tc:active { transform: scale(.92); }
+.btn-tc.done:active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.btn-tc.del:active  { background: var(--magenta-dim); border-color: var(--magenta); color: var(--magenta); }
+.btn-tc.resub { color: var(--cyan); border-color: rgba(0,229,255,.3); }
+.btn-tc.resub:active { background: var(--cyan-dim); }
 
-/* ── DASHBOARD GANTT ── */
-.gantt-controls{display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg);}
-.gantt-zoom-btn{font-family:var(--mono);font-size:10px;padding:4px 11px;border-radius:4px;border:1px solid var(--border-md);background:var(--surface);cursor:pointer;color:var(--text2);transition:all var(--t);}
-.gantt-zoom-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-.gantt-zoom-btn:hover:not(.active){background:var(--bg);}
-.gantt-nav{display:flex;align-items:center;gap:6px;margin-left:auto;}
-.gantt-nav-btn{font-size:13px;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--surface);cursor:pointer;color:var(--text2);transition:all var(--t);}
-.gantt-nav-btn:hover{border-color:var(--border-md);}
-.gantt-period-lbl{font-family:var(--mono);font-size:10px;color:var(--text2);min-width:120px;text-align:center;}
-.btn-gantt-now{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--blue);transition:all var(--t);}
-.btn-gantt-now:hover{background:var(--blue-bg);}
+/* completed divider */
+.completed-divider {
+  display: flex; align-items: center; gap: 10px; margin: 18px 0 10px;
+}
+.cd-line { flex: 1; height: 1px; background: var(--border); }
+.cd-label {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--muted); white-space: nowrap;
+}
 
-.gantt-wrap{flex:1;overflow:auto;}
-.gantt-canvas{position:relative;min-height:100%;}
-.gantt-header-row{display:flex;position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--border);}
-.gantt-label-col{width:180px;flex-shrink:0;border-right:1px solid var(--border);font-family:var(--mono);font-size:9px;color:var(--muted);padding:6px 10px;display:flex;align-items:center;}
-.gantt-timeline-hdr{flex:1;position:relative;height:26px;overflow:hidden;}
-.gantt-tick-lbl{position:absolute;font-family:var(--mono);font-size:9px;color:var(--muted);transform:translateX(-50%);top:4px;white-space:nowrap;}
-.gantt-row{display:flex;border-bottom:1px solid var(--border);min-height:38px;}
-.gantt-row:hover{background:rgba(0,0,0,.012);}
-.gantt-row-label{width:180px;flex-shrink:0;border-right:1px solid var(--border);padding:7px 10px;display:flex;align-items:center;gap:6px;}
-.gantt-row-icon{font-size:13px;flex-shrink:0;}
-.gantt-row-name{font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.gantt-row-pic{font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
-.gantt-bars{flex:1;position:relative;min-height:38px;}
-.gantt-vline{position:absolute;top:0;bottom:0;width:1px;background:var(--border);pointer-events:none;}
-.gantt-vline.now-line{background:var(--red);opacity:.5;width:2px;}
-.gantt-bar{position:absolute;top:50%;transform:translateY(-50%);height:18px;border-radius:3px;display:flex;align-items:center;padding:0 5px;font-family:var(--mono);font-size:9px;overflow:hidden;white-space:nowrap;cursor:default;min-width:3px;}
-.gantt-bar:hover{filter:brightness(.9);}
-.gb-ops{background:var(--cat-ops-bg);color:var(--cat-ops);border:1px solid var(--green-bd);}
-.gb-adm{background:var(--cat-adm-bg);color:var(--cat-adm);border:1px solid var(--blue-bd);}
-.gb-mtg{background:var(--cat-mtg-bg);color:var(--cat-mtg);border:1px solid var(--amber-bd);}
-.gb-ext{background:var(--cat-ext-bg);color:var(--cat-ext);border:1px solid var(--red-bd);}
-.gb-int{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
-.gb-break{background:var(--purple-bg);color:var(--purple);border:1px solid #e9d5ff;}
-.gb-eod{background:var(--accent);color:#fff;}
-.gantt-empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:12px;}
+/* ══ SUBMIT FORM ══ */
+.field { margin-bottom: 14px; position: relative; }
+.field label {
+  display: block; font-size: 9px; font-weight: 600; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  font-family: var(--mono);
+}
+.field input {
+  width: 100%; font-family: var(--font); font-size: 15px; font-weight: 500;
+  color: var(--text); background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 11px 13px; outline: none;
+  transition: border-color var(--t), background var(--t), box-shadow var(--t);
+  -webkit-appearance: none;
+}
+.field input:focus {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 0 3px var(--purple-dim);
+  background: var(--bg-card2);
+}
+.field input::placeholder { color: var(--muted); }
+.field input[readonly] {
+  background: var(--bg-card); color: var(--text2); cursor: default;
+  border-color: var(--border);
+}
 
-/* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity 180ms ease;}
-.modal-overlay.open{opacity:1;pointer-events:all;}
-.modal{background:var(--surface);border-radius:10px;width:420px;max-width:92vw;box-shadow:0 16px 48px rgba(0,0,0,.18);transform:translateY(10px);transition:transform 200ms ease;overflow:hidden;}
-.modal-overlay.open .modal{transform:translateY(0);}
-.modal-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.modal-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
-.btn-modal-close{font-size:20px;background:none;border:none;cursor:pointer;color:var(--muted);line-height:1;}
-.modal-body{padding:18px;}
-.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
-.btn-secondary{font-family:var(--font);font-size:12px;font-weight:500;padding:7px 15px;border:1px solid var(--border-md);border-radius:var(--r);background:none;cursor:pointer;color:var(--text2);transition:all var(--t);}
-.btn-secondary:hover{background:var(--bg);}
-.time-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* autocomplete */
+.ac-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--bg-card2); border: 1px solid var(--border-md);
+  border-radius: var(--r-sm); box-shadow: 0 12px 32px rgba(0,0,0,.5);
+  z-index: 100; max-height: 180px; overflow-y: auto; display: none;
+}
+.ac-dropdown.open { display: block; }
+.ac-item {
+  padding: 10px 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: background var(--t); border-bottom: 1px solid var(--border);
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:active, .ac-item.focused { background: var(--purple-dim); }
+.ac-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.ac-dept { font-size: 10px; font-family: var(--mono); color: var(--cyan); }
+.ac-empty { padding: 12px 13px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
 
-/* ── TOAST ── */
-.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(50px);background:var(--accent);color:#fff;font-size:11px;font-weight:500;padding:7px 15px;border-radius:5px;opacity:0;transition:all 240ms cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap;z-index:999;font-family:var(--mono);}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.dept-display { display: none; margin-top: 6px; }
+.dept-display.visible { display: block; }
+.dept-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+  background: var(--cyan-dim); color: var(--cyan);
+  border: 1px solid rgba(0,229,255,.3); font-family: var(--mono);
+}
 
-.panel::-webkit-scrollbar,.gantt-wrap::-webkit-scrollbar{width:4px;height:4px;}
-.panel::-webkit-scrollbar-thumb,.gantt-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.form-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 14px; border-top: 1px solid var(--border); margin-top: 4px;
+}
+.btn-primary {
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  padding: 11px 24px; border-radius: 24px; border: none;
+  background: linear-gradient(135deg, #8b5cf6, #00e5ff);
+  color: #fff; cursor: pointer; letter-spacing: .5px;
+  box-shadow: 0 4px 20px rgba(139,92,246,.4);
+  transition: all var(--t);
+}
+.btn-primary:active { transform: scale(.96); opacity: .9; }
+.btn-ghost {
+  font-family: var(--font); font-size: 12px; color: var(--muted);
+  background: none; border: none; cursor: pointer; padding: 4px;
+  transition: color var(--t);
+}
+.btn-ghost:active { color: var(--magenta); }
+
+/* ══ EDIT LOG ══ */
+.event-list { display: flex; flex-direction: column; gap: 6px; }
+.ev-item {
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--bg-card); display: flex; align-items: center;
+  overflow: hidden; transition: border-color var(--t);
+}
+.ev-item.incomplete { border-color: rgba(255,183,0,.4); background: rgba(255,183,0,.05); }
+.ev-type-col {
+  width: 72px; flex-shrink: 0; padding: 10px 8px;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+}
+.ev-badge {
+  font-family: var(--mono); font-size: 8px; font-weight: 600;
+  letter-spacing: .5px; padding: 2px 5px; border-radius: 3px; text-transform: uppercase;
+}
+.ev-START  { background: var(--green-dim); color: var(--green); }
+.ev-STOP   { background: var(--bg-card2); color: var(--muted); }
+.ev-PAUSE  { background: var(--amber-dim); color: var(--amber); }
+.ev-RESUME { background: var(--cyan-dim); color: var(--cyan); }
+.ev-DONE   { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
+.ev-BREAK  { background: var(--purple-dim); color: var(--purple); }
+.ev-INT    { background: var(--magenta-dim); color: var(--magenta); }
+.ev-EOD    { background: var(--magenta-dim); color: var(--magenta); }
+.ev-ts { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+.ev-body { flex: 1; padding: 9px 10px; min-width: 0; }
+.ev-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.ev-sub { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+.ev-incomplete-lbl {
+  font-size: 9px; color: var(--amber); font-weight: 700;
+  font-family: var(--mono); letter-spacing: .5px; margin-top: 3px;
+}
+.ev-actions { padding: 0 8px; flex-shrink: 0; }
+.btn-edit-ev {
+  font-size: 11px; padding: 5px 9px; border-radius: 6px;
+  border: 1px solid rgba(255,183,0,.4); background: var(--amber-dim);
+  cursor: pointer; color: var(--amber); font-weight: 700;
+  font-family: var(--font); transition: all var(--t);
+}
+.btn-edit-ev:active { transform: scale(.94); }
+
+/* ══ SETTINGS ══ */
+.settings-title { font-size: 16px; font-weight: 700; letter-spacing: .5px; margin-bottom: 4px; }
+.settings-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 18px; }
+.emp-add-row { display: flex; gap: 7px; margin-bottom: 16px; }
+.emp-add-row input {
+  flex: 1; font-family: var(--font); font-size: 13px; font-weight: 500;
+  color: var(--text); background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 9px 11px; outline: none; -webkit-appearance: none;
+  transition: border-color var(--t);
+}
+.emp-add-row input:focus { border-color: var(--border-bright); }
+.emp-add-row input::placeholder { color: var(--muted); }
+.btn-add-emp {
+  font-family: var(--font); font-size: 13px; font-weight: 700;
+  padding: 9px 14px; background: linear-gradient(135deg,#8b5cf6,#00e5ff);
+  color: #fff; border: none; border-radius: var(--r-sm); cursor: pointer;
+  white-space: nowrap; letter-spacing: .3px;
+  box-shadow: 0 2px 12px rgba(139,92,246,.35);
+}
+.btn-add-emp:active { transform: scale(.96); }
+
+.emp-table { width: 100%; border-collapse: collapse; }
+.emp-table th {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--muted); text-align: left;
+  padding: 6px 10px; border-bottom: 1px solid var(--border); font-weight: 400;
+}
+.emp-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.emp-table tr:last-child td { border-bottom: none; }
+.emp-table td:first-child { font-weight: 600; color: var(--text); }
+.emp-dept-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 8px;
+  background: var(--cyan-dim); color: var(--cyan);
+  border: 1px solid rgba(0,229,255,.25); font-family: var(--mono);
+}
+.btn-del-emp {
+  font-size: 10px; padding: 3px 8px; border-radius: 5px;
+  border: 1px solid var(--border); background: none;
+  cursor: pointer; color: var(--muted); transition: all var(--t); font-family: var(--font);
+}
+.btn-del-emp:active { background: var(--magenta-dim); border-color: var(--magenta); color: var(--magenta); }
+.emp-empty {
+  text-align: center; padding: 32px; color: var(--muted);
+  font-size: 11px; border: 1px dashed var(--border); border-radius: var(--r);
+  font-family: var(--mono); line-height: 1.8;
+}
+
+/* ══ GANTT ══ */
+.gantt-controls {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  background: var(--bg-mid); flex-shrink: 0;
+}
+.gantt-zoom-btn {
+  font-family: var(--mono); font-size: 10px; padding: 5px 12px; border-radius: 20px;
+  border: 1px solid var(--border-md); background: var(--bg-card);
+  cursor: pointer; color: var(--text2); transition: all var(--t);
+}
+.gantt-zoom-btn.active {
+  background: linear-gradient(135deg,#8b5cf6,#00e5ff);
+  color: #fff; border-color: transparent;
+  box-shadow: 0 2px 12px rgba(139,92,246,.4);
+}
+.gantt-nav { display: flex; align-items: center; gap: 5px; margin-left: auto; }
+.gantt-nav-btn {
+  font-size: 14px; padding: 4px 10px; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--bg-card); cursor: pointer; color: var(--text2);
+}
+.gantt-period-lbl {
+  font-family: var(--mono); font-size: 9px; color: var(--text2);
+  min-width: 80px; text-align: center; letter-spacing: .3px;
+}
+.btn-gantt-now {
+  font-family: var(--mono); font-size: 9px; padding: 5px 9px; border-radius: 6px;
+  border: 1px solid rgba(0,229,255,.3); background: var(--cyan-dim);
+  cursor: pointer; color: var(--cyan);
+}
+.gantt-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
+.gantt-canvas { position: relative; min-height: 100%; }
+.gantt-header-row {
+  display: flex; position: sticky; top: 0; z-index: 10;
+  background: var(--bg-mid); border-bottom: 1px solid var(--border);
+}
+.gantt-label-col {
+  width: 120px; flex-shrink: 0; border-right: 1px solid var(--border);
+  font-family: var(--mono); font-size: 8px; color: var(--muted);
+  padding: 6px 8px; display: flex; align-items: center; letter-spacing: .5px;
+}
+.gantt-timeline-hdr { flex: 1; position: relative; height: 26px; overflow: hidden; }
+.gantt-tick-lbl {
+  position: absolute; font-family: var(--mono); font-size: 8px;
+  color: var(--muted); transform: translateX(-50%); top: 4px; white-space: nowrap;
+}
+.gantt-row { display: flex; border-bottom: 1px solid var(--border); min-height: 40px; }
+.gantt-row-label {
+  width: 120px; flex-shrink: 0; border-right: 1px solid var(--border);
+  padding: 7px 8px; display: flex; align-items: center; gap: 5px;
+}
+.gantt-row-icon { font-size: 12px; flex-shrink: 0; }
+.gantt-row-name { font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.gantt-row-sub { font-size: 9px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
+.gantt-bars { flex: 1; position: relative; min-height: 40px; }
+.gantt-vline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border); pointer-events: none; }
+.gantt-vline.now-line { background: var(--magenta); opacity: .7; width: 2px; box-shadow: 0 0 6px var(--magenta); }
+.gantt-bar {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  height: 20px; border-radius: 4px;
+  display: flex; align-items: center; padding: 0 5px;
+  font-family: var(--mono); font-size: 8px; overflow: hidden; white-space: nowrap;
+  min-width: 3px;
+}
+.gb-ops   { background: var(--cat-ops-bg); color: var(--cat-ops); border: 1px solid rgba(0,230,118,.3); }
+.gb-adm   { background: var(--cat-adm-bg); color: var(--cat-adm); border: 1px solid rgba(0,229,255,.3); }
+.gb-mtg   { background: var(--cat-mtg-bg); color: var(--cat-mtg); border: 1px solid rgba(255,183,0,.3); }
+.gb-ext   { background: var(--cat-ext-bg); color: var(--cat-ext); border: 1px solid rgba(255,45,120,.3); }
+.gb-int   { background: var(--magenta-dim); color: var(--magenta); border: 1px solid rgba(255,45,120,.3); }
+.gb-break { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(139,92,246,.3); }
+.gb-eod   { background: var(--magenta-dim); color: var(--magenta); }
+.gantt-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 11px; font-family: var(--mono); }
+
+/* ══ MODAL ══ */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 200; opacity: 0; pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg-card2);
+  border: 1px solid var(--border-md);
+  border-radius: 20px 20px 0 0;
+  width: var(--w); max-width: 100vw;
+  box-shadow: 0 -20px 60px rgba(0,0,0,.5);
+  transform: translateY(100%);
+  transition: transform 250ms cubic-bezier(.32,0,.67,0);
+  padding-bottom: env(safe-area-inset-bottom);
+  max-height: 85vh; overflow-y: auto;
+}
+.modal-overlay.open .modal { transform: translateY(0); transition-timing-function: cubic-bezier(.33,1,.68,1); }
+.modal-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border-md); margin: 12px auto 0;
+}
+.modal-header { padding: 14px 18px 0; display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 15px; font-weight: 700; letter-spacing: .3px; display: flex; align-items: center; gap: 8px; }
+.btn-modal-close { font-size: 22px; background: none; border: none; cursor: pointer; color: var(--muted); line-height: 1; }
+.modal-body { padding: 16px 18px; }
+.modal-footer { padding: 10px 18px 16px; display: flex; justify-content: flex-end; gap: 8px; }
+.btn-secondary {
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  padding: 9px 18px; border: 1px solid var(--border-md); border-radius: 20px;
+  background: none; cursor: pointer; color: var(--text2);
+}
+.time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field input[type="time"] { color-scheme: dark; }
+
+/* ══ TOAST ══ */
+.toast {
+  position: fixed; bottom: calc(var(--tab-h) + 12px); left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg-card2); color: var(--text);
+  border: 1px solid var(--border-md);
+  font-size: 12px; font-weight: 600; font-family: var(--mono);
+  padding: 8px 16px; border-radius: 20px; opacity: 0;
+  transition: all 260ms cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none; white-space: nowrap; z-index: 999;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  letter-spacing: .3px;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 <div class="shell">
 
-<!-- ══ TABBAR ══ -->
-<div class="tabbar">
-  <div class="tab-brand"><div class="brand-dot"></div>WorkLog</div>
-  <div class="tabs">
-    <button class="tab-btn" onclick="switchTab('dashboard')" id="tab-dashboard">Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('submit')"    id="tab-submit">Submit</button>
-    <button class="tab-btn active" onclick="switchTab('running')" id="tab-running">Running</button>
-    <button class="tab-btn" onclick="switchTab('editlog')"   id="tab-editlog">Edit Log <span class="tab-badge hidden" id="editBadge">0</span></button>
-    <button class="tab-btn" onclick="switchTab('settings')"  id="tab-settings">Settings</button>
-  </div>
-  <div class="tab-clock" id="clockBar">--:--:--</div>
-</div>
-
-<!-- ══ STATUS BAR ══ -->
-<div class="statusbar">
-  <span class="sb-idle" id="sbIdle">Tidak ada aktivitas aktif</span>
-  <div class="sb-active" id="sbActive">
-    <div class="sb-pulse"></div>
-    <div class="sb-name" id="sbName">—</div>
-    <div class="sb-timer" id="sbTimer">00:00</div>
-    <button class="sb-btn" onclick="doneActive()">✓ Selesai</button>
-    <button class="sb-btn brk" onclick="doBreak()">☕ Istirahat</button>
-  </div>
-  <div style="flex:1"></div>
-  <span style="font-family:var(--mono);font-size:10px;color:var(--muted)" id="dateBar"></span>
-</div>
-
-<!-- ══ PANEL: DASHBOARD ══ -->
-<div class="panel" id="panel-dashboard">
-  <div class="gantt-controls">
-    <button class="gantt-zoom-btn active" id="zoom-day"   onclick="setZoom('day')">Hari</button>
-    <button class="gantt-zoom-btn"        id="zoom-week"  onclick="setZoom('week')">Minggu</button>
-    <button class="gantt-zoom-btn"        id="zoom-month" onclick="setZoom('month')">Bulan</button>
-    <button class="btn-gantt-now" onclick="ganttGoNow()">Sekarang</button>
-    <div class="gantt-nav">
-      <button class="gantt-nav-btn" onclick="ganttNav(-1)">‹</button>
-      <span class="gantt-period-lbl" id="ganttPeriodLbl"></span>
-      <button class="gantt-nav-btn" onclick="ganttNav(1)">›</button>
+  <!-- ══ HEADER ══ -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-orb"></div>
+      WorkLog
+    </div>
+    <div style="text-align:right">
+      <div class="header-clock" id="clockBar">--:--:--</div>
+      <div class="header-date" id="dateBar"></div>
     </div>
   </div>
-  <div class="gantt-wrap" id="ganttWrap">
-    <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
-  </div>
-</div>
 
-<!-- ══ PANEL: SUBMIT ══ -->
-<div class="panel" id="panel-submit">
-  <div class="panel-inner">
-    <div class="submit-wrap">
-      <div style="margin-bottom:20px">
-        <div style="font-size:15px;font-weight:600;margin-bottom:2px">Tambah Tugas</div>
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Nama tugas dan PIC — ringkas, cepat</div>
+  <!-- ══ STATUS BAR ══ -->
+  <div class="statusbar">
+    <span class="sb-idle" id="sbIdle">— tidak ada aktivitas aktif —</span>
+    <div class="sb-active" id="sbActive">
+      <div class="sb-pulse"></div>
+      <div class="sb-name" id="sbName">—</div>
+      <div class="sb-timer" id="sbTimer">00:00</div>
+      <div class="sb-actions">
+        <button class="sb-btn done" onclick="doneActive()">✓</button>
+        <button class="sb-btn brk"  onclick="doBreak()">☕</button>
       </div>
-      <div class="field">
-        <label>Nama Tugas</label>
-        <input type="text" id="f-title" placeholder="contoh: Buat invoice bulan ini..." onkeydown="if(event.key==='Enter')document.getElementById('f-pic').focus()"/>
-      </div>
-      <div class="field" id="picField">
-        <label>PIC</label>
-        <input type="text" id="f-pic" placeholder="ketik nama..." autocomplete="off"
-          oninput="onPicInput()"
-          onkeydown="onPicKeydown(event)"
-          onblur="setTimeout(closeAc,180)"/>
-        <div class="ac-dropdown" id="acDropdown"></div>
-        <div class="dept-display" id="deptDisplay">
-          <div class="dept-tag">🏢 <span id="deptName">—</span></div>
+    </div>
+  </div>
+
+  <!-- ══ PANELS ══ -->
+  <div class="panels">
+
+    <!-- DASHBOARD -->
+    <div class="panel" id="panel-dashboard">
+      <div style="display:flex;flex-direction:column;height:100%;">
+        <div class="gantt-controls">
+          <button class="gantt-zoom-btn active" id="zoom-day"   onclick="setZoom('day')">Hari</button>
+          <button class="gantt-zoom-btn"        id="zoom-week"  onclick="setZoom('week')">Minggu</button>
+          <button class="gantt-zoom-btn"        id="zoom-month" onclick="setZoom('month')">Bulan</button>
+          <button class="btn-gantt-now" onclick="ganttGoNow()">Now</button>
+          <div class="gantt-nav">
+            <button class="gantt-nav-btn" onclick="ganttNav(-1)">‹</button>
+            <span class="gantt-period-lbl" id="ganttPeriodLbl"></span>
+            <button class="gantt-nav-btn" onclick="ganttNav(1)">›</button>
+          </div>
+        </div>
+        <div class="gantt-wrap" id="ganttWrap">
+          <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
         </div>
       </div>
-      <div class="form-footer">
-        <button class="btn-ghost" onclick="clearForm()">Bersihkan</button>
-        <button class="btn-primary" onclick="submitTask()">+ Tambah Tugas</button>
+    </div>
+
+    <!-- SUBMIT -->
+    <div class="panel" id="panel-submit">
+      <div class="panel-inner">
+        <div style="margin-bottom:18px">
+          <div style="font-size:17px;font-weight:700;letter-spacing:.3px;margin-bottom:3px">Tambah Tugas</div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">nama · PIC — ringkas, cepat</div>
+        </div>
+        <div class="field">
+          <label>Nama Tugas</label>
+          <input type="text" id="f-title" placeholder="contoh: Buat invoice..." onkeydown="if(event.key==='Enter')document.getElementById('f-pic').focus()"/>
+        </div>
+        <div class="field" id="picField">
+          <label>PIC</label>
+          <input type="text" id="f-pic" placeholder="ketik nama..." autocomplete="off"
+            oninput="onPicInput()" onkeydown="onPicKeydown(event)" onblur="setTimeout(closeAc,200)"/>
+          <div class="ac-dropdown" id="acDropdown"></div>
+          <div class="dept-display" id="deptDisplay">
+            <div class="dept-tag">🏢 <span id="deptName">—</span></div>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-ghost" onclick="clearForm()">Bersihkan</button>
+          <button class="btn-primary" onclick="submitTask()">+ Tambah</button>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ══ PANEL: RUNNING ══ -->
-<div class="panel active" id="panel-running">
-  <div class="int-row">
-    <span class="int-row-lbl">Interupsi</span>
-    <button class="int-btn" onclick="triggerInt('teams','MS Teams')">💬<span class="int-tip">MS Teams</span></button>
-    <button class="int-btn" onclick="triggerInt('whatsapp','WhatsApp')">📱<span class="int-tip">WhatsApp</span></button>
-    <button class="int-btn" onclick="triggerInt('tamu','Tamu')">🤝<span class="int-tip">Tamu</span></button>
-    <button class="int-btn" onclick="triggerInt('toilet','Toilet')">🚽<span class="int-tip">Toilet</span></button>
-    <button class="int-btn" onclick="triggerInt('rokok','Rokok')">🚬<span class="int-tip">Rokok</span></button>
-    <div class="int-div"></div>
-    <button class="btn-pulang" onclick="openPulang()">🚪 Pulang</button>
-  </div>
-  <div class="tasks-section">
-    <div class="section-row">
-      <span class="section-lbl">Tugas Aktif</span>
-      <button class="btn-ghost" style="font-size:10px;font-family:var(--mono)" onclick="exportCSV()">↓ CSV</button>
-    </div>
-    <div class="task-cards" id="activeTasks">
-      <div class="task-empty" id="activeEmpty">Belum ada tugas. Tambah di tab Submit ☝️</div>
-    </div>
-  </div>
-  <div id="completedSection" style="display:none">
-    <div class="completed-divider"><div class="cd-line"></div><div class="cd-label">Completed Tasks</div><div class="cd-line"></div></div>
-    <div class="tasks-section" style="padding-top:0">
-      <div class="task-cards" id="doneTasks"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ PANEL: EDIT LOG ══ -->
-<div class="panel" id="panel-editlog">
-  <div class="panel-inner">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div>
-        <div style="font-size:15px;font-weight:600;margin-bottom:2px">Edit Log</div>
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="editSub">Semua aktivitas hari ini</div>
+    <!-- RUNNING -->
+    <div class="panel active" id="panel-running">
+      <!-- interrupt row -->
+      <div class="int-row">
+        <span class="int-row-lbl">Int.</span>
+        <button class="int-btn" onclick="triggerInt('teams','MS Teams')">💬</button>
+        <button class="int-btn" onclick="triggerInt('whatsapp','WhatsApp')">📱</button>
+        <button class="int-btn" onclick="triggerInt('tamu','Tamu')">🤝</button>
+        <button class="int-btn" onclick="triggerInt('toilet','Toilet')">🚽</button>
+        <button class="int-btn" onclick="triggerInt('rokok','Rokok')">🚬</button>
+        <div class="int-div"></div>
+        <button class="btn-pulang" onclick="openPulang()">🚪 Pulang</button>
       </div>
-      <button class="btn-ghost" style="font-size:10px;font-family:var(--mono)" onclick="clearLog()">Hapus log hari ini</button>
-    </div>
-    <div class="event-list" id="eventList">
-      <div style="text-align:center;padding:40px;color:var(--muted);font-size:12px">Belum ada event.</div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ PANEL: SETTINGS ══ -->
-<div class="panel" id="panel-settings">
-  <div class="panel-inner">
-    <div class="settings-wrap">
-      <div class="settings-section-title">Master Karyawan</div>
-      <div class="settings-section-sub">Data ini digunakan untuk autocomplete PIC dan pengisian departemen otomatis</div>
-
-      <div class="emp-add-row">
-        <input type="text" id="emp-name" placeholder="Nama karyawan..." onkeydown="if(event.key==='Enter')document.getElementById('emp-dept').focus()"/>
-        <input type="text" id="emp-dept" placeholder="Departemen..." onkeydown="if(event.key==='Enter')addEmployee()"/>
-        <button class="btn-add-emp" onclick="addEmployee()">+ Tambah</button>
-      </div>
-
-      <div id="empTableWrap">
-        <div class="emp-empty" id="empEmpty">Belum ada karyawan. Tambahkan di atas.</div>
-        <table class="emp-table" id="empTable" style="display:none">
-          <thead><tr><th>#</th><th>Nama</th><th>Departemen</th><th></th></tr></thead>
-          <tbody id="empTbody"></tbody>
-        </table>
+      <div class="panel-inner">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="sec-label">Tugas Aktif</div>
+          <button class="btn-ghost" style="font-size:10px;font-family:var(--mono)" onclick="exportCSV()">↓ CSV</button>
+        </div>
+        <div class="task-stack" id="activeTasks">
+          <div class="task-empty" id="activeEmpty">Belum ada tugas.<br>Tambah di tab Submit ↓</div>
+        </div>
+        <div id="completedSection" style="display:none">
+          <div class="completed-divider">
+            <div class="cd-line"></div>
+            <div class="cd-label">Completed</div>
+            <div class="cd-line"></div>
+          </div>
+          <div class="task-stack" id="doneTasks"></div>
+        </div>
       </div>
     </div>
+
+    <!-- EDIT LOG -->
+    <div class="panel" id="panel-editlog">
+      <div class="panel-inner">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div style="font-size:17px;font-weight:700;margin-bottom:2px">Edit Log</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="editSub">Semua aktivitas hari ini</div>
+          </div>
+          <button class="btn-ghost" style="font-size:10px;font-family:var(--mono)" onclick="clearLog()">Hapus</button>
+        </div>
+        <div class="event-list" id="eventList">
+          <div class="task-empty">Belum ada event.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panel" id="panel-settings">
+      <div class="panel-inner">
+        <div class="settings-title">Master Karyawan</div>
+        <div class="settings-sub">Autocomplete PIC + departemen otomatis</div>
+        <div class="emp-add-row">
+          <input type="text" id="emp-name" placeholder="Nama..." onkeydown="if(event.key==='Enter')document.getElementById('emp-dept').focus()"/>
+          <input type="text" id="emp-dept" placeholder="Dept..." onkeydown="if(event.key==='Enter')addEmployee()" style="max-width:110px"/>
+          <button class="btn-add-emp" onclick="addEmployee()">+</button>
+        </div>
+        <div id="empTableWrap">
+          <div class="emp-empty" id="empEmpty">Belum ada karyawan.<br>Tambahkan di atas.</div>
+          <table class="emp-table" id="empTable" style="display:none">
+            <thead><tr><th>#</th><th>Nama</th><th>Dept</th><th></th></tr></thead>
+            <tbody id="empTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panels -->
+
+  <!-- ══ BOTTOM TAB BAR ══ -->
+  <div class="tabbar">
+    <button class="tab-btn" onclick="switchTab('dashboard')" id="tab-dashboard">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">Dashboard</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('submit')" id="tab-submit">
+      <span class="tab-icon">✏️</span>
+      <span class="tab-label">Submit</span>
+    </button>
+    <button class="tab-btn active" onclick="switchTab('running')" id="tab-running">
+      <span class="tab-icon">▶️</span>
+      <span class="tab-label">Running</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('editlog')" id="tab-editlog">
+      <span class="tab-icon">📋</span>
+      <span class="tab-label">Log</span>
+      <span class="tab-badge hidden" id="editBadge">0</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-label">Settings</span>
+    </button>
   </div>
-</div>
 
 </div><!-- /shell -->
 
 <!-- ══ MODAL: EDIT EVENT ══ -->
 <div class="modal-overlay" id="editModal" onclick="closeModal(event)">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
       <div class="modal-title"><span id="mIcon">💬</span><span id="mTitle">Lengkapi Event</span></div>
       <button class="btn-modal-close" onclick="closeModal()">×</button>
@@ -400,7 +814,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
       <div class="field" style="position:relative">
         <label>PIC / Dengan Siapa</label>
         <input type="text" id="m-pic" placeholder="nama orang..." autocomplete="off"
-          oninput="onMPicInput()" onkeydown="onMPicKeydown(event)" onblur="setTimeout(closeMac,180)"/>
+          oninput="onMPicInput()" onkeydown="onMPicKeydown(event)" onblur="setTimeout(closeMac,200)"/>
         <div class="ac-dropdown" id="macDropdown"></div>
         <div class="dept-display" id="mDeptDisplay">
           <div class="dept-tag">🏢 <span id="mDeptName">—</span></div>
@@ -414,7 +828,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Batal</button>
-      <button class="btn-primary" onclick="saveEdit()">Simpan</button>
+      <button class="btn-primary" onclick="saveEdit()" style="padding:9px 20px;font-size:13px">Simpan</button>
     </div>
   </div>
 </div>
@@ -422,20 +836,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
 <!-- ══ MODAL: PULANG ══ -->
 <div class="modal-overlay" id="pulangModal" onclick="closePulang(event)">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
       <div class="modal-title">🚪 Tutup Hari Kerja</div>
       <button class="btn-modal-close" onclick="closePulang()">×</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px">
-        Semua task aktif akan di-<strong>PAUSE</strong>.<br>
-        Log tersimpan. Task belum selesai bisa dilanjut besok.
+      <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
+        Task aktif akan di-<strong style="color:var(--amber)">PAUSE</strong>.<br>
+        Log tersimpan. Lanjut besok.
       </div>
-      <div class="field"><label>Catatan penutup (opsional)</label><input type="text" id="pulang-notes" placeholder="lanjut besok setelah meeting..."/></div>
+      <div class="field"><label>Catatan (opsional)</label><input type="text" id="pulang-notes" placeholder="lanjut besok setelah meeting..."/></div>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closePulang()">Batal</button>
-      <button class="btn-primary" style="background:var(--red)" onclick="confirmPulang()">🚪 Pulang</button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#ff2d78);padding:9px 20px;font-size:13px" onclick="confirmPulang()">🚪 Pulang</button>
     </div>
   </div>
 </div>
@@ -443,32 +858,27 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  STATE
-// ══════════════════════════════════════════════════
-let tasks      = load('wl5_tasks')   || [];
-let events     = load('wl5_events')  || [];
-let employees  = load('wl5_employees') || [];   // [{id, name, dept}]
-let activeId   = load('wl5_active')  || null;
+// ══════════════════════════════════════════════
+let tasks     = load('wl6_tasks')      || [];
+let events    = load('wl6_events')     || [];
+let employees = load('wl6_employees')  || [];
+let activeId  = load('wl6_active')     || null;
 let activeStart = null;
-const storedAS = localStorage.getItem('wl5_activeStart');
-if (activeId && storedAS) activeStart = new Date(storedAS);
+const sAS = localStorage.getItem('wl6_activeStart');
+if (activeId && sAS) activeStart = new Date(sAS);
 
-// autocomplete state
-let acFocusIdx = -1;
-let selectedDept = '';      // for submit form
-let macFocusIdx = -1;
-let mSelectedDept = '';     // for modal form
+let acFocusIdx = -1, selectedDept = '';
+let macFocusIdx = -1, mSelectedDept = '';
+let ganttZoom = 'day', ganttOffset = 0;
 
 const CAT  = {ops:'Operasional',adm:'Administrasi',mtg:'Koordinasi',ext:'Pekerjaan Org Lain'};
 const IICO = {teams:'💬',whatsapp:'📱',tamu:'🤝',toilet:'🚽',rokok:'🚬'};
 
-// gantt state
-let ganttZoom = 'day', ganttOffset = 0;
-
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  INIT
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   tickClock(); setInterval(tickClock, 1000);
   setInterval(tickTimer, 1000);
@@ -476,292 +886,197 @@ window.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('beforeunload', autoPause);
 });
 
-function tickClock(){
-  const n=new Date();
-  document.getElementById('clockBar').textContent=n.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  document.getElementById('dateBar').textContent=n.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+function tickClock() {
+  const n = new Date();
+  document.getElementById('clockBar').textContent = n.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('dateBar').textContent  = n.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'});
 }
-function tickTimer(){
-  if(!activeId||!activeStart)return;
-  const ms=Date.now()-activeStart.getTime();
-  const e=document.getElementById('sbTimer'); if(e) e.textContent=fmtMs(ms);
-  const te=document.getElementById('el-'+activeId); if(te) te.textContent=calcElapsed(activeId);
+function tickTimer() {
+  if (!activeId || !activeStart) return;
+  const ms = Date.now() - activeStart.getTime();
+  const e = document.getElementById('sbTimer'); if (e) e.textContent = fmtMs(ms);
+  const te = document.getElementById('el-'+activeId); if (te) te.textContent = calcElapsed(activeId);
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  TABS
-// ══════════════════════════════════════════════════
-function switchTab(name){
-  ['dashboard','submit','running','editlog','settings'].forEach(t=>{
-    document.getElementById('panel-'+t).classList.toggle('active',t===name);
-    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+// ══════════════════════════════════════════════
+function switchTab(name) {
+  ['dashboard','submit','running','editlog','settings'].forEach(t => {
+    document.getElementById('panel-'+t).classList.toggle('active', t===name);
+    document.getElementById('tab-'+t).classList.toggle('active', t===name);
   });
-  if(name==='editlog')   renderEvents();
-  if(name==='dashboard') renderGantt();
-  if(name==='settings')  renderEmployees();
+  if (name==='editlog')   renderEvents();
+  if (name==='dashboard') renderGantt();
+  if (name==='settings')  renderEmployees();
 }
 
-// ══════════════════════════════════════════════════
-//  EMPLOYEE MASTER
-// ══════════════════════════════════════════════════
-function addEmployee(){
-  const name=(document.getElementById('emp-name').value||'').trim();
-  const dept=(document.getElementById('emp-dept').value||'').trim();
-  if(!name){toast('⚠ Nama karyawan wajib');return;}
-  if(!dept){toast('⚠ Departemen wajib');return;}
-  // check duplicate
-  if(employees.some(e=>e.name.toLowerCase()===name.toLowerCase())){toast('⚠ Nama sudah ada');return;}
-  employees.push({id:'E'+Date.now(),name,dept});
-  save('wl5_employees',employees);
-  document.getElementById('emp-name').value='';
-  document.getElementById('emp-dept').value='';
+// ══════════════════════════════════════════════
+//  EMPLOYEES
+// ══════════════════════════════════════════════
+function addEmployee() {
+  const name = (document.getElementById('emp-name').value||'').trim();
+  const dept = (document.getElementById('emp-dept').value||'').trim();
+  if (!name) { toast('⚠ Nama wajib'); return; }
+  if (!dept) { toast('⚠ Dept wajib'); return; }
+  if (employees.some(e=>e.name.toLowerCase()===name.toLowerCase())) { toast('⚠ Nama sudah ada'); return; }
+  employees.push({id:'E'+Date.now(), name, dept});
+  save('wl6_employees', employees);
+  document.getElementById('emp-name').value = '';
+  document.getElementById('emp-dept').value = '';
   document.getElementById('emp-name').focus();
   renderEmployees();
   toast('✓ '+name+' ditambahkan');
 }
-
-function deleteEmployee(id){
-  employees=employees.filter(e=>e.id!==id);
-  save('wl5_employees',employees);
-  renderEmployees();
+function deleteEmployee(id) {
+  employees = employees.filter(e=>e.id!==id);
+  save('wl6_employees', employees); renderEmployees();
 }
-
-function renderEmployees(){
-  const empty=document.getElementById('empEmpty');
-  const table=document.getElementById('empTable');
-  const tbody=document.getElementById('empTbody');
-  if(!employees.length){empty.style.display='';table.style.display='none';return;}
+function renderEmployees() {
+  const empty = document.getElementById('empEmpty');
+  const table = document.getElementById('empTable');
+  const tbody = document.getElementById('empTbody');
+  if (!employees.length) { empty.style.display=''; table.style.display='none'; return; }
   empty.style.display='none'; table.style.display='';
-  tbody.innerHTML=employees.map((e,i)=>`
+  tbody.innerHTML = employees.map((e,i)=>`
     <tr>
-      <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${i+1}</td>
+      <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
       <td>${esc(e.name)}</td>
       <td><span class="emp-dept-badge">${esc(e.dept)}</span></td>
-      <td style="text-align:right"><button class="btn-del-emp" onclick="deleteEmployee('${e.id}')">Hapus</button></td>
+      <td style="text-align:right"><button class="btn-del-emp" onclick="deleteEmployee('${e.id}')">✕</button></td>
     </tr>`).join('');
 }
-
-function lookupDept(name){
-  const e=employees.find(x=>x.name.toLowerCase()===name.toLowerCase());
-  return e?e.dept:'';
+function lookupDept(name) {
+  const e = employees.find(x=>x.name.toLowerCase()===name.toLowerCase());
+  return e ? e.dept : '';
 }
 
-// ══════════════════════════════════════════════════
-//  AUTOCOMPLETE — SUBMIT FORM
-// ══════════════════════════════════════════════════
-function onPicInput(){
-  const q=(document.getElementById('f-pic').value||'').trim().toLowerCase();
-  selectedDept='';
-  showDept('deptDisplay','deptName','');
-  if(!q){closeAc();return;}
-  const matches=employees.filter(e=>e.name.toLowerCase().includes(q)).slice(0,8);
-  renderAc('acDropdown', matches, pickPic);
-  acFocusIdx=-1;
+// ══════════════════════════════════════════════
+//  AUTOCOMPLETE — SUBMIT
+// ══════════════════════════════════════════════
+function onPicInput() {
+  const q = (document.getElementById('f-pic').value||'').trim().toLowerCase();
+  selectedDept = ''; showDept('deptDisplay','deptName','');
+  if (!q) { closeAc(); return; }
+  const m = employees.filter(e=>e.name.toLowerCase().includes(q)).slice(0,6);
+  renderAc('acDropdown', m, pickPic); acFocusIdx = -1;
 }
-
-function onPicKeydown(e){
-  const dd=document.getElementById('acDropdown');
-  if(!dd.classList.contains('open'))return;
-  const items=dd.querySelectorAll('.ac-item');
-  if(e.key==='ArrowDown'){e.preventDefault();acFocusIdx=Math.min(acFocusIdx+1,items.length-1);highlightAc(items,acFocusIdx);}
-  else if(e.key==='ArrowUp'){e.preventDefault();acFocusIdx=Math.max(acFocusIdx-1,0);highlightAc(items,acFocusIdx);}
-  else if(e.key==='Enter'&&acFocusIdx>=0){e.preventDefault();items[acFocusIdx].click();}
-  else if(e.key==='Escape'){closeAc();}
+function onPicKeydown(e) {
+  const dd = document.getElementById('acDropdown');
+  if (!dd.classList.contains('open')) return;
+  const items = dd.querySelectorAll('.ac-item');
+  if (e.key==='ArrowDown')  { e.preventDefault(); acFocusIdx=Math.min(acFocusIdx+1,items.length-1); highlightAc(items,acFocusIdx); }
+  else if (e.key==='ArrowUp')   { e.preventDefault(); acFocusIdx=Math.max(acFocusIdx-1,0); highlightAc(items,acFocusIdx); }
+  else if (e.key==='Enter' && acFocusIdx>=0) { e.preventDefault(); items[acFocusIdx].click(); }
+  else if (e.key==='Escape') closeAc();
 }
-
-function pickPic(emp){
-  document.getElementById('f-pic').value=emp.name;
-  selectedDept=emp.dept;
-  showDept('deptDisplay','deptName',emp.dept);
-  closeAc();
-}
-
-function closeAc(){
-  const dd=document.getElementById('acDropdown');
-  dd.classList.remove('open'); dd.innerHTML='';
-  // if typed name matches exactly but wasn't picked via click
+function pickPic(emp) { document.getElementById('f-pic').value=emp.name; selectedDept=emp.dept; showDept('deptDisplay','deptName',emp.dept); closeAc(); }
+function closeAc() {
+  const dd=document.getElementById('acDropdown'); dd.classList.remove('open'); dd.innerHTML='';
   const q=(document.getElementById('f-pic').value||'').trim();
-  if(!selectedDept&&q){
-    const d=lookupDept(q);
-    if(d){selectedDept=d;showDept('deptDisplay','deptName',d);}
-  }
+  if (!selectedDept&&q) { const d=lookupDept(q); if(d){selectedDept=d;showDept('deptDisplay','deptName',d);} }
 }
 
-// ══════════════════════════════════════════════════
-//  AUTOCOMPLETE — MODAL FORM
-// ══════════════════════════════════════════════════
-function onMPicInput(){
+// AUTOCOMPLETE — MODAL
+function onMPicInput() {
   const q=(document.getElementById('m-pic').value||'').trim().toLowerCase();
-  mSelectedDept='';
-  showDept('mDeptDisplay','mDeptName','');
+  mSelectedDept=''; showDept('mDeptDisplay','mDeptName','');
   if(!q){closeMac();return;}
-  const matches=employees.filter(e=>e.name.toLowerCase().includes(q)).slice(0,8);
-  renderAc('macDropdown', matches, pickMPic);
-  macFocusIdx=-1;
+  const m=employees.filter(e=>e.name.toLowerCase().includes(q)).slice(0,6);
+  renderAc('macDropdown',m,pickMPic); macFocusIdx=-1;
 }
-
-function onMPicKeydown(e){
+function onMPicKeydown(e) {
   const dd=document.getElementById('macDropdown');
   if(!dd.classList.contains('open'))return;
   const items=dd.querySelectorAll('.ac-item');
   if(e.key==='ArrowDown'){e.preventDefault();macFocusIdx=Math.min(macFocusIdx+1,items.length-1);highlightAc(items,macFocusIdx);}
   else if(e.key==='ArrowUp'){e.preventDefault();macFocusIdx=Math.max(macFocusIdx-1,0);highlightAc(items,macFocusIdx);}
   else if(e.key==='Enter'&&macFocusIdx>=0){e.preventDefault();items[macFocusIdx].click();}
-  else if(e.key==='Escape'){closeMac();}
+  else if(e.key==='Escape')closeMac();
 }
-
-function pickMPic(emp){
-  document.getElementById('m-pic').value=emp.name;
-  mSelectedDept=emp.dept;
-  showDept('mDeptDisplay','mDeptName',emp.dept);
-  closeMac();
-}
-
+function pickMPic(emp){document.getElementById('m-pic').value=emp.name;mSelectedDept=emp.dept;showDept('mDeptDisplay','mDeptName',emp.dept);closeMac();}
 function closeMac(){
-  const dd=document.getElementById('macDropdown');
-  dd.classList.remove('open'); dd.innerHTML='';
+  const dd=document.getElementById('macDropdown');dd.classList.remove('open');dd.innerHTML='';
   const q=(document.getElementById('m-pic').value||'').trim();
-  if(!mSelectedDept&&q){
-    const d=lookupDept(q);
-    if(d){mSelectedDept=d;showDept('mDeptDisplay','mDeptName',d);}
-  }
+  if(!mSelectedDept&&q){const d=lookupDept(q);if(d){mSelectedDept=d;showDept('mDeptDisplay','mDeptName',d);}}
 }
 
-// shared AC renderer
-function renderAc(ddId, matches, pickFn){
+function renderAc(ddId, matches, pickFn) {
   const dd=document.getElementById(ddId);
-  if(!matches.length){
-    dd.innerHTML='<div class="ac-empty">Tidak ditemukan di master</div>';
-    dd.classList.add('open'); return;
-  }
-  dd.innerHTML=matches.map((e,i)=>`
-    <div class="ac-item" data-idx="${i}">
-      <span class="ac-name">${esc(e.name)}</span>
-      <span class="ac-dept">${esc(e.dept)}</span>
-    </div>`).join('');
+  if (!matches.length){dd.innerHTML='<div class="ac-empty">Tidak ditemukan</div>';dd.classList.add('open');return;}
+  dd.innerHTML=matches.map((e,i)=>`<div class="ac-item" data-idx="${i}"><span class="ac-name">${esc(e.name)}</span><span class="ac-dept">${esc(e.dept)}</span></div>`).join('');
   dd.querySelectorAll('.ac-item').forEach((el,i)=>el.addEventListener('mousedown',ev=>{ev.preventDefault();pickFn(matches[i]);}));
   dd.classList.add('open');
 }
+function highlightAc(items,idx){items.forEach((el,i)=>el.classList.toggle('focused',i===idx));if(items[idx])items[idx].scrollIntoView({block:'nearest'});}
+function showDept(dId,nId,dept){const d=document.getElementById(dId),n=document.getElementById(nId);if(dept){d.classList.add('visible');n.textContent=dept;}else{d.classList.remove('visible');}}
 
-function highlightAc(items, idx){
-  items.forEach((el,i)=>el.classList.toggle('focused',i===idx));
-  if(items[idx]) items[idx].scrollIntoView({block:'nearest'});
-}
-
-function showDept(displayId, nameId, dept){
-  const d=document.getElementById(displayId);
-  const n=document.getElementById(nameId);
-  if(dept){d.classList.add('visible');n.textContent=dept;}
-  else{d.classList.remove('visible');n.textContent='—';}
-}
-
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  SUBMIT
-// ══════════════════════════════════════════════════
-function submitTask(){
+// ══════════════════════════════════════════════
+function submitTask() {
   const title=v('f-title'), pic=v('f-pic');
-  if(!title){toast('⚠ Nama tugas wajib diisi');return;}
+  if (!title){toast('⚠ Nama tugas wajib');return;}
   const dept=selectedDept||lookupDept(pic)||'';
   const isUnplanned=events.some(e=>e.type==='START');
   tasks.push({id:'T'+Date.now(),title,pic,dept,cat:'ops',createdAt:new Date().toISOString(),unplanned:isUnplanned,totalMs:0,status:'todo'});
-  save('wl5_tasks',tasks); clearForm(); renderAll();
+  save('wl6_tasks',tasks); clearForm(); renderAll();
   toast('✓ Tugas ditambahkan'+(isUnplanned?' · mendadak':''));
   switchTab('running');
 }
+function clearForm(){['f-title','f-pic'].forEach(i=>document.getElementById(i).value='');selectedDept='';showDept('deptDisplay','deptName','');closeAc();}
 
-function clearForm(){
-  ['f-title','f-pic'].forEach(i=>document.getElementById(i).value='');
-  selectedDept='';
-  showDept('deptDisplay','deptName','');
-  closeAc();
-}
-
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  TASK CONTROLS
-// ══════════════════════════════════════════════════
-function startTask(id){
-  if(activeId===id)return;
-  if(activeId)stopActive('STOP');
-  const t=tasks.find(x=>x.id===id);
-  if(!t||t.status==='done')return;
+// ══════════════════════════════════════════════
+function startTask(id) {
+  if (activeId===id) return;
+  if (activeId) stopActive('STOP');
+  const t=tasks.find(x=>x.id===id); if(!t||t.status==='done')return;
   const lastEv=[...events].reverse().find(e=>e.taskId===id);
   const evType=(lastEv&&(lastEv.type==='STOP'||lastEv.type==='PAUSE'))?'RESUME':'START';
   t.status='in-progress'; activeId=id; activeStart=new Date();
-  localStorage.setItem('wl5_activeStart',activeStart.toISOString());
-  save('wl5_active',activeId); save('wl5_tasks',tasks);
+  localStorage.setItem('wl6_activeStart',activeStart.toISOString());
+  save('wl6_active',activeId); save('wl6_tasks',tasks);
   pushEvent({taskId:id,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:evType});
   renderAll();
 }
-
-function stopActive(evType){
-  if(!activeId)return;
+function stopActive(evType) {
+  if (!activeId) return;
   const t=tasks.find(x=>x.id===activeId);
-  if(t&&activeStart){
-    t.totalMs=(t.totalMs||0)+(Date.now()-activeStart.getTime());
-    t.status=evType==='DONE'?'done':'todo';
-    save('wl5_tasks',tasks);
-    pushEvent({taskId:activeId,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:evType});
-  }
-  activeId=null; activeStart=null;
-  localStorage.removeItem('wl5_activeStart'); save('wl5_active',null);
+  if (t&&activeStart){t.totalMs=(t.totalMs||0)+(Date.now()-activeStart.getTime());t.status=evType==='DONE'?'done':'todo';save('wl6_tasks',tasks);pushEvent({taskId:activeId,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:evType});}
+  activeId=null;activeStart=null;localStorage.removeItem('wl6_activeStart');save('wl6_active',null);
 }
-
 function doneActive(){if(!activeId)return;stopActive('DONE');renderAll();toast('✅ Tugas selesai');}
-function doBreak(){
-  if(!activeId)return; stopActive('PAUSE');
-  pushEvent({taskId:'',title:'Istirahat',pic:'—',dept:'—',cat:'—',type:'BREAK'});
-  renderAll(); toast('☕ Istirahat dicatat');
-}
-function markDone(id){
-  if(activeId===id)stopActive('DONE');
-  else{const t=tasks.find(x=>x.id===id);if(!t)return;t.status='done';save('wl5_tasks',tasks);pushEvent({taskId:id,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'DONE'});}
-  renderAll(); toast('✅ Selesai');
-}
-function deleteTask(id){if(activeId===id)stopActive('STOP');tasks=tasks.filter(t=>t.id!==id);save('wl5_tasks',tasks);renderAll();}
-function resubmitTask(id){
-  const t=tasks.find(x=>x.id===id);if(!t)return;
-  t.status='todo';t.totalMs=0;save('wl5_tasks',tasks);renderAll();toast('↑ Task dikembalikan ke atas');
-}
+function doBreak(){if(!activeId)return;stopActive('PAUSE');pushEvent({taskId:'',title:'Istirahat',pic:'—',dept:'—',cat:'—',type:'BREAK'});renderAll();toast('☕ Istirahat');}
+function markDone(id){if(activeId===id)stopActive('DONE');else{const t=tasks.find(x=>x.id===id);if(!t)return;t.status='done';save('wl6_tasks',tasks);pushEvent({taskId:id,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'DONE'});}renderAll();toast('✅ Selesai');}
+function deleteTask(id){if(activeId===id)stopActive('STOP');tasks=tasks.filter(t=>t.id!==id);save('wl6_tasks',tasks);renderAll();}
+function resubmitTask(id){const t=tasks.find(x=>x.id===id);if(!t)return;t.status='todo';t.totalMs=0;save('wl6_tasks',tasks);renderAll();toast('↑ Dikembalikan');}
 function autoPause(){if(activeId)stopActive('PAUSE');}
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  INTERRUPT
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function triggerInt(type,label){
   if(activeId)stopActive('PAUSE');
   const now=new Date();
-  events.push({id:'EV'+Date.now(),ts:now.toISOString(),tsStart:now.toISOString(),tsEnd:'',
-    taskId:'',title:label,pic:'—',dept:'—',cat:'—',type:'INT',intType:type,
-    icon:IICO[type]||'❓',incomplete:true,notes:''});
-  save('wl5_events',events); updateBadge(); renderAll();
-  toast((IICO[type]||'')+' '+label+' — lengkapi di Edit Log');
+  events.push({id:'EV'+Date.now(),ts:now.toISOString(),tsStart:now.toISOString(),tsEnd:'',taskId:'',title:label,pic:'—',dept:'—',cat:'—',type:'INT',intType:type,icon:IICO[type]||'❓',incomplete:true,notes:''});
+  save('wl6_events',events);updateBadge();renderAll();
+  toast((IICO[type]||'')+' '+label+' · lengkapi di Log');
 }
 function openPulang(){document.getElementById('pulangModal').classList.add('open');}
 function closePulang(e){if(e&&e.target!==document.getElementById('pulangModal'))return;document.getElementById('pulangModal').classList.remove('open');}
-function confirmPulang(){
-  if(activeId)stopActive('PAUSE');
-  pushEvent({taskId:'',title:'Pulang',pic:'—',dept:'—',cat:'—',type:'EOD',notes:v('pulang-notes')});
-  document.getElementById('pulangModal').classList.remove('open');
-  renderAll(); toast('🚪 Selamat pulang!');
-}
+function confirmPulang(){if(activeId)stopActive('PAUSE');pushEvent({taskId:'',title:'Pulang',pic:'—',dept:'—',cat:'—',type:'EOD',notes:v('pulang-notes')});document.getElementById('pulangModal').classList.remove('open');renderAll();toast('🚪 Selamat pulang!');}
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  EVENTS
-// ══════════════════════════════════════════════════
-function pushEvent(data){
-  const now=new Date();
-  events.push({id:'EV'+Date.now(),ts:now.toISOString(),tsStart:now.toISOString(),tsEnd:'',incomplete:false,...data});
-  save('wl5_events',events); updateBadge();
-}
-function updateBadge(){
-  const n=events.filter(e=>e.incomplete).length;
-  const b=document.getElementById('editBadge');
-  b.textContent=n; b.classList.toggle('hidden',n===0);
-}
+// ══════════════════════════════════════════════
+function pushEvent(data){const now=new Date();events.push({id:'EV'+Date.now(),ts:now.toISOString(),tsStart:now.toISOString(),tsEnd:'',incomplete:false,...data});save('wl6_events',events);updateBadge();}
+function updateBadge(){const n=events.filter(e=>e.incomplete).length;const b=document.getElementById('editBadge');b.textContent=n;b.classList.toggle('hidden',n===0);}
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  MODAL EDIT
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function openEditModal(evId){
   const ev=events.find(e=>e.id===evId);if(!ev)return;
   document.getElementById('mEvId').value=evId;
@@ -782,150 +1097,123 @@ function saveEdit(){
   const evId=document.getElementById('mEvId').value;
   const ev=events.find(e=>e.id===evId);if(!ev)return;
   const name=v('m-name'),pic=v('m-pic');
-  if(!name){toast('⚠ Nama kegiatan wajib');return;}
+  if(!name){toast('⚠ Nama wajib');return;}
   if(!pic){toast('⚠ PIC wajib');return;}
   const dept=mSelectedDept||lookupDept(pic)||'';
   ev.title=name;ev.pic=pic;ev.dept=dept;ev.notes=v('m-notes');ev.incomplete=false;
   const ts=v('m-start'),te=v('m-end');
   if(ts){const d=new Date(ev.ts);applyT(d,ts);ev.tsStart=d.toISOString();}
   if(te){const d=new Date(ev.ts);applyT(d,te);ev.tsEnd=d.toISOString();}
-  save('wl5_events',events);updateBadge();renderAll();
+  save('wl6_events',events);updateBadge();renderAll();
   document.getElementById('editModal').classList.remove('open');
   toast('✓ Event diperbarui');
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  RENDER
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function renderAll(){renderStatusBar();renderTasks();updateBadge();}
 
 function renderStatusBar(){
   const idle=document.getElementById('sbIdle'),act=document.getElementById('sbActive');
-  if(activeId){
-    const t=tasks.find(x=>x.id===activeId);
-    idle.style.display='none';act.classList.add('on');
-    document.getElementById('sbName').textContent=t?t.title:'—';
-    document.getElementById('sbTimer').textContent=fmtMs(activeStart?Date.now()-activeStart.getTime():0);
-  }else{idle.style.display='';act.classList.remove('on');}
+  if(activeId){const t=tasks.find(x=>x.id===activeId);idle.style.display='none';act.classList.add('on');document.getElementById('sbName').textContent=t?t.title:'—';document.getElementById('sbTimer').textContent=fmtMs(activeStart?Date.now()-activeStart.getTime():0);}
+  else{idle.style.display='';act.classList.remove('on');}
 }
 
 function renderTasks(){
   const active=tasks.filter(t=>t.status!=='done');
   const done=tasks.filter(t=>t.status==='done');
-  const ac=document.getElementById('activeTasks');
-  const ae=document.getElementById('activeEmpty');
+  const ac=document.getElementById('activeTasks'),ae=document.getElementById('activeEmpty');
   if(!active.length){ac.innerHTML='';ac.appendChild(ae);}
-  else{
-    try{ae.remove();}catch(e){}
-    ac.innerHTML=active.map(t=>{
-      const isAct=activeId===t.id;
-      return `<div class="tc${isAct?' is-active':''}">
-        <div class="tc-start" onclick="startTask('${t.id}')">${isAct?'⏸':'▶'}</div>
-        <div class="tc-body">
-          <div class="tc-title">${esc(t.title)}</div>
-          <div class="tc-meta">
-            ${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}
-            ${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}
-            <span class="tc-elapsed" id="el-${t.id}">${calcElapsed(t.id)}</span>
-            ${t.unplanned?'<span class="tc-unplanned">mendadak</span>':''}
-          </div>
-        </div>
-        <div class="tc-actions">
-          <button class="btn-tc done" onclick="markDone('${t.id}')">✓</button>
-          <button class="btn-tc del"  onclick="deleteTask('${t.id}')">✕</button>
-        </div>
-      </div>`;
-    }).join('');
-  }
-  const cs=document.getElementById('completedSection');
-  const dc=document.getElementById('doneTasks');
-  if(!done.length){cs.style.display='none';return;}
-  cs.style.display='';
-  dc.innerHTML=done.map(t=>`
-    <div class="tc is-done">
-      <div class="tc-start" style="cursor:default">✓</div>
+  else{try{ae.remove();}catch(e){}
+    ac.innerHTML=active.map(t=>{const isAct=activeId===t.id;return`<div class="tc${isAct?' is-active':''}">
+      <div class="tc-start" onclick="startTask('${t.id}')">${isAct?'⏸':'▶'}</div>
       <div class="tc-body">
         <div class="tc-title">${esc(t.title)}</div>
         <div class="tc-meta">
           ${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}
           ${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}
-          <span class="tc-elapsed">${calcElapsed(t.id)}</span>
+          <span class="tc-elapsed" id="el-${t.id}">${calcElapsed(t.id)}</span>
+          ${t.unplanned?'<span class="tc-unplanned">mendadak</span>':''}
         </div>
       </div>
       <div class="tc-actions">
-        <button class="btn-tc resub" onclick="resubmitTask('${t.id}')">↑ Resubmit</button>
-        <button class="btn-tc del" onclick="deleteTask('${t.id}')">✕</button>
+        <button class="btn-tc done" onclick="markDone('${t.id}')">✓</button>
+        <button class="btn-tc del"  onclick="deleteTask('${t.id}')">✕</button>
       </div>
-    </div>`).join('');
+    </div>`;}).join('');}
+
+  const cs=document.getElementById('completedSection'),dc=document.getElementById('doneTasks');
+  if(!done.length){cs.style.display='none';return;}
+  cs.style.display='';
+  dc.innerHTML=done.map(t=>`<div class="tc is-done">
+    <div class="tc-start" style="cursor:default">✓</div>
+    <div class="tc-body">
+      <div class="tc-title">${esc(t.title)}</div>
+      <div class="tc-meta">${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}<span class="tc-elapsed">${calcElapsed(t.id)}</span></div>
+    </div>
+    <div class="tc-actions">
+      <button class="btn-tc resub" onclick="resubmitTask('${t.id}')">↑</button>
+      <button class="btn-tc del"   onclick="deleteTask('${t.id}')">✕</button>
+    </div>
+  </div>`).join('');
 }
 
 function renderEvents(){
   const el=document.getElementById('eventList');
   const inc=events.filter(e=>e.incomplete).length;
   document.getElementById('editSub').textContent=inc?`${inc} event belum dilengkapi`:'Semua aktivitas hari ini';
-  if(!events.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:12px">Belum ada event.</div>';return;}
+  if(!events.length){el.innerHTML='<div class="task-empty">Belum ada event.</div>';return;}
   el.innerHTML=[...events].reverse().map(ev=>{
-    const ts=fmtTs(ev.tsStart||ev.ts);
-    const tsE=ev.tsEnd?fmtTs(ev.tsEnd):'';
-    const subParts=[ts+(tsE?' – '+tsE:'')];
-    if(ev.pic&&ev.pic!=='—')subParts.push('→ '+ev.pic);
-    if(ev.dept&&ev.dept!=='—')subParts.push(ev.dept);
-    return `<div class="ev-item${ev.incomplete?' incomplete':''}">
+    const ts=fmtTs(ev.tsStart||ev.ts),tsE=ev.tsEnd?fmtTs(ev.tsEnd):'';
+    const sub=[ts+(tsE?' – '+tsE:''),ev.pic&&ev.pic!=='—'?'→ '+ev.pic:'',ev.dept&&ev.dept!=='—'?ev.dept:''].filter(Boolean).join(' · ');
+    return`<div class="ev-item${ev.incomplete?' incomplete':''}">
       <div class="ev-type-col">
-        <span class="ev-badge ev-${ev.type}">${ev.type==='INT'?(ev.intType||'INT').toUpperCase().slice(0,6):ev.type}</span>
+        <span class="ev-badge ev-${ev.type}">${ev.type==='INT'?(ev.intType||'INT').toUpperCase().slice(0,5):ev.type}</span>
         <span class="ev-ts">${ts}</span>
       </div>
       <div class="ev-body">
         <div class="ev-title">${ev.icon?ev.icon+' ':''}${esc(ev.title||'—')}</div>
-        <div class="ev-sub">${subParts.join(' · ')}</div>
+        <div class="ev-sub">${sub}</div>
         ${ev.notes?`<div class="ev-sub">${esc(ev.notes)}</div>`:''}
         ${ev.incomplete?'<div class="ev-incomplete-lbl">! perlu dilengkapi</div>':''}
       </div>
-      ${ev.incomplete?`<div class="ev-actions"><button class="btn-edit-ev" onclick="openEditModal('${ev.id}')">Lengkapi →</button></div>`:''}
-    </div>`;
-  }).join('');
+      ${ev.incomplete?`<div class="ev-actions"><button class="btn-edit-ev" onclick="openEditModal('${ev.id}')">Isi →</button></div>`:''}
+    </div>`;}).join('');
 }
 
-function clearLog(){if(!confirm('Hapus semua event?'))return;events=[];save('wl5_events',events);updateBadge();renderEvents();}
+function clearLog(){if(!confirm('Hapus semua event?'))return;events=[];save('wl6_events',events);updateBadge();renderEvents();}
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  GANTT
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function setZoom(z){ganttZoom=z;ganttOffset=0;['day','week','month'].forEach(x=>document.getElementById('zoom-'+x).classList.toggle('active',x===z));renderGantt();}
 function ganttNav(dir){ganttOffset+=dir;renderGantt();}
 function ganttGoNow(){ganttOffset=0;renderGantt();}
-
 function ganttPeriod(){
   const now=new Date();
-  if(ganttZoom==='day'){const d=new Date(now);d.setDate(d.getDate()+ganttOffset);d.setHours(0,0,0,0);return{start:d,end:new Date(d.getTime()+24*3600000),label:d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})};}
-  if(ganttZoom==='week'){const d=new Date(now);d.setDate(d.getDate()-d.getDay()+1+ganttOffset*7);d.setHours(0,0,0,0);const e=new Date(d.getTime()+7*24*3600000);return{start:d,end:e,label:d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' – '+new Date(e-1).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})};}
+  if(ganttZoom==='day'){const d=new Date(now);d.setDate(d.getDate()+ganttOffset);d.setHours(0,0,0,0);return{start:d,end:new Date(d.getTime()+24*3600000),label:d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'})};}
+  if(ganttZoom==='week'){const d=new Date(now);d.setDate(d.getDate()-d.getDay()+1+ganttOffset*7);d.setHours(0,0,0,0);const e=new Date(d.getTime()+7*24*3600000);return{start:d,end:e,label:d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' – '+new Date(e-1).toLocaleDateString('id-ID',{day:'numeric',month:'short'})};}
   const d=new Date(now.getFullYear(),now.getMonth()+ganttOffset,1);return{start:d,end:new Date(d.getFullYear(),d.getMonth()+1,1),label:d.toLocaleDateString('id-ID',{month:'long',year:'numeric'})};
 }
-
 function renderGantt(){
   const{start,end,label}=ganttPeriod();
   document.getElementById('ganttPeriodLbl').textContent=label;
   const wrap=document.getElementById('ganttContent');
-  let viewStart=new Date(start),viewEnd=new Date(end);
-  if(ganttZoom==='day'){viewStart.setHours(7,0,0,0);viewEnd.setHours(20,0,0,0);}
-  const viewMs=viewEnd-viewStart;
-  const pct=ts=>Math.max(0,Math.min(100,((new Date(ts)-viewStart)/viewMs)*100));
-
-  // ticks
+  let vs=new Date(start),ve=new Date(end);
+  if(ganttZoom==='day'){vs.setHours(7,0,0,0);ve.setHours(20,0,0,0);}
+  const vMs=ve-vs;
+  const pct=ts=>Math.max(0,Math.min(100,((new Date(ts)-vs)/vMs)*100));
   const ticks=[];
-  if(ganttZoom==='day'){for(let h=7;h<=20;h++){const d=new Date(viewStart);d.setHours(h,0,0,0);ticks.push({ts:d,label:pad(h)+':00'});}}
-  else if(ganttZoom==='week'){let d=new Date(viewStart);while(d<viewEnd){ticks.push({ts:new Date(d),label:d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric'})});d.setDate(d.getDate()+1);}}
-  else{let d=new Date(viewStart);while(d<viewEnd){if(d.getDate()===1||d.getDate()%7===0)ticks.push({ts:new Date(d),label:d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})});d.setDate(d.getDate()+1);}}
-
-  // rows
+  if(ganttZoom==='day'){for(let h=7;h<=20;h++){const d=new Date(vs);d.setHours(h,0,0,0);ticks.push({ts:d,label:pad(h)+':00'});}}
+  else if(ganttZoom==='week'){let d=new Date(vs);while(d<ve){ticks.push({ts:new Date(d),label:d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric'})});d.setDate(d.getDate()+1);}}
+  else{let d=new Date(vs);while(d<ve){if(d.getDate()===1||d.getDate()%7===0)ticks.push({ts:new Date(d),label:d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})});d.setDate(d.getDate()+1);}}
+  const evInWin=events.filter(e=>{const t=new Date(e.tsStart||e.ts);return t>=vs&&t<ve;});
   const rowMap=new Map();
-  const evInWin=events.filter(e=>{const t=new Date(e.tsStart||e.ts);return t>=viewStart&&t<viewEnd;});
-
-  // task segments
   const taskIds=[...new Set(evInWin.filter(e=>e.taskId&&['START','RESUME','STOP','PAUSE','DONE'].includes(e.type)).map(e=>e.taskId))];
   taskIds.forEach(tid=>{
     const t=tasks.find(x=>x.id===tid);if(!t)return;
-    if(!rowMap.has(tid))rowMap.set(tid,{icon:'',name:t.title,pic:t.pic||'',dept:t.dept||'',segments:[]});
+    if(!rowMap.has(tid))rowMap.set(tid,{icon:'',name:t.title,sub:t.dept||t.pic||'',segments:[]});
     const row=rowMap.get(tid);
     const tevs=evInWin.filter(e=>e.taskId===tid).sort((a,b)=>new Date(a.ts)-new Date(b.ts));
     let ss=null;
@@ -933,54 +1221,40 @@ function renderGantt(){
       if(ev.type==='START'||ev.type==='RESUME')ss=new Date(ev.tsStart||ev.ts);
       else if((ev.type==='STOP'||ev.type==='PAUSE'||ev.type==='DONE')&&ss){row.segments.push({s:ss,e:new Date(ev.ts),cat:t.cat});ss=null;}
     });
-    if(ss&&activeId===tid)row.segments.push({s:ss,e:new Date(),cat:t.cat,active:true});
+    if(ss&&activeId===tid)row.segments.push({s:ss,e:new Date(),cat:t.cat});
   });
-
-  // interrupt/break/eod
   evInWin.filter(e=>e.type==='INT'||e.type==='BREAK'||e.type==='EOD').forEach(ev=>{
     const key=ev.type==='INT'?'int-'+(ev.intType||'x'):ev.type;
-    if(!rowMap.has(key))rowMap.set(key,{icon:ev.icon||'⏸',name:ev.title,pic:'',dept:'',segments:[]});
+    if(!rowMap.has(key))rowMap.set(key,{icon:ev.icon||'⏸',name:ev.title,sub:'',segments:[]});
     const row=rowMap.get(key);
-    const s=new Date(ev.tsStart||ev.ts);
-    const e=ev.tsEnd?new Date(ev.tsEnd):new Date(s.getTime()+5*60000);
+    const s=new Date(ev.tsStart||ev.ts),e=ev.tsEnd?new Date(ev.tsEnd):new Date(s.getTime()+5*60000);
     row.segments.push({s,e,type:ev.type==='INT'?'int':ev.type.toLowerCase()});
   });
-
   const now=new Date();
   if(!rowMap.size){wrap.innerHTML='<div class="gantt-empty">Tidak ada aktivitas di periode ini.</div>';return;}
-
   const rows=[...rowMap.values()];
   wrap.innerHTML=`<div class="gantt-canvas">
     <div class="gantt-header-row">
-      <div class="gantt-label-col">Tugas / Aktivitas</div>
+      <div class="gantt-label-col">Aktivitas</div>
       <div class="gantt-timeline-hdr">${ticks.map(tk=>`<span class="gantt-tick-lbl" style="left:${pct(tk.ts)}%">${tk.label}</span>`).join('')}</div>
     </div>
-    ${rows.map(row=>`
-    <div class="gantt-row">
+    ${rows.map(row=>`<div class="gantt-row">
       <div class="gantt-row-label">
         ${row.icon?`<span class="gantt-row-icon">${row.icon}</span>`:''}
-        <div style="min-width:0">
-          <div class="gantt-row-name">${esc(row.name)}</div>
-          ${row.dept?`<div class="gantt-row-pic">${esc(row.dept)}</div>`:row.pic?`<div class="gantt-row-pic">→ ${esc(row.pic)}</div>`:''}
-        </div>
+        <div style="min-width:0"><div class="gantt-row-name">${esc(row.name)}</div>${row.sub?`<div class="gantt-row-sub">${esc(row.sub)}</div>`:''}</div>
       </div>
       <div class="gantt-bars">
         ${ticks.map(tk=>`<div class="gantt-vline" style="left:${pct(tk.ts)}%"></div>`).join('')}
-        ${now>=viewStart&&now<=viewEnd?`<div class="gantt-vline now-line" style="left:${pct(now)}%"></div>`:''}
-        ${row.segments.map(seg=>{
-          const l=pct(seg.s),w=Math.max(pct(seg.e)-l,.3);
-          const cls=seg.type?'gb-'+seg.type:`gb-${seg.cat||'ops'}`;
-          const title=`${new Date(seg.s).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} – ${new Date(seg.e).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`;
-          return `<div class="gantt-bar ${cls}" style="left:${l}%;width:${w}%" title="${title}"></div>`;
-        }).join('')}
+        ${now>=vs&&now<=ve?`<div class="gantt-vline now-line" style="left:${pct(now)}%"></div>`:''}
+        ${row.segments.map(seg=>{const l=pct(seg.s),w=Math.max(pct(seg.e)-l,.5);const cls=seg.type?'gb-'+seg.type:'gb-'+(seg.cat||'ops');return`<div class="gantt-bar ${cls}" style="left:${l}%;width:${w}%" title="${new Date(seg.s).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} – ${new Date(seg.e).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}"></div>`;}).join('')}
       </div>
     </div>`).join('')}
   </div>`;
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  EXPORT
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function exportCSV(){
   if(!events.length){toast('Belum ada data');return;}
   const hdr=['ID','Timestamp','Waktu Mulai','Waktu Selesai','Task ID','Judul','PIC','Departemen','Kategori','Event','Catatan','Incomplete'];
@@ -990,9 +1264,9 @@ function exportCSV(){
   a.click();toast('✓ CSV didownload');
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  HELPERS
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function calcElapsed(id){const t=tasks.find(x=>x.id===id);if(!t)return'';let ms=t.totalMs||0;if(activeId===id&&activeStart)ms+=Date.now()-activeStart.getTime();if(!ms)return'';const m=Math.floor(ms/60000);return m<60?m+' mnt':Math.floor(m/60)+'j '+(m%60)+'mnt';}
 function fmtMs(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60);return h>0?`${pad(h)}:${pad(m%60)}:${pad(s%60)}`:`${pad(m)}:${pad(s%60)}`;}
 function fmtTs(iso){return new Date(iso).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
