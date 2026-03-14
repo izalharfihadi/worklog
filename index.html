@@ -256,23 +256,23 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   width: 40px; height: 40px;
   border: none; background: none;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: transform var(--t); flex-shrink: 0; padding: 0;
+  transition: all var(--t); flex-shrink: 0; padding: 0;
+  color: var(--text2); border-radius: 10px;
 }
-.int-btn img { width: 32px; height: auto; opacity: .8; transition: opacity var(--t), transform var(--t); }
-.int-btn:active img { opacity: 1; transform: scale(.85); }
-.int-btn.state-incomplete { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 8px; }
-.int-btn.state-incomplete img { opacity: 1; }
-.int-btn.state-complete  { outline: 2px solid var(--green);  outline-offset: 2px; border-radius: 8px; }
-.int-btn.state-complete  img { opacity: 1; }
+.int-btn svg { width: 26px; height: 26px; stroke: currentColor; transition: all var(--t); }
+.int-btn:active { color: var(--cyan); transform: scale(.88); }
+.int-btn.state-incomplete { outline: 2px solid var(--amber); outline-offset: 2px; color: var(--amber); }
+.int-btn.state-complete   { outline: 2px solid var(--green);  outline-offset: 2px; color: var(--green); }
 .int-div { width: 1px; height: 20px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
 .btn-pulang {
   width: 40px; height: 40px;
   border: none; background: none;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; padding: 0; transition: transform var(--t);
+  flex-shrink: 0; padding: 0;
+  color: var(--magenta); border-radius: 10px; transition: all var(--t);
 }
-.btn-pulang img { width: 32px; height: auto; opacity: .8; transition: opacity var(--t), transform var(--t); }
-.btn-pulang:active img { opacity: 1; transform: scale(.85); }
+.btn-pulang svg { width: 26px; height: 26px; stroke: currentColor; }
+.btn-pulang:active { transform: scale(.88); color: var(--red); }
 
 /* ══ TASK CARDS ══ */
 .task-stack { display: flex; flex-direction: column; gap: 8px; }
@@ -616,7 +616,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   border: 1px solid rgba(0,229,255,.3); background: var(--cyan-dim);
   cursor: pointer; color: var(--cyan);
 }
-.gantt-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
+.gantt-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; position: relative; }
 .gantt-header-row { display: flex; position: sticky; top: 0; z-index: 10; background: var(--bg-mid); border-bottom: 1px solid var(--border); }
 .gantt-row { display: flex; border-bottom: 1px solid var(--border); min-height: 40px; overflow: visible; }
 .gantt-label-col {
@@ -794,13 +794,13 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
       <!-- interrupt row -->
       <div class="int-row">
         <span class="int-row-lbl">Int.</span>
-        <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams','MS Teams')"><img src="int-teams.png"/></button>
-        <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp','WhatsApp')"><img src="int-whatsapp.png"/></button>
-        <button class="int-btn" data-itype="tamu"     onclick="triggerInt('tamu','Orang')"><img src="int-tamu.png"/></button>
-        <button class="int-btn" data-itype="toilet"   onclick="triggerInt('toilet','Toilet')"><img src="int-toilet.png"/></button>
-        <button class="int-btn" data-itype="rokok"    onclick="triggerInt('rokok','Rokok')"><img src="int-rokok.png"/></button>
+        <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams','MS Teams')"><i data-lucide="message-square-text"></i></button>
+        <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp','WhatsApp')"><i data-lucide="message-circle"></i></button>
+        <button class="int-btn" data-itype="tamu"     onclick="triggerInt('tamu','Orang')"><i data-lucide="user-round"></i></button>
+        <button class="int-btn" data-itype="toilet"   onclick="triggerInt('toilet','Toilet')"><i data-lucide="toilet"></i></button>
+        <button class="int-btn" data-itype="rokok"    onclick="triggerInt('rokok','Rokok')"><i data-lucide="cigarette"></i></button>
         <div class="int-div"></div>
-        <button class="btn-pulang" onclick="openPulang()"><img src="int-pulang.png" width="32" height="auto"/></button>
+        <button class="btn-pulang" onclick="openPulang()"><i data-lucide="door-open"></i></button>
       </div>
       <div class="panel-inner">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -1891,32 +1891,66 @@ function renderGantt(){
   if(!rowMap.size){wrap.innerHTML='<div class="gantt-empty">Tidak ada aktivitas di periode ini.</div>';return;}
   const rows=[...rowMap.values()];
 
+  // Map intType ke Lucide icon name
+  const intIconMap = {
+    teams:'message-square-text', whatsapp:'message-circle',
+    tamu:'user-round', toilet:'toilet', rokok:'cigarette', pulang:'door-open'
+  };
+  const lucideSvg = name => {
+    const el = document.createElement('i');
+    el.setAttribute('data-lucide', name);
+    el.style.cssText = 'width:16px;height:16px;flex-shrink:0;color:var(--text2)';
+    return el.outerHTML;
+  };
+  function rowIconHtml(row, ev) {
+    if (ev && ev.intType && intIconMap[ev.intType]) {
+      return `<i data-lucide="${intIconMap[ev.intType]}" style="width:16px;height:16px;flex-shrink:0;stroke:var(--text2)"></i>`;
+    }
+    return '';
+  }
+
+  // Attach ev reference to each row for icon lookup
+  const rowEvMap = new Map();
+  evInWin.filter(e=>e.type==='INT').forEach(ev=>{
+    const key='int-'+(ev.intType||'x');
+    if(!rowEvMap.has(key)) rowEvMap.set(key, ev);
+  });
+
   wrap.innerHTML=`
-  <div id="ganttInner" style="display:flex;flex-direction:column;min-height:100%">
-    <div class="gantt-header-row" style="position:sticky;top:0;z-index:10">
-      <div class="gantt-label-col" style="width:${LABEL_W}px;flex-shrink:0">Aktivitas</div>
-      <div style="flex:1;overflow:hidden">
-        <div class="gantt-timeline-hdr" style="width:${trackW}px;position:relative;height:28px">
+  <div id="ganttInner" style="position:relative">
+    <!-- Sticky header row -->
+    <div style="display:flex;position:sticky;top:0;z-index:20;background:var(--bg-mid);border-bottom:1px solid var(--border)">
+      <div style="width:${LABEL_W}px;flex-shrink:0;position:sticky;left:0;z-index:21;background:var(--bg-mid);border-right:1px solid var(--border);padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px;display:flex;align-items:center">AKTIVITAS</div>
+      <div style="overflow:hidden;flex:1">
+        <div style="width:${trackW}px;position:relative;height:28px">
           ${ticks.map(tk=>`<span class="gantt-tick-lbl" style="left:${pct(tk.ts)}%">${tk.label}</span>`).join('')}
         </div>
       </div>
     </div>
-    ${rows.map(row=>`
-    <div class="gantt-row">
-      <div class="gantt-row-label" style="width:${LABEL_W}px;flex-shrink:0">
-        ${row.icon?`<span class="gantt-row-icon">${row.icon}</span>`:''}
-        <div style="min-width:0"><div class="gantt-row-name">${esc(row.name)}</div>${row.sub?`<div class="gantt-row-sub">${esc(row.sub)}</div>`:''}</div>
-      </div>
-      <div class="gantt-bars" style="width:${trackW}px;flex-shrink:0;position:relative;min-height:40px">
-        ${ticks.map(tk=>`<div class="gantt-vline" style="left:${pct(tk.ts)}%"></div>`).join('')}
-        ${now>=vs&&now<=ve?`<div class="gantt-vline now-line" style="left:${pct(now)}%"></div>`:''}
-        ${row.segments.map(seg=>{
-          const l=pct(seg.s), w=Math.max(pct(seg.e)-l, .3);
-          const cls=seg.type?'gb-'+seg.type:'gb-'+(seg.cat||'ops');
-          return`<div class="gantt-bar ${cls}" style="left:${l}%;width:${w}%" title="${new Date(seg.s).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} – ${new Date(seg.e).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}"></div>`;
-        }).join('')}
-      </div>
-    </div>`).join('')}
+    <!-- Data rows -->
+    ${rows.map((row,ri)=>{
+      const key=[...rowMap.keys()][ri];
+      const ev=rowEvMap.get(key);
+      const iconHtml=rowIconHtml(row,ev);
+      return`<div style="display:flex;border-bottom:1px solid var(--border);min-height:40px">
+        <div style="width:${LABEL_W}px;flex-shrink:0;position:sticky;left:0;z-index:10;background:var(--bg-card);border-right:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px">
+          ${iconHtml}
+          <div style="min-width:0">
+            <div class="gantt-row-name">${esc(row.name)}</div>
+            ${row.sub?`<div class="gantt-row-sub">${esc(row.sub)}</div>`:''}
+          </div>
+        </div>
+        <div style="width:${trackW}px;flex-shrink:0;position:relative;min-height:40px">
+          ${ticks.map(tk=>`<div class="gantt-vline" style="left:${pct(tk.ts)}%"></div>`).join('')}
+          ${now>=vs&&now<=ve?`<div class="gantt-vline now-line" style="left:${pct(now)}%"></div>`:''}
+          ${row.segments.map(seg=>{
+            const l=pct(seg.s), w=Math.max(pct(seg.e)-l, .3);
+            const cls=seg.type?'gb-'+seg.type:'gb-'+(seg.cat||'ops');
+            return`<div class="gantt-bar ${cls}" style="left:${l}%;width:${w}%" title="${new Date(seg.s).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} – ${new Date(seg.e).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}"></div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('')}
   </div>`;
 
   // Scroll to current time on day view
@@ -1928,6 +1962,8 @@ function renderGantt(){
 
   // Init pinch zoom
   initGanttPinch();
+  // Re-render Lucide icons injected into gantt rows
+  lucide.createIcons();
 }
 
 // ══════════════════════════════════════════════
