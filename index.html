@@ -279,10 +279,15 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   border: none; background: none;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; padding: 0;
-  color: var(--magenta); border-radius: 10px; transition: all var(--t);
+  color: var(--text2); border-radius: 10px; transition: all var(--t);
 }
 .btn-pulang svg { width: 26px; height: 26px; stroke: currentColor; }
-.btn-pulang:active { transform: scale(.88); color: var(--red); }
+.btn-pulang:active { transform: scale(.88); }
+.btn-pulang.state-active {
+  color: var(--cyan);
+  outline: 2px solid var(--cyan); outline-offset: 2px;
+  box-shadow: 0 0 8px var(--cyan-glow);
+}
 
 /* ══ TASK CARDS ══ */
 .task-stack { display: flex; flex-direction: column; gap: 8px; }
@@ -502,6 +507,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 .ev-BREAK  { background: var(--purple-dim); color: var(--purple); }
 .ev-INT    { background: var(--magenta-dim); color: var(--magenta); }
 .ev-EOD    { background: var(--magenta-dim); color: var(--magenta); }
+.ev-HOME   { background: var(--cyan-dim); color: var(--cyan); }
 .ev-ts { font-family: var(--mono); font-size: 9px; color: var(--muted); }
 .ev-body { flex: 1; padding: 9px 10px; min-width: 0; }
 .ev-title { font-size: 13px; font-weight: 600; color: var(--text); }
@@ -590,6 +596,138 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   font-family: var(--mono); line-height: 1.8;
 }
 
+/* ══ ADVANCED SETTINGS ══ */
+.adv-link {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-top: 1px solid var(--border); margin-top: 20px;
+  cursor: pointer; color: var(--muted); transition: color var(--t);
+  background: none; border-left: none; border-right: none; border-bottom: none;
+  width: 100%; font-family: var(--font);
+}
+.adv-link:active { color: var(--text); }
+.adv-link-label { font-size: 13px; font-weight: 600; letter-spacing: .3px; }
+.adv-link-sub { font-size: 10px; font-family: var(--mono); color: var(--muted); margin-top: 2px; }
+.adv-link svg { width: 16px; height: 16px; flex-shrink: 0; stroke: var(--muted); }
+
+/* Advanced panel */
+.adv-back {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 22px;
+  background: none; border: none; cursor: pointer; color: var(--text2);
+  font-family: var(--font); font-size: 13px; font-weight: 600; padding: 0;
+}
+.adv-back svg { width: 18px; height: 18px; stroke: currentColor; }
+.adv-back:active { color: var(--cyan); }
+
+.reset-card {
+  border: 1px solid var(--border); border-radius: var(--r);
+  background: var(--bg-card); padding: 16px; margin-bottom: 12px;
+}
+.reset-card-title {
+  font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.reset-card-title svg { width: 16px; height: 16px; stroke: currentColor; flex-shrink: 0; }
+.reset-card-desc {
+  font-size: 11px; color: var(--muted); font-family: var(--mono);
+  line-height: 1.6; margin-bottom: 14px;
+}
+.reset-confirm-row {
+  display: flex; gap: 8px; align-items: center; display: none;
+  margin-top: 10px;
+}
+.reset-confirm-row.visible { display: flex; }
+.reset-input {
+  flex: 1; font-family: var(--mono); font-size: 13px; font-weight: 500;
+  color: var(--text); background: var(--bg-deep);
+  border: 1px solid var(--border-md); border-radius: var(--r-sm);
+  padding: 8px 11px; outline: none; letter-spacing: 2px; text-transform: uppercase;
+  -webkit-appearance: none;
+}
+.reset-input:focus { border-color: var(--magenta); }
+.reset-input::placeholder { letter-spacing: 0; text-transform: none; color: var(--muted); }
+.btn-reset-trigger {
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  padding: 8px 14px; border-radius: var(--r-sm); cursor: pointer;
+  border: 1px solid var(--border-md); background: var(--bg-card2);
+  color: var(--muted); transition: all var(--t); white-space: nowrap;
+}
+.btn-reset-trigger:active { background: var(--red-bg); border-color: var(--magenta); color: var(--magenta); }
+.btn-reset-exec {
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  padding: 8px 14px; border-radius: var(--r-sm); cursor: pointer;
+  border: 1px solid rgba(255,45,120,.4); background: var(--magenta-dim);
+  color: var(--magenta); transition: all var(--t); white-space: nowrap;
+}
+.btn-reset-exec:active { opacity: .7; }
+
+/* ══ PRODUCT TOUR ══ */
+.tour-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  pointer-events: none;
+}
+.tour-overlay.active { pointer-events: all; }
+.tour-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.72);
+  transition: opacity 300ms;
+}
+.tour-spotlight {
+  position: absolute;
+  border-radius: 14px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.72);
+  border: 2px solid var(--cyan);
+  box-shadow: 0 0 0 2000px rgba(0,0,0,.72), 0 0 20px var(--cyan-glow);
+  transition: all 350ms cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+}
+.tour-card {
+  position: absolute;
+  background: var(--bg-card2);
+  border: 1px solid var(--border-md);
+  border-radius: 14px;
+  padding: 18px;
+  width: 280px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.5);
+  transition: all 350ms cubic-bezier(.4,0,.2,1);
+}
+.tour-arrow {
+  position: absolute; width: 0; height: 0;
+}
+.tour-arrow.down {
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid var(--bg-card2);
+}
+.tour-arrow.up {
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid var(--bg-card2);
+}
+.tour-step-lbl {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1px;
+  color: var(--cyan); text-transform: uppercase; margin-bottom: 8px;
+}
+.tour-title {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  margin-bottom: 6px; line-height: 1.3;
+}
+.tour-body {
+  font-size: 12px; color: var(--text2); line-height: 1.6;
+  font-family: var(--mono); margin-bottom: 16px;
+}
+.tour-footer { display: flex; justify-content: flex-end; gap: 8px; }
+.btn-tour-skip {
+  font-family: var(--font); font-size: 11px; color: var(--muted);
+  background: none; border: none; cursor: pointer; padding: 4px 8px;
+}
+.btn-tour-next {
+  font-family: var(--font); font-size: 13px; font-weight: 700;
+  padding: 9px 20px; border-radius: 20px;
+  background: linear-gradient(135deg,#8b5cf6,#00e5ff);
+  color: #fff; border: none; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(139,92,246,.4);
+}
+
 /* ══ GANTT ══ */
 .gantt-controls {
   display: flex; align-items: center; gap: 6px;
@@ -658,6 +796,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 .gb-int   { background: var(--magenta-dim); color: var(--magenta); border: 1px solid rgba(255,45,120,.3); }
 .gb-break { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(139,92,246,.3); }
 .gb-eod   { background: var(--magenta-dim); color: var(--magenta); }
+.gb-home  { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,229,255,.2); }
 .gantt-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 11px; font-family: var(--mono); }
 
 /* ══ MODAL ══ */
@@ -736,9 +875,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
       <div class="sb-pulse"></div>
       <div class="sb-name" id="sbName">—</div>
       <div class="sb-timer" id="sbTimer">00:00</div>
-      <div class="sb-actions">
-        <button class="sb-btn done" onclick="doneActive()">✓</button>
-        <button class="sb-btn brk"  onclick="doBreak()">☕</button>
+      <div class="sb-actions" id="sbActions">
+        <button class="sb-btn done" id="sbDoneBtn" onclick="doneActive()">✓ Selesai</button>
       </div>
     </div>
   </div>
@@ -798,13 +936,13 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
       <!-- interrupt row -->
       <div class="int-row">
         <span class="int-row-lbl">Int.</span>
-        <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams','MS Teams')"><i data-lucide="message-square-text"></i></button>
-        <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp','WhatsApp')"><i data-lucide="message-circle"></i></button>
-        <button class="int-btn" data-itype="tamu"     onclick="triggerInt('tamu','Orang')"><i data-lucide="user-round"></i></button>
-        <button class="int-btn" data-itype="toilet"   onclick="triggerInt('toilet','Toilet')"><i data-lucide="toilet"></i></button>
-        <button class="int-btn" data-itype="rokok"    onclick="triggerInt('rokok','Rokok')"><i data-lucide="cigarette"></i></button>
+        <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams')"><i data-lucide="message-square-text"></i></button>
+        <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp')"><i data-lucide="message-circle"></i></button>
+        <button class="int-btn" data-itype="tamu"     onclick="triggerInt('tamu')"><i data-lucide="user-round"></i></button>
+        <button class="int-btn" data-itype="toilet"   onclick="triggerInt('toilet')"><i data-lucide="toilet"></i></button>
+        <button class="int-btn" data-itype="rokok"    onclick="triggerInt('rokok')"><i data-lucide="cigarette"></i></button>
         <div class="int-div"></div>
-        <button class="btn-pulang" onclick="openPulang()"><i data-lucide="door-open"></i></button>
+        <button class="btn-pulang" data-itype="home" onclick="goHome()"><i data-lucide="house"></i></button>
       </div>
       <div class="panel-inner">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -849,7 +987,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 
     <!-- SETTINGS -->
     <div class="panel" id="panel-settings">
-      <div class="panel-inner">
+      <!-- Main settings view -->
+      <div id="settings-main" class="panel-inner">
         <div class="settings-title">Master Karyawan</div>
         <div class="settings-sub">Autocomplete PIC + departemen otomatis</div>
 
@@ -888,6 +1027,57 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <tbody id="empTbody"></tbody>
           </table>
         </div>
+
+        <!-- Advanced link -->
+        <button class="adv-link" onclick="showAdvanced()">
+          <div>
+            <div class="adv-link-label">Advanced</div>
+            <div class="adv-link-sub">Reset data · opsi developer</div>
+          </div>
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Advanced settings view -->
+      <div id="settings-advanced" class="panel-inner" style="display:none">
+        <button class="adv-back" onclick="hideAdvanced()">
+          <i data-lucide="arrow-left"></i> Advanced
+        </button>
+
+        <!-- Reset Tasks -->
+        <div class="reset-card">
+          <div class="reset-card-title" style="color:var(--amber)">
+            <i data-lucide="flask-conical"></i> Reset Tasks
+          </div>
+          <div class="reset-card-desc">Hapus semua task dari PWA dan Sheets.<br>Events dan master karyawan tetap.<br>Gunakan untuk membersihkan data testing.</div>
+          <button class="btn-reset-trigger" onclick="showResetConfirm('tasks')">Hapus semua task →</button>
+          <div class="reset-confirm-row" id="confirm-tasks">
+            <input class="reset-input" id="input-tasks" placeholder="ketik RESET" maxlength="5"/>
+            <button class="btn-reset-exec" onclick="execReset('tasks')">Eksekusi</button>
+          </div>
+        </div>
+
+        <!-- Reset Done Tasks -->
+        <div class="reset-card">
+          <div class="reset-card-title" style="color:var(--cyan)">
+            <i data-lucide="check-circle"></i> Reset Done Tasks
+          </div>
+          <div class="reset-card-desc">Hapus semua task berstatus selesai.<br>Task aktif dan pending tetap.<br>Direkomendasikan secara berkala untuk menjaga performa.</div>
+          <button class="btn-reset-trigger" onclick="execReset('done')">Hapus done tasks →</button>
+        </div>
+
+        <!-- Reset Semua -->
+        <div class="reset-card" style="border-color:rgba(255,45,120,.3)">
+          <div class="reset-card-title" style="color:var(--magenta)">
+            <i data-lucide="rotate-ccw"></i> Reset Semua
+          </div>
+          <div class="reset-card-desc">Menghapus seluruh data lokal dan Sheets.<br>App kembali seperti install baru.<br><strong style="color:var(--magenta)">Tidak dapat dibatalkan.</strong></div>
+          <button class="btn-reset-trigger" onclick="showResetConfirm('all')">Factory reset →</button>
+          <div class="reset-confirm-row" id="confirm-all">
+            <input class="reset-input" id="input-all" placeholder="ketik RESET" maxlength="5"/>
+            <button class="btn-reset-exec" onclick="execReset('all')">Eksekusi</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -919,6 +1109,20 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   </div>
 
 </div><!-- /shell -->
+
+<!-- ══ PRODUCT TOUR ══ -->
+<div class="tour-overlay" id="tourOverlay">
+  <div class="tour-spotlight" id="tourSpotlight"></div>
+  <div class="tour-card" id="tourCard">
+    <div class="tour-step-lbl" id="tourStepLbl">Langkah 1 dari 2</div>
+    <div class="tour-title" id="tourTitle">Selamat datang di WorkLog</div>
+    <div class="tour-body" id="tourBody">Pencatat waktu kerjamu yang tidak pernah berhenti. Setiap detik aktivitasmu terekam — tidak ada celah.</div>
+    <div class="tour-footer">
+      <button class="btn-tour-skip" onclick="endTour()">Lewati</button>
+      <button class="btn-tour-next" id="tourNextBtn" onclick="tourNext()">Mulai →</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ MODAL: EDIT EVENT ══ -->
 <div class="modal-overlay" id="editModal" onclick="closeModal(event)">
@@ -953,28 +1157,6 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   </div>
 </div>
 
-<!-- ══ MODAL: PULANG ══ -->
-<div class="modal-overlay" id="pulangModal" onclick="closePulang(event)">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">🚪 Tutup Hari Kerja</div>
-      <button class="btn-modal-close" onclick="closePulang()">×</button>
-    </div>
-    <div class="modal-body">
-      <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">
-        Task aktif akan di-<strong style="color:var(--amber)">PAUSE</strong>.<br>
-        Log tersimpan. Lanjut besok.
-      </div>
-      <div class="field"><label>Catatan (opsional)</label><input type="text" id="pulang-notes" placeholder="lanjut besok setelah meeting..."/></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closePulang()">Batal</button>
-      <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#ff2d78);padding:9px 20px;font-size:13px" onclick="confirmPulang()">🚪 Pulang</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -988,6 +1170,13 @@ let activeId  = load('wl6_active')     || null;
 let activeStart = null;
 const sAS = localStorage.getItem('wl6_activeStart');
 if (activeId && sAS) activeStart = new Date(sAS);
+
+// currentStatus: 'task' | 'home' | 'int-teams' | 'int-whatsapp' | 'int-tamu' | 'int-toilet' | 'int-rokok'
+let currentStatus = load('wl6_status') || 'home';
+// homeStart: waktu mulai status rumah saat ini
+let homeStart = null;
+const sHS = localStorage.getItem('wl6_homeStart');
+if (currentStatus === 'home' && sHS) homeStart = new Date(sHS);
 
 let acFocusIdx = -1, selectedDept = '';
 let macFocusIdx = -1, mSelectedDept = '';
@@ -1003,6 +1192,14 @@ let syncPending = false;
 //  INIT
 // ══════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  // First launch ever — seed home status
+  if (!load('wl6_status')) {
+    currentStatus = 'home';
+    homeStart = new Date();
+    save('wl6_status', 'home');
+    localStorage.setItem('wl6_homeStart', homeStart.toISOString());
+    pushEvent({taskId:'', title:'Rumah', type:'HOME', pic:'—', dept:'—', cat:'—'});
+  }
   tickClock(); setInterval(tickClock, 1000);
   setInterval(tickTimer, 1000);
   renderAll();
@@ -1010,6 +1207,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setInterval(autoSync, 60000);         // auto-sync tiap 1 menit
   window.addEventListener('beforeunload', autoPause);
   lucide.createIcons();
+  setTimeout(startTour, 700);           // product tour — only shows on first launch
 });
 
 function tickClock() {
@@ -1018,10 +1216,14 @@ function tickClock() {
   document.getElementById('dateBar').textContent  = n.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'});
 }
 function tickTimer() {
-  if (!activeId || !activeStart) return;
-  const ms = Date.now() - activeStart.getTime();
-  const e = document.getElementById('sbTimer'); if (e) e.textContent = fmtMs(ms);
-  const te = document.getElementById('el-'+activeId); if (te) te.textContent = calcElapsed(activeId);
+  if (currentStatus === 'task' && activeId && activeStart) {
+    const ms = Date.now() - activeStart.getTime();
+    const e = document.getElementById('sbTimer'); if (e) e.textContent = fmtMs(ms);
+    const te = document.getElementById('el-'+activeId); if (te) te.textContent = calcElapsed(activeId);
+  } else if (currentStatus === 'home' && homeStart) {
+    const ms = Date.now() - homeStart.getTime();
+    const e = document.getElementById('sbTimer'); if (e) e.textContent = fmtMs(ms);
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1178,7 +1380,8 @@ function switchTab(name) {
   });
   if (name==='editlog')   renderEvents();
   if (name==='dashboard') renderGantt();
-  if (name==='settings')  renderEmployees();
+  if (name==='settings')  { renderEmployees(); hideAdvanced(); }
+  lucide.createIcons();
 }
 
 // ══════════════════════════════════════════════
@@ -1433,71 +1636,146 @@ function submitTask() {
 function clearForm(){['f-title','f-pic'].forEach(i=>document.getElementById(i).value='');selectedDept='';showDept('deptDisplay','deptName','');closeAc();}
 
 // ══════════════════════════════════════════════
-//  TASK CONTROLS
+//  CONTINUOUS TIMELINE ENGINE
 // ══════════════════════════════════════════════
-function startTask(id) {
-  if (activeId===id) return;
-  if (activeId) stopActive('STOP');
-  const t=tasks.find(x=>x.id===id); if(!t||t.status==='done')return;
-  const lastEv=[...events].reverse().find(e=>e.taskId===id);
-  const evType=(lastEv&&(lastEv.type==='STOP'||lastEv.type==='PAUSE'))?'RESUME':'START';
-  t.status='in-progress'; activeId=id; activeStart=new Date();
-  localStorage.setItem('wl6_activeStart',activeStart.toISOString());
-  save('wl6_active',activeId); save('wl6_tasks',tasks);
-  pushEvent({taskId:id,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:evType});
+
+// setStatus: the single entry point for ALL status changes
+// Every call closes the previous status and opens the new one
+function setStatus(newStatus, opts={}) {
+  const now = new Date();
+  const prevStatus = currentStatus;
+
+  // ── Close previous status ──
+  if (prevStatus === 'home') {
+    // Close home period — no event needed, home was already opened on entry
+    homeStart = null;
+    localStorage.removeItem('wl6_homeStart');
+  } else if (prevStatus === 'task' && activeId) {
+    // Close active task
+    const t = tasks.find(x=>x.id===activeId);
+    if (t && activeStart) {
+      t.totalMs = (t.totalMs||0) + (now - activeStart);
+      t.status = opts.doneTask ? 'done' : 'todo';
+      save('wl6_tasks', tasks);
+      pushEvent({taskId:activeId, title:t.title, pic:t.pic, dept:t.dept||'', cat:t.cat,
+        type: opts.doneTask ? 'DONE' : 'PAUSE'});
+    }
+    activeId = null; activeStart = null;
+    localStorage.removeItem('wl6_activeStart');
+    save('wl6_active', null);
+  } else if (prevStatus && prevStatus.startsWith('int-')) {
+    // Close interrupt — mark incomplete if not filled
+    const lastInt = [...events].reverse().find(e=>e.type==='INT'&&e.intType===prevStatus.replace('int-',''));
+    // incomplete stays as-is, will show yellow badge
+  }
+
+  // ── Open new status ──
+  currentStatus = newStatus;
+  save('wl6_status', newStatus);
+
+  if (newStatus === 'home') {
+    homeStart = now;
+    localStorage.setItem('wl6_homeStart', now.toISOString());
+    pushEvent({taskId:'', title:'Rumah', type:'HOME', pic:'—', dept:'—', cat:'—'});
+    pushToSheets();
+  } else if (newStatus === 'task') {
+    const id = opts.taskId;
+    const t = tasks.find(x=>x.id===id);
+    if (!t || t.status==='done') return;
+    const lastEv = [...events].reverse().find(e=>e.taskId===id);
+    const evType = (lastEv&&(lastEv.type==='STOP'||lastEv.type==='PAUSE')) ? 'RESUME' : 'START';
+    t.status = 'in-progress';
+    activeId = id; activeStart = now;
+    localStorage.setItem('wl6_activeStart', now.toISOString());
+    save('wl6_active', id); save('wl6_tasks', tasks);
+    pushEvent({taskId:id, title:t.title, pic:t.pic, dept:t.dept||'', cat:t.cat, type:evType});
+  } else if (newStatus.startsWith('int-')) {
+    const intType = newStatus.replace('int-','');
+    const labels = {teams:'MS Teams',whatsapp:'WhatsApp',tamu:'Orang',toilet:'Toilet',rokok:'Rokok'};
+    const label = labels[intType] || intType;
+    events.push({id:'EV'+Date.now(), ts:now.toISOString(), tsStart:now.toISOString(), tsEnd:'',
+      taskId:'', title:label, pic:'—', dept:'—', cat:'—',
+      type:'INT', intType, incomplete:true, notes:''});
+    save('wl6_events', events);
+    updateBadge();
+    appendEventToSheets(events[events.length-1]);
+  }
+
   renderAll();
 }
-function stopActive(evType) {
+
+// ── Public API wrappers ──
+function startTask(id) {
+  if (currentStatus==='task' && activeId===id) return; // already running this task
+  setStatus('task', {taskId:id});
+}
+
+function markDone(id) {
+  if (currentStatus==='task' && activeId===id) {
+    setStatus('home', {doneTask:true});
+  } else {
+    const t=tasks.find(x=>x.id===id); if(!t)return;
+    t.status='done'; save('wl6_tasks',tasks);
+    pushEvent({taskId:id,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'DONE'});
+    renderAll();
+  }
+  toast('✅ Selesai');
+}
+
+function doneActive() {
+  if (currentStatus!=='task'||!activeId) return;
+  setStatus('home', {doneTask:true});
+  toast('✅ Tugas selesai');
+}
+
+function triggerInt(type) {
+  setStatus('int-'+type);
+}
+
+function goHome() {
+  if (currentStatus==='home') return;
+  setStatus('home');
+}
+
+function resubmitTask(id){
+  const t=tasks.find(x=>x.id===id); if(!t)return;
+  t.status='todo'; t.totalMs=0; save('wl6_tasks',tasks); renderAll(); toast('↑ Dikembalikan');
+}
+
+function stopActive(evType){
+  // Legacy shim — used by autoPause and loadFromSheets
   if (!activeId) return;
   const t=tasks.find(x=>x.id===activeId);
-  if (t&&activeStart){t.totalMs=(t.totalMs||0)+(Date.now()-activeStart.getTime());t.status=evType==='DONE'?'done':'todo';save('wl6_tasks',tasks);pushEvent({taskId:activeId,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:evType});}
-  activeId=null;activeStart=null;localStorage.removeItem('wl6_activeStart');save('wl6_active',null);
-}
-function doneActive(){if(!activeId)return;stopActive('DONE');renderAll();toast('✅ Tugas selesai');}
-function doBreak(){if(!activeId)return;stopActive('PAUSE');pushEvent({taskId:'',title:'Istirahat',pic:'—',dept:'—',cat:'—',type:'BREAK'});renderAll();toast('☕ Istirahat');}
-function markDone(id){if(activeId===id)stopActive('DONE');else{const t=tasks.find(x=>x.id===id);if(!t)return;t.status='done';save('wl6_tasks',tasks);pushEvent({taskId:id,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'DONE'});}renderAll();toast('✅ Selesai');}
-function deleteTask(id){if(activeId===id)stopActive('STOP');tasks=tasks.filter(t=>t.id!==id);save('wl6_tasks',tasks);renderAll();}
-function resubmitTask(id){const t=tasks.find(x=>x.id===id);if(!t)return;t.status='todo';t.totalMs=0;save('wl6_tasks',tasks);renderAll();toast('↑ Dikembalikan');}
-function autoPause(){
-  // Catat PAUSE event tapi JANGAN hapus activeId/activeStart dari localStorage
-  // sehingga saat buka ulang PWA, task masih terdeteksi sebagai aktif
-  if (!activeId) return;
-  const t = tasks.find(x=>x.id===activeId);
-  if (t && activeStart) {
-    t.totalMs = (t.totalMs||0) + (Date.now()-activeStart.getTime());
-    t.status = 'todo';
-    save('wl6_tasks', tasks);
-    const now = new Date();
-    const ev = {id:'EV'+Date.now(),ts:now.toISOString(),tsStart:now.toISOString(),tsEnd:'',
-      incomplete:false,taskId:activeId,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'PAUSE'};
-    events.push(ev);
-    save('wl6_events', events);
-    // Simpan activeId & activeStart tetap di localStorage — akan di-restore saat buka ulang
-    save('wl6_active', activeId);
-    localStorage.setItem('wl6_activeStart', new Date().toISOString());
+  if (t&&activeStart){
+    t.totalMs=(t.totalMs||0)+(Date.now()-activeStart.getTime());
+    t.status=evType==='DONE'?'done':'todo';
+    save('wl6_tasks',tasks);
+    pushEvent({taskId:activeId,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:evType});
   }
+  activeId=null; activeStart=null;
+  localStorage.removeItem('wl6_activeStart'); save('wl6_active',null);
+}
+
+function autoPause(){
+  if (currentStatus==='task' && activeId) {
+    const t=tasks.find(x=>x.id===activeId);
+    if(t&&activeStart){
+      t.totalMs=(t.totalMs||0)+(Date.now()-activeStart.getTime());
+      t.status='todo'; save('wl6_tasks',tasks);
+      const ev={id:'EV'+Date.now(),ts:new Date().toISOString(),tsStart:new Date().toISOString(),
+        tsEnd:'',incomplete:false,taskId:activeId,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'PAUSE'};
+      events.push(ev); save('wl6_events',events);
+      // Keep activeId/activeStart in localStorage for restore
+      save('wl6_active',activeId);
+      localStorage.setItem('wl6_activeStart',new Date().toISOString());
+    }
+  }
+  // Preserve currentStatus so app restores correctly on reopen
 }
 
 // ══════════════════════════════════════════════
-//  INTERRUPT
+//  INTERRUPT (legacy shim for modal)
 // ══════════════════════════════════════════════
-function triggerInt(type,label){
-  if(activeId)stopActive('PAUSE');
-  const now=new Date();
-  events.push({id:'EV'+Date.now(),ts:now.toISOString(),tsStart:now.toISOString(),tsEnd:'',taskId:'',title:label,pic:'—',dept:'—',cat:'—',type:'INT',intType:type,icon:IICO[type]||'❓',incomplete:true,notes:''});
-  save('wl6_events',events);updateBadge();renderAll();
-  toast((IICO[type]||'')+' '+label+' · lengkapi di Log');
-}
-function openPulang(){document.getElementById('pulangModal').classList.add('open');}
-function closePulang(e){if(e&&e.target!==document.getElementById('pulangModal'))return;document.getElementById('pulangModal').classList.remove('open');}
-function confirmPulang(){
-  if(activeId)stopActive('PAUSE');
-  pushEvent({taskId:'',title:'Pulang',pic:'—',dept:'—',cat:'—',type:'EOD',notes:v('pulang-notes')});
-  document.getElementById('pulangModal').classList.remove('open');
-  renderAll();
-  pushToSheets();
-  toast('🚪 Selamat pulang!');
-}
 
 // ══════════════════════════════════════════════
 //  EVENTS
@@ -1554,49 +1832,60 @@ function saveEdit(){
 function renderAll(){renderStatusBar();renderTasks();updateBadge();renderIntState();}
 
 function renderStatusBar(){
-  const idle=document.getElementById('sbIdle'),act=document.getElementById('sbActive');
-  if(activeId){const t=tasks.find(x=>x.id===activeId);idle.style.display='none';act.classList.add('on');document.getElementById('sbName').textContent=t?t.title:'—';document.getElementById('sbTimer').textContent=fmtMs(activeStart?Date.now()-activeStart.getTime():0);}
-  else{idle.style.display='';act.classList.remove('on');}
+  const idle=document.getElementById('sbIdle');
+  const act=document.getElementById('sbActive');
+  const sbName=document.getElementById('sbName');
+  const sbTimer=document.getElementById('sbTimer');
+
+  const doneBtn = document.getElementById('sbDoneBtn');
+  if (doneBtn) doneBtn.style.display = currentStatus==='task' ? '' : 'none';
+
+  if (currentStatus === 'task' && activeId) {
+    const t=tasks.find(x=>x.id===activeId);
+    idle.style.display='none'; act.classList.add('on');
+    sbName.textContent = t ? t.title : '—';
+    sbTimer.textContent = fmtMs(activeStart ? Date.now()-activeStart.getTime() : 0);
+  } else if (currentStatus === 'home') {
+    idle.style.display='none'; act.classList.add('on');
+    sbName.textContent = '🏠 Rumah';
+    sbTimer.textContent = fmtMs(homeStart ? Date.now()-homeStart.getTime() : 0);
+  } else if (currentStatus.startsWith('int-')) {
+    const labels = {teams:'MS Teams',whatsapp:'WhatsApp',tamu:'Orang',toilet:'Toilet',rokok:'Rokok'};
+    const intType = currentStatus.replace('int-','');
+    idle.style.display='none'; act.classList.add('on');
+    sbName.textContent = labels[intType] || intType;
+    const lastInt = [...events].reverse().find(e=>e.type==='INT'&&e.intType===intType);
+    sbTimer.textContent = lastInt ? fmtMs(Date.now()-new Date(lastInt.ts).getTime()) : '00:00';
+  } else {
+    idle.style.display=''; act.classList.remove('on');
+  }
 }
 
 function renderIntState(){
-  const btns = document.querySelectorAll('.int-btn[data-itype]');
-  btns.forEach(btn => {
-    const itype = btn.dataset.itype;
-    btn.classList.remove('state-incomplete','state-complete');
+  // Clear all states first
+  document.querySelectorAll('.int-btn[data-itype]').forEach(btn => {
+    btn.classList.remove('state-incomplete','state-complete','state-active');
+  });
+  document.querySelectorAll('.btn-pulang[data-itype]').forEach(btn => {
+    btn.classList.remove('state-active');
+  });
 
-    if (!activeId) {
-      // Tidak ada task aktif — cek apakah ada INT incomplete hari ini
-      const todayInt = events.filter(e =>
-        e.type==='INT' && e.intType===itype && e.incomplete
-      );
-      if (todayInt.length) btn.classList.add('state-incomplete');
-      return;
-    }
+  // Highlight currently active status
+  if (currentStatus === 'home') {
+    const homeBtn = document.querySelector('.btn-pulang[data-itype="home"]');
+    if (homeBtn) homeBtn.classList.add('state-active');
+  } else if (currentStatus.startsWith('int-')) {
+    const intType = currentStatus.replace('int-','');
+    const btn = document.querySelector(`.int-btn[data-itype="${intType}"]`);
+    if (btn) btn.classList.add('state-incomplete');
+  }
+  // If currentStatus === 'task', task card itself is highlighted — no int-row highlight needed
 
-    // Ada task aktif — cek apakah INT ini sedang berlangsung
-    // "sedang berlangsung" = ada INT event setelah STOP/PAUSE terakhir task ini
-    // dan belum ada START/RESUME setelah INT tersebut
-    const taskEvs = events
-      .filter(e => e.taskId === activeId || (e.type==='INT' && e.intType===itype))
-      .sort((a,b) => new Date(a.ts) - new Date(b.ts));
-
-    // Ambil event terakhir yang relevan
-    const lastRelevant = [...events]
-      .filter(e =>
-        (e.taskId===activeId && ['START','RESUME','STOP','PAUSE'].includes(e.type)) ||
-        (e.type==='INT' && e.intType===itype)
-      )
-      .sort((a,b) => new Date(a.ts) - new Date(b.ts))
-      .slice(-1)[0];
-
-    if (!lastRelevant) return;
-
-    if (lastRelevant.type === 'INT') {
-      // INT adalah event terakhir — interrupt sedang berlangsung
-      btn.classList.add(lastRelevant.incomplete ? 'state-incomplete' : 'state-complete');
-    }
-    // Jika event terakhir adalah START/RESUME — sudah kembali kerja, tidak ada outline
+  // Also show yellow on any incomplete INT events that haven't been filled
+  events.filter(e=>e.type==='INT'&&e.incomplete).forEach(ev=>{
+    if (currentStatus === 'int-'+ev.intType) return; // already handled above
+    const btn = document.querySelector(`.int-btn[data-itype="${ev.intType}"]`);
+    if (btn && !btn.classList.contains('state-incomplete')) btn.classList.add('state-incomplete');
   });
 }
 
@@ -1748,13 +2037,15 @@ function renderEvents(){
   el.innerHTML=[...events].reverse().map(ev=>{
     const ts=fmtTs(ev.tsStart||ev.ts),tsE=ev.tsEnd?fmtTs(ev.tsEnd):'';
     const sub=[ts+(tsE?' – '+tsE:''),ev.pic&&ev.pic!=='—'?'→ '+ev.pic:'',ev.dept&&ev.dept!=='—'?ev.dept:''].filter(Boolean).join(' · ');
+    const badgeLabel = ev.type==='INT' ? (ev.intType||'INT').toUpperCase().slice(0,5) : ev.type;
+    const titleIcon = ev.type==='HOME' ? '🏠 ' : ev.type==='INT' ? '' : '';
     return`<div class="ev-item${ev.incomplete?' incomplete':''}">
       <div class="ev-type-col">
-        <span class="ev-badge ev-${ev.type}">${ev.type==='INT'?(ev.intType||'INT').toUpperCase().slice(0,5):ev.type}</span>
+        <span class="ev-badge ev-${ev.type}">${badgeLabel}</span>
         <span class="ev-ts">${ts}</span>
       </div>
       <div class="ev-body">
-        <div class="ev-title">${ev.icon?ev.icon+' ':''}${esc(ev.title||'—')}</div>
+        <div class="ev-title">${titleIcon}${esc(ev.title||'—')}</div>
         <div class="ev-sub">${sub}</div>
         ${ev.notes?`<div class="ev-sub">${esc(ev.notes)}</div>`:''}
         ${ev.incomplete?'<div class="ev-incomplete-lbl">! perlu dilengkapi</div>':''}
@@ -1764,6 +2055,160 @@ function renderEvents(){
 }
 
 function clearLog(){if(!confirm('Hapus semua event?'))return;events=[];save('wl6_events',events);updateBadge();renderEvents();}
+
+// ══════════════════════════════════════════════
+//  ADVANCED SETTINGS
+// ══════════════════════════════════════════════
+function showAdvanced(){
+  document.getElementById('settings-main').style.display='none';
+  document.getElementById('settings-advanced').style.display='';
+  lucide.createIcons();
+}
+function hideAdvanced(){
+  document.getElementById('settings-advanced').style.display='none';
+  document.getElementById('settings-main').style.display='';
+  lucide.createIcons();
+}
+
+function showResetConfirm(type){
+  // Hide all confirm rows first
+  ['tasks','all'].forEach(t=>{
+    const el=document.getElementById('confirm-'+t);
+    if(el){el.classList.remove('visible');const inp=document.getElementById('input-'+t);if(inp)inp.value='';}
+  });
+  const row=document.getElementById('confirm-'+type);
+  if(row){row.classList.add('visible');setTimeout(()=>document.getElementById('input-'+type)?.focus(),100);}
+}
+
+async function execReset(type){
+  // Validate RESET keyword for destructive ops
+  if(type==='tasks'||type==='all'){
+    const val=(document.getElementById('input-'+type)?.value||'').trim().toUpperCase();
+    if(val!=='RESET'){toast('⚠ Ketik RESET untuk konfirmasi');return;}
+  }
+
+  setSyncStatus('syncing');
+  try {
+    if(type==='tasks'){
+      tasks=[]; activeId=null; activeStart=null;
+      localStorage.removeItem('wl6_activeStart'); save('wl6_active',null);
+      save('wl6_tasks',[]);
+      if(currentStatus==='task'){currentStatus='home';homeStart=new Date();save('wl6_status','home');localStorage.setItem('wl6_homeStart',homeStart.toISOString());}
+      await gasPost('syncTasks',{rows:[]});
+      toast('✓ Semua task dihapus');
+    }
+    else if(type==='done'){
+      if(!confirm('Hapus semua done tasks?'))return;
+      tasks=tasks.filter(t=>t.status!=='done');
+      save('wl6_tasks',tasks);
+      await gasPost('syncTasks',{rows:tasks.map(t=>({...t,totalMin:Math.round((t.totalMs||0)/60000),unplanned:t.unplanned?'YES':'NO'}))});
+      toast('✓ Done tasks dihapus');
+    }
+    else if(type==='all'){
+      // Nuclear — clear everything
+      const keys=['wl6_tasks','wl6_events','wl6_employees','wl6_active','wl6_status',
+        'wl6_homeStart','wl6_activeStart','wl6_onboarded'];
+      keys.forEach(k=>localStorage.removeItem(k));
+      await gasPost('syncTasks',{rows:[]});
+      await gasPost('syncEvents',{rows:[]});
+      await gasPost('syncEmployees',{rows:[]});
+      toast('✓ Reset selesai — reload app');
+      setTimeout(()=>location.reload(),1500);
+      return;
+    }
+    setSyncStatus('ok');
+    hideAdvanced();
+    renderAll();
+    // Reset confirm rows
+    ['tasks','all'].forEach(t=>{
+      const el=document.getElementById('confirm-'+t);
+      if(el)el.classList.remove('visible');
+    });
+  } catch(err){
+    setSyncStatus('error');
+    console.error('execReset:',err);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  PRODUCT TOUR
+// ══════════════════════════════════════════════
+let tourStep = 0;
+
+const TOUR_STEPS = [
+  {
+    spotlightEl: null, // center screen, no spotlight
+    title: 'Selamat datang di WorkLog 👋',
+    body: 'Pencatat waktu kerjamu yang tidak pernah berhenti. Setiap detik aktivitasmu terekam — tidak ada celah, tidak ada waktu kosong.',
+    nextLabel: 'Lanjut →'
+  },
+  {
+    spotlightEl: () => document.querySelector('.btn-pulang[data-itype="home"]'),
+    title: 'Mulai perjalananmu dari sini 🏠',
+    body: 'Ikon Rumah adalah statusmu saat ini. Klik task untuk mulai bekerja, atau klik ikon interrupt untuk mencatat aktivitas non-task. Rumah menyala = kamu sedang istirahat.',
+    nextLabel: 'Mengerti, mulai!'
+  }
+];
+
+function startTour(){
+  if(load('wl6_onboarded')) return; // Already toured
+  tourStep = 0;
+  renderTourStep();
+  document.getElementById('tourOverlay').classList.add('active');
+}
+
+function renderTourStep(){
+  const step = TOUR_STEPS[tourStep];
+  const overlay = document.getElementById('tourOverlay');
+  const spotlight = document.getElementById('tourSpotlight');
+  const card = document.getElementById('tourCard');
+
+  document.getElementById('tourStepLbl').textContent = `Langkah ${tourStep+1} dari ${TOUR_STEPS.length}`;
+  document.getElementById('tourTitle').textContent = step.title;
+  document.getElementById('tourBody').textContent = step.body;
+  document.getElementById('tourNextBtn').textContent = step.nextLabel;
+
+  if(step.spotlightEl) {
+    const el = step.spotlightEl();
+    if(el){
+      const r = el.getBoundingClientRect();
+      const pad = 10;
+      spotlight.style.cssText = `
+        left:${r.left-pad}px; top:${r.top-pad}px;
+        width:${r.width+pad*2}px; height:${r.height+pad*2}px;
+        display:block;
+      `;
+      // Position card above the spotlight
+      const cardW = 280, shellRect = document.querySelector('.shell').getBoundingClientRect();
+      const cardLeft = Math.max(shellRect.left+10, Math.min(shellRect.right-cardW-10, r.left+(r.width/2)-(cardW/2)));
+      const cardTop = r.top - pad - 180;
+      card.style.cssText = `left:${cardLeft}px; top:${Math.max(20,cardTop)}px; width:${cardW}px;`;
+    }
+  } else {
+    // Step 1 — center card, no spotlight
+    spotlight.style.display = 'none';
+    const shellRect = document.querySelector('.shell').getBoundingClientRect();
+    const cardW = 280;
+    card.style.cssText = `
+      left:${shellRect.left+(shellRect.width-cardW)/2}px;
+      top:${shellRect.top+(shellRect.height-220)/2}px;
+      width:${cardW}px;
+    `;
+  }
+}
+
+function tourNext(){
+  tourStep++;
+  if(tourStep >= TOUR_STEPS.length){
+    endTour(); return;
+  }
+  renderTourStep();
+}
+
+function endTour(){
+  document.getElementById('tourOverlay').classList.remove('active');
+  localStorage.setItem('wl6_onboarded','1');
+}
 
 // ══════════════════════════════════════════════
 //  GANTT
@@ -1903,33 +2348,35 @@ function renderGantt(){
     });
     if(ss&&activeId===tid) row.segments.push({s:ss,e:new Date(),cat:t.cat});
   });
-  evInWin.filter(e=>e.type==='INT'||e.type==='BREAK'||e.type==='EOD').forEach(ev=>{
-    const key=ev.type==='INT'?'int-'+(ev.intType||'x'):ev.type;
-    if(!rowMap.has(key))rowMap.set(key,{icon:ev.icon||'⏸',name:ev.title,sub:'',segments:[]});
+  evInWin.filter(e=>e.type==='INT'||e.type==='BREAK'||e.type==='EOD'||e.type==='HOME').forEach(ev=>{
+    const key = ev.type==='INT' ? 'int-'+(ev.intType||'x') : ev.type;
+    if(!rowMap.has(key)) rowMap.set(key,{icon:'',name:ev.title||'Rumah',sub:'',segments:[],evType:ev.type,intType:ev.intType});
     const row=rowMap.get(key);
-    const s=new Date(ev.tsStart||ev.ts),e=ev.tsEnd?new Date(ev.tsEnd):new Date(s.getTime()+5*60000);
-    row.segments.push({s,e,type:ev.type==='INT'?'int':ev.type.toLowerCase()});
+    // Duration: from this event's ts to the NEXT event's ts (continuous model)
+    const allEvsSorted = [...events].sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+    const evIdx = allEvsSorted.findIndex(x=>x.id===ev.id);
+    const nextEv = allEvsSorted[evIdx+1];
+    const s = new Date(ev.ts);
+    const e = nextEv ? new Date(nextEv.ts) : (currentStatus===key||currentStatus==='home'&&ev.type==='HOME' ? new Date() : new Date(s.getTime()+5*60000));
+    const segType = ev.type==='INT' ? 'int' : ev.type.toLowerCase();
+    row.segments.push({s, e, type:segType, intType:ev.intType});
   });
 
   const now=new Date();
   if(!rowMap.size){wrap.innerHTML='<div class="gantt-empty">Tidak ada aktivitas di periode ini.</div>';return;}
   const rows=[...rowMap.values()];
 
-  // Map intType ke Lucide icon name
+  // Map intType/evType ke Lucide icon name
   const intIconMap = {
     teams:'message-square-text', whatsapp:'message-circle',
-    tamu:'user-round', toilet:'toilet', rokok:'cigarette', pulang:'door-open'
+    tamu:'user-round', toilet:'toilet', rokok:'cigarette'
   };
-  const lucideSvg = name => {
-    const el = document.createElement('i');
-    el.setAttribute('data-lucide', name);
-    el.style.cssText = 'width:16px;height:16px;flex-shrink:0;color:var(--text2)';
-    return el.outerHTML;
-  };
+  const evTypeIconMap = { HOME:'house', BREAK:'coffee', EOD:'door-open' };
   function rowIconHtml(row, ev) {
-    if (ev && ev.intType && intIconMap[ev.intType]) {
+    if (ev && ev.intType && intIconMap[ev.intType])
       return `<i data-lucide="${intIconMap[ev.intType]}" style="width:16px;height:16px;flex-shrink:0;stroke:var(--text2)"></i>`;
-    }
+    if (ev && ev.type && evTypeIconMap[ev.type])
+      return `<i data-lucide="${evTypeIconMap[ev.type]}" style="width:16px;height:16px;flex-shrink:0;stroke:var(--muted)"></i>`;
     return '';
   }
 
@@ -1938,6 +2385,9 @@ function renderGantt(){
   evInWin.filter(e=>e.type==='INT').forEach(ev=>{
     const key='int-'+(ev.intType||'x');
     if(!rowEvMap.has(key)) rowEvMap.set(key, ev);
+  });
+  evInWin.filter(e=>['HOME','BREAK','EOD'].includes(e.type)).forEach(ev=>{
+    if(!rowEvMap.has(ev.type)) rowEvMap.set(ev.type, ev);
   });
 
   wrap.innerHTML=`
