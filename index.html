@@ -265,6 +265,26 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   border: 1px dashed var(--border); border-radius: var(--r);
   line-height: 1.8;
 }
+/* sort bar */
+.sort-bar {
+  display: flex; align-items: center; gap: 4px; margin-bottom: 10px;
+  font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .5px;
+}
+.sort-btn {
+  padding: 3px 9px; border-radius: 10px; border: 1px solid var(--border);
+  background: none; cursor: pointer; font-family: var(--mono); font-size: 9px;
+  color: var(--muted); transition: all var(--t); letter-spacing: .5px;
+}
+.sort-btn.active { background: var(--purple-dim); border-color: var(--border-bright); color: var(--cyan); }
+.sort-btn:active { transform: scale(.94); }
+/* drag-drop */
+.tc { cursor: grab; }
+.tc.dragging { opacity: .35; border-color: var(--cyan); cursor: grabbing; }
+.tc.drag-over { border-color: var(--cyan); box-shadow: 0 0 0 2px var(--cyan-dim); }
+.tc-date {
+  font-size: 9px; color: var(--muted); font-family: var(--mono);
+  letter-spacing: .3px; white-space: nowrap;
+}
 
 .tc {
   border: 1px solid var(--border);
@@ -477,7 +497,11 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   font-family: var(--mono); font-size: 8px; letter-spacing: 1px;
   text-transform: uppercase; color: var(--muted); text-align: left;
   padding: 6px 10px; border-bottom: 1px solid var(--border); font-weight: 400;
+  cursor: pointer; user-select: none; transition: color var(--t);
 }
+.emp-table th:hover { color: var(--cyan); }
+.emp-table th.sort-asc::after { content: ' ↑'; color: var(--cyan); }
+.emp-table th.sort-desc::after { content: ' ↓'; color: var(--cyan); }
 .emp-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); color: var(--text2); }
 .emp-table tr:last-child td { border-bottom: none; }
 .emp-table td:first-child { font-weight: 600; color: var(--text); }
@@ -486,12 +510,31 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   background: var(--cyan-dim); color: var(--cyan);
   border: 1px solid rgba(0,229,255,.25); font-family: var(--mono);
 }
+.emp-edit-input {
+  width: 100%; font-family: var(--font); font-size: 13px; font-weight: 500;
+  color: var(--text); background: var(--bg-card2);
+  border: 1px solid var(--border-bright); border-radius: 5px;
+  padding: 4px 8px; outline: none; -webkit-appearance: none;
+}
 .btn-del-emp {
   font-size: 10px; padding: 3px 8px; border-radius: 5px;
   border: 1px solid var(--border); background: none;
   cursor: pointer; color: var(--muted); transition: all var(--t); font-family: var(--font);
 }
 .btn-del-emp:active { background: var(--magenta-dim); border-color: var(--magenta); color: var(--magenta); }
+.btn-edit-emp {
+  font-size: 10px; padding: 3px 8px; border-radius: 5px;
+  border: 1px solid var(--border); background: none;
+  cursor: pointer; color: var(--muted); transition: all var(--t); font-family: var(--font);
+  margin-right: 3px;
+}
+.btn-edit-emp:active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
+.btn-save-emp {
+  font-size: 10px; padding: 3px 8px; border-radius: 5px;
+  border: 1px solid rgba(0,230,118,.4); background: var(--green-dim);
+  cursor: pointer; color: var(--green); font-family: var(--font); font-weight: 600;
+  margin-right: 3px;
+}
 .emp-empty {
   text-align: center; padding: 32px; color: var(--muted);
   font-size: 11px; border: 1px dashed var(--border); border-radius: var(--r);
@@ -708,18 +751,24 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
       <!-- interrupt row -->
       <div class="int-row">
         <span class="int-row-lbl">Int.</span>
-        <button class="int-btn" onclick="triggerInt('teams','MS Teams')">💬</button>
-        <button class="int-btn" onclick="triggerInt('whatsapp','WhatsApp')">📱</button>
-        <button class="int-btn" onclick="triggerInt('tamu','Tamu')">🤝</button>
-        <button class="int-btn" onclick="triggerInt('toilet','Toilet')">🚽</button>
-        <button class="int-btn" onclick="triggerInt('rokok','Rokok')">🚬</button>
+        <button class="int-btn" onclick="triggerInt('teams','MS Teams')"><img src="int-teams.png" width="24" height="16"/></button>
+        <button class="int-btn" onclick="triggerInt('whatsapp','WhatsApp')"><img src="int-whatsapp.png" width="24" height="16"/></button>
+        <button class="int-btn" onclick="triggerInt('tamu','Tamu')"><img src="int-tamu.png" width="24" height="16"/></button>
+        <button class="int-btn" onclick="triggerInt('toilet','Toilet')"><img src="int-toilet.png" width="24" height="16"/></button>
+        <button class="int-btn" onclick="triggerInt('rokok','Rokok')"><img src="int-rokok.png" width="24" height="16"/></button>
         <div class="int-div"></div>
-        <button class="btn-pulang" onclick="openPulang()">🚪 Pulang</button>
+        <button class="btn-pulang" onclick="openPulang()"><img src="int-pulang.png" width="20" height="13"/> Pulang</button>
       </div>
       <div class="panel-inner">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <div class="sec-label">Tugas Aktif</div>
           <button class="btn-ghost" style="font-size:10px;font-family:var(--mono)" onclick="exportCSV()">↓ CSV</button>
+        </div>
+        <div class="sort-bar">
+          <span>Sort:</span>
+          <button class="sort-btn active" id="sort-manual" onclick="setTaskSort('manual')">Manual</button>
+          <button class="sort-btn" id="sort-date"   onclick="setTaskSort('date')">Tanggal</button>
+          <button class="sort-btn" id="sort-name"   onclick="setTaskSort('name')">Nama</button>
         </div>
         <div class="task-stack" id="activeTasks">
           <div class="task-empty" id="activeEmpty">Belum ada tugas.<br>Tambah di tab Submit ↓</div>
@@ -756,6 +805,11 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
       <div class="panel-inner">
         <div class="settings-title">Master Karyawan</div>
         <div class="settings-sub">Autocomplete PIC + departemen otomatis</div>
+
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button class="btn-ghost" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:5px 12px;color:var(--cyan)" onclick="loadFromSheets()">↓ Tarik dari Sheets</button>
+          <button class="btn-ghost" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:5px 12px;color:var(--green)" onclick="pushToSheets()">↑ Kirim ke Sheets</button>
+        </div>
         <div class="emp-add-row">
           <input type="text" id="emp-name" placeholder="Nama..." onkeydown="if(event.key==='Enter')document.getElementById('emp-dept').focus()"/>
           <input type="text" id="emp-dept" placeholder="Dept..." onkeydown="if(event.key==='Enter')addEmployee()" style="max-width:110px"/>
@@ -764,7 +818,12 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
         <div id="empTableWrap">
           <div class="emp-empty" id="empEmpty">Belum ada karyawan.<br>Tambahkan di atas.</div>
           <table class="emp-table" id="empTable" style="display:none">
-            <thead><tr><th>#</th><th>Nama</th><th>Dept</th><th></th></tr></thead>
+            <thead><tr>
+              <th style="width:28px">#</th>
+              <th id="th-name" onclick="setEmpSort('name')">Nama</th>
+              <th id="th-dept" onclick="setEmpSort('dept')">Dept</th>
+              <th style="width:80px"></th>
+            </tr></thead>
             <tbody id="empTbody"></tbody>
           </table>
         </div>
@@ -876,6 +935,9 @@ let ganttZoom = 'day', ganttOffset = 0;
 const CAT  = {ops:'Operasional',adm:'Administrasi',mtg:'Koordinasi',ext:'Pekerjaan Org Lain'};
 const IICO = {teams:'💬',whatsapp:'📱',tamu:'🤝',toilet:'🚽',rokok:'🚬'};
 
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby8kCWqCjTr-BP6va1F4i2bO56VlWKEW4cIgNJubLFI2k5_mE-lvjpFLmX1-wx46d5L/exec';
+let syncPending = false;
+
 // ══════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════
@@ -883,6 +945,8 @@ window.addEventListener('DOMContentLoaded', () => {
   tickClock(); setInterval(tickClock, 1000);
   setInterval(tickTimer, 1000);
   renderAll();
+  loadFromSheets();                     // pull data dari Sheets saat buka app
+  setInterval(autoSync, 60000);         // auto-sync tiap 1 menit
   window.addEventListener('beforeunload', autoPause);
 });
 
@@ -896,6 +960,133 @@ function tickTimer() {
   const ms = Date.now() - activeStart.getTime();
   const e = document.getElementById('sbTimer'); if (e) e.textContent = fmtMs(ms);
   const te = document.getElementById('el-'+activeId); if (te) te.textContent = calcElapsed(activeId);
+}
+
+// ══════════════════════════════════════════════
+//  GOOGLE SHEETS SYNC
+// ══════════════════════════════════════════════
+
+// Indikator sync di header
+function setSyncStatus(state) {
+  // state: 'syncing' | 'ok' | 'error' | 'idle'
+  const orb = document.querySelector('.brand-orb');
+  if (!orb) return;
+  if (state === 'syncing') { orb.style.background = 'var(--amber)'; orb.style.boxShadow = '0 0 8px var(--amber)'; }
+  else if (state === 'ok') { orb.style.background = 'var(--green)'; orb.style.boxShadow = '0 0 8px var(--green)'; setTimeout(()=>setSyncStatus('idle'), 2000); }
+  else if (state === 'error') { orb.style.background = 'var(--magenta)'; orb.style.boxShadow = '0 0 8px var(--magenta)'; }
+  else { orb.style.background = 'var(--cyan)'; orb.style.boxShadow = '0 0 8px var(--cyan), 0 0 16px var(--cyan-glow)'; }
+}
+
+// POST ke Apps Script
+async function gasPost(action, payload) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify({action, ...payload})
+  });
+  return res.json();
+}
+
+// GET dari Apps Script
+async function gasGet(sheet) {
+  const res = await fetch(GAS_URL + '?sheet=' + sheet);
+  return res.json();
+}
+
+// Load semua data dari Sheets saat startup
+async function loadFromSheets() {
+  setSyncStatus('syncing');
+  try {
+    // Load employees
+    const empRes = await gasGet('employees');
+    if (empRes.status === 'ok' && empRes.rows.length) {
+      employees = empRes.rows.map(r => ({
+        id: r['ID'] || 'E'+Date.now()+Math.random(),
+        name: r['Nama'] || '',
+        dept: r['Departemen'] || ''
+      })).filter(e => e.name);
+      save('wl6_employees', employees);
+    }
+    // Load tasks
+    const taskRes = await gasGet('tasks');
+    if (taskRes.status === 'ok' && taskRes.rows.length) {
+      const sheetTasks = taskRes.rows.map(r => ({
+        id: r['ID'], title: r['Judul'], pic: r['PIC'],
+        dept: r['Departemen'], cat: r['Kategori'] || 'ops',
+        createdAt: r['Dibuat'], status: r['Status'] || 'todo',
+        totalMs: (parseFloat(r['Total Menit']) || 0) * 60000,
+        unplanned: r['Mendadak'] === 'YES' || r['Mendadak'] === true
+      })).filter(t => t.id && t.title);
+      // Merge: jangan timpa task yang sedang aktif
+      if (sheetTasks.length) {
+        tasks = sheetTasks;
+        if (activeId && !tasks.find(t => t.id === activeId)) activeId = null;
+        save('wl6_tasks', tasks);
+      }
+    }
+    // Load events
+    const evRes = await gasGet('events');
+    if (evRes.status === 'ok' && evRes.rows.length) {
+      events = evRes.rows.map(r => ({
+        id: r['ID'], ts: r['Timestamp'],
+        tsStart: r['Waktu Mulai'], tsEnd: r['Waktu Selesai'],
+        taskId: r['Task ID'], title: r['Judul'],
+        pic: r['PIC'], dept: r['Departemen'],
+        cat: r['Kategori'], type: r['Event'],
+        notes: r['Catatan'],
+        incomplete: r['Incomplete'] === 'YES' || r['Incomplete'] === true
+      })).filter(e => e.id && e.type);
+      save('wl6_events', events);
+    }
+    renderAll();
+    setSyncStatus('ok');
+    toast('☁ Data dimuat dari Sheets');
+  } catch(err) {
+    setSyncStatus('error');
+    toast('⚠ Gagal konek ke Sheets');
+    console.error('loadFromSheets:', err);
+  }
+}
+
+// Push semua data ke Sheets (full sync)
+async function pushToSheets() {
+  if (syncPending) return;
+  syncPending = true;
+  setSyncStatus('syncing');
+  try {
+    await gasPost('syncEvents', {
+      rows: events.map(e => ({...e, incomplete: e.incomplete ? 'YES' : 'NO'}))
+    });
+    await gasPost('syncTasks', {
+      rows: tasks.map(t => ({...t, totalMin: Math.round((t.totalMs||0)/60000), unplanned: t.unplanned ? 'YES' : 'NO'}))
+    });
+    await gasPost('syncEmployees', {
+      rows: employees
+    });
+    setSyncStatus('ok');
+    toast('☁ Tersimpan ke Sheets');
+  } catch(err) {
+    setSyncStatus('error');
+    toast('⚠ Gagal sync ke Sheets');
+    console.error('pushToSheets:', err);
+  } finally {
+    syncPending = false;
+  }
+}
+
+// Auto-sync periodik
+function autoSync() {
+  if (document.visibilityState === 'visible') pushToSheets();
+}
+
+// Push single event langsung (realtime append)
+async function appendEventToSheets(ev) {
+  try {
+    await gasPost('appendEvent', {
+      row: {...ev, incomplete: ev.incomplete ? 'YES' : 'NO'}
+    });
+  } catch(err) {
+    console.warn('appendEvent failed, will sync on next push:', err);
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -914,6 +1105,11 @@ function switchTab(name) {
 // ══════════════════════════════════════════════
 //  EMPLOYEES
 // ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  EMPLOYEES
+// ══════════════════════════════════════════════
+let empSort = null, empSortDir = 'asc';
+
 function addEmployee() {
   const name = (document.getElementById('emp-name').value||'').trim();
   const dept = (document.getElementById('emp-dept').value||'').trim();
@@ -927,24 +1123,87 @@ function addEmployee() {
   document.getElementById('emp-name').focus();
   renderEmployees();
   toast('✓ '+name+' ditambahkan');
+  pushToSheets();
 }
 function deleteEmployee(id) {
   employees = employees.filter(e=>e.id!==id);
-  save('wl6_employees', employees); renderEmployees();
+  save('wl6_employees', employees);
+  renderEmployees();
+  pushToSheets();
 }
-function renderEmployees() {
+function editEmployee(id) {
+  // toggle inline edit mode
+  renderEmployees(id);
+}
+function saveEmployee(id) {
+  const nameEl = document.getElementById('edit-name-'+id);
+  const deptEl = document.getElementById('edit-dept-'+id);
+  if (!nameEl||!deptEl) return;
+  const name = nameEl.value.trim(), dept = deptEl.value.trim();
+  if (!name||!dept) { toast('⚠ Nama dan dept wajib'); return; }
+  const dup = employees.find(e=>e.name.toLowerCase()===name.toLowerCase()&&e.id!==id);
+  if (dup) { toast('⚠ Nama sudah ada'); return; }
+  const emp = employees.find(e=>e.id===id);
+  if (emp) { emp.name=name; emp.dept=dept; save('wl6_employees',employees); }
+  renderEmployees();
+  toast('✓ Disimpan');
+  pushToSheets();
+}
+
+function setEmpSort(col) {
+  if (empSort === col) empSortDir = empSortDir==='asc'?'desc':'asc';
+  else { empSort = col; empSortDir = 'asc'; }
+  renderEmployees();
+}
+
+function getSortedEmployees() {
+  if (!empSort) return employees;
+  return [...employees].sort((a,b) => {
+    const va=a[empSort].toLowerCase(), vb=b[empSort].toLowerCase();
+    return empSortDir==='asc' ? va.localeCompare(vb,'id') : vb.localeCompare(va,'id');
+  });
+}
+
+function renderEmployees(editId=null) {
   const empty = document.getElementById('empEmpty');
   const table = document.getElementById('empTable');
   const tbody = document.getElementById('empTbody');
+  // update sort indicators
+  ['name','dept'].forEach(col => {
+    const th = document.getElementById('th-'+col);
+    if (!th) return;
+    th.className = empSort===col ? ('sort-'+empSortDir) : '';
+  });
   if (!employees.length) { empty.style.display=''; table.style.display='none'; return; }
   empty.style.display='none'; table.style.display='';
-  tbody.innerHTML = employees.map((e,i)=>`
-    <tr>
-      <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
-      <td>${esc(e.name)}</td>
-      <td><span class="emp-dept-badge">${esc(e.dept)}</span></td>
-      <td style="text-align:right"><button class="btn-del-emp" onclick="deleteEmployee('${e.id}')">✕</button></td>
-    </tr>`).join('');
+  const sorted = getSortedEmployees();
+  tbody.innerHTML = sorted.map((e,i) => {
+    if (e.id === editId) return `
+      <tr>
+        <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
+        <td><input class="emp-edit-input" id="edit-name-${e.id}" value="${esc(e.name)}" /></td>
+        <td><input class="emp-edit-input" id="edit-dept-${e.id}" value="${esc(e.dept)}" /></td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn-save-emp" onclick="saveEmployee('${e.id}')">✓</button>
+          <button class="btn-del-emp"  onclick="renderEmployees()">✕</button>
+        </td>
+      </tr>`;
+    return `
+      <tr>
+        <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
+        <td>${esc(e.name)}</td>
+        <td><span class="emp-dept-badge">${esc(e.dept)}</span></td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn-edit-emp" onclick="editEmployee('${e.id}')">✏</button>
+          <button class="btn-del-emp"  onclick="deleteEmployee('${e.id}')">✕</button>
+        </td>
+      </tr>`;
+  }).join('');
+  // focus first input if editing
+  if (editId) {
+    const inp = document.getElementById('edit-name-'+editId);
+    if (inp) { inp.focus(); inp.select(); }
+  }
 }
 function lookupDept(name) {
   const e = employees.find(x=>x.name.toLowerCase()===name.toLowerCase());
@@ -1022,6 +1281,7 @@ function submitTask() {
   tasks.push({id:'T'+Date.now(),title,pic,dept,cat:'ops',createdAt:new Date().toISOString(),unplanned:isUnplanned,totalMs:0,status:'todo'});
   save('wl6_tasks',tasks); clearForm(); renderAll();
   toast('✓ Tugas ditambahkan'+(isUnplanned?' · mendadak':''));
+  pushToSheets();
   switchTab('running');
 }
 function clearForm(){['f-title','f-pic'].forEach(i=>document.getElementById(i).value='');selectedDept='';showDept('deptDisplay','deptName','');closeAc();}
@@ -1066,12 +1326,26 @@ function triggerInt(type,label){
 }
 function openPulang(){document.getElementById('pulangModal').classList.add('open');}
 function closePulang(e){if(e&&e.target!==document.getElementById('pulangModal'))return;document.getElementById('pulangModal').classList.remove('open');}
-function confirmPulang(){if(activeId)stopActive('PAUSE');pushEvent({taskId:'',title:'Pulang',pic:'—',dept:'—',cat:'—',type:'EOD',notes:v('pulang-notes')});document.getElementById('pulangModal').classList.remove('open');renderAll();toast('🚪 Selamat pulang!');}
+function confirmPulang(){
+  if(activeId)stopActive('PAUSE');
+  pushEvent({taskId:'',title:'Pulang',pic:'—',dept:'—',cat:'—',type:'EOD',notes:v('pulang-notes')});
+  document.getElementById('pulangModal').classList.remove('open');
+  renderAll();
+  pushToSheets();
+  toast('🚪 Selamat pulang!');
+}
 
 // ══════════════════════════════════════════════
 //  EVENTS
 // ══════════════════════════════════════════════
-function pushEvent(data){const now=new Date();events.push({id:'EV'+Date.now(),ts:now.toISOString(),tsStart:now.toISOString(),tsEnd:'',incomplete:false,...data});save('wl6_events',events);updateBadge();}
+function pushEvent(data){
+  const now=new Date();
+  const ev={id:'EV'+Date.now(),ts:now.toISOString(),tsStart:now.toISOString(),tsEnd:'',incomplete:false,...data};
+  events.push(ev);
+  save('wl6_events',events);
+  updateBadge();
+  appendEventToSheets(ev);
+}
 function updateBadge(){const n=events.filter(e=>e.incomplete).length;const b=document.getElementById('editBadge');b.textContent=n;b.classList.toggle('hidden',n===0);}
 
 // ══════════════════════════════════════════════
@@ -1107,6 +1381,7 @@ function saveEdit(){
   save('wl6_events',events);updateBadge();renderAll();
   document.getElementById('editModal').classList.remove('open');
   toast('✓ Event diperbarui');
+  pushToSheets();
 }
 
 // ══════════════════════════════════════════════
@@ -1120,13 +1395,79 @@ function renderStatusBar(){
   else{idle.style.display='';act.classList.remove('on');}
 }
 
+// ══════════════════════════════════════════════
+//  TASK SORT & DRAG-DROP
+// ══════════════════════════════════════════════
+let taskSort = 'manual';
+let dragSrcId = null;
+
+function setTaskSort(s) {
+  taskSort = s;
+  ['manual','date','name'].forEach(x => document.getElementById('sort-'+x).classList.toggle('active', x===s));
+  renderTasks();
+}
+
+function getSortedActive() {
+  const active = tasks.filter(t => t.status !== 'done');
+  if (taskSort === 'date') return [...active].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+  if (taskSort === 'name') return [...active].sort((a,b) => a.title.localeCompare(b.title, 'id'));
+  return active; // manual = as-stored
+}
+
+function fmtDateShort(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('id-ID', {day:'numeric', month:'short'});
+}
+
+function initDragDrop() {
+  const container = document.getElementById('activeTasks');
+  container.querySelectorAll('.tc[data-id]').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      dragSrcId = el.dataset.id;
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => el.classList.remove('dragging'));
+    el.addEventListener('dragover', e => {
+      e.preventDefault();
+      container.querySelectorAll('.tc').forEach(x => x.classList.remove('drag-over'));
+      el.classList.add('drag-over');
+    });
+    el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      el.classList.remove('drag-over');
+      if (!dragSrcId || dragSrcId === el.dataset.id) return;
+      // reorder tasks array
+      const srcIdx = tasks.findIndex(t => t.id === dragSrcId);
+      const tgtIdx = tasks.findIndex(t => t.id === el.dataset.id);
+      if (srcIdx < 0 || tgtIdx < 0) return;
+      const [moved] = tasks.splice(srcIdx, 1);
+      tasks.splice(tgtIdx, 0, moved);
+      save('wl6_tasks', tasks);
+      renderTasks();
+    });
+    // touch drag support
+    el.addEventListener('touchstart', e => { dragSrcId = el.dataset.id; el.classList.add('dragging'); }, {passive:true});
+    el.addEventListener('touchend', () => { el.classList.remove('dragging'); });
+    el.addEventListener('touchmove', e => {
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      const card = target?.closest('.tc[data-id]');
+      container.querySelectorAll('.tc').forEach(x => x.classList.remove('drag-over'));
+      if (card && card.dataset.id !== dragSrcId) card.classList.add('drag-over');
+    }, {passive:true});
+  });
+}
+
 function renderTasks(){
-  const active=tasks.filter(t=>t.status!=='done');
-  const done=tasks.filter(t=>t.status==='done');
-  const ac=document.getElementById('activeTasks'),ae=document.getElementById('activeEmpty');
-  if(!active.length){ac.innerHTML='';ac.appendChild(ae);}
-  else{try{ae.remove();}catch(e){}
-    ac.innerHTML=active.map(t=>{const isAct=activeId===t.id;return`<div class="tc${isAct?' is-active':''}">
+  const active = getSortedActive();
+  const done   = tasks.filter(t => t.status === 'done');
+  const ac = document.getElementById('activeTasks'), ae = document.getElementById('activeEmpty');
+  if (!active.length) { ac.innerHTML = ''; ac.appendChild(ae); }
+  else {
+    try { ae.remove(); } catch(e) {}
+    ac.innerHTML = active.map(t => { const isAct = activeId === t.id; return `<div class="tc${isAct?' is-active':''}" draggable="true" data-id="${t.id}">
       <div class="tc-start" onclick="startTask('${t.id}')">${isAct?'⏸':'▶'}</div>
       <div class="tc-body">
         <div class="tc-title">${esc(t.title)}</div>
@@ -1135,22 +1476,25 @@ function renderTasks(){
           ${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}
           <span class="tc-elapsed" id="el-${t.id}">${calcElapsed(t.id)}</span>
           ${t.unplanned?'<span class="tc-unplanned">mendadak</span>':''}
+          <span class="tc-date">${fmtDateShort(t.createdAt)}</span>
         </div>
       </div>
       <div class="tc-actions">
         <button class="btn-tc done" onclick="markDone('${t.id}')">✓</button>
         <button class="btn-tc del"  onclick="deleteTask('${t.id}')">✕</button>
       </div>
-    </div>`;}).join('');}
+    </div>`; }).join('');
+    initDragDrop();
+  }
 
-  const cs=document.getElementById('completedSection'),dc=document.getElementById('doneTasks');
-  if(!done.length){cs.style.display='none';return;}
-  cs.style.display='';
-  dc.innerHTML=done.map(t=>`<div class="tc is-done">
+  const cs = document.getElementById('completedSection'), dc = document.getElementById('doneTasks');
+  if (!done.length) { cs.style.display='none'; return; }
+  cs.style.display = '';
+  dc.innerHTML = done.map(t => `<div class="tc is-done">
     <div class="tc-start" style="cursor:default">✓</div>
     <div class="tc-body">
       <div class="tc-title">${esc(t.title)}</div>
-      <div class="tc-meta">${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}<span class="tc-elapsed">${calcElapsed(t.id)}</span></div>
+      <div class="tc-meta">${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}<span class="tc-elapsed">${calcElapsed(t.id)}</span><span class="tc-date">${fmtDateShort(t.createdAt)}</span></div>
     </div>
     <div class="tc-actions">
       <button class="btn-tc resub" onclick="resubmitTask('${t.id}')">↑</button>
