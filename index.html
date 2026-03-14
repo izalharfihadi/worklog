@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="icon-512.png">
 <title>WorkLog</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
 <style>
 :root {
   /* ── Dark Space Purple Palette ── */
@@ -191,10 +192,12 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 
 /* sync indicator */
 .sync-icon {
-  font-size: 14px; line-height: 1; opacity: 0;
-  transition: opacity 300ms; display: inline-block;
+  opacity: 0; transition: opacity 300ms;
+  display: inline-flex; align-items: center;
   margin-left: 6px; vertical-align: middle;
+  color: var(--cyan);
 }
+.sync-icon svg { width: 14px; height: 14px; stroke: currentColor; }
 .sync-icon.syncing { opacity: 1; animation: spin 1s linear infinite; }
 .sync-icon.visible { opacity: 1; animation: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -206,13 +209,14 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   position: relative; padding: 6px 0;
 }
 .tab-btn.active { color: var(--cyan); }
-.tab-icon { font-size: 24px; line-height: 1; }
+.tab-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+.tab-icon svg { width: 24px; height: 24px; stroke: currentColor; }
+.tab-btn.active .tab-icon svg {
+  filter: drop-shadow(0 0 6px var(--cyan));
+}
 .tab-label {
   font-family: var(--font); font-size: 9px; font-weight: 600;
   letter-spacing: 1px; text-transform: uppercase;
-}
-.tab-btn.active .tab-icon {
-  filter: drop-shadow(0 0 8px var(--cyan));
 }
 .tab-badge {
   position: absolute; top: 5px; right: calc(50% - 18px);
@@ -613,11 +617,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   cursor: pointer; color: var(--cyan);
 }
 .gantt-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
-.gantt-canvas { position: relative; min-height: 100%; }
-.gantt-header-row {
-  display: flex; position: sticky; top: 0; z-index: 10;
-  background: var(--bg-mid); border-bottom: 1px solid var(--border);
-}
+.gantt-header-row { display: flex; position: sticky; top: 0; z-index: 10; background: var(--bg-mid); border-bottom: 1px solid var(--border); }
+.gantt-row { display: flex; border-bottom: 1px solid var(--border); min-height: 40px; overflow: visible; }
 .gantt-label-col {
   width: 120px; flex-shrink: 0; border-right: 1px solid var(--border);
   font-family: var(--mono); font-size: 8px; color: var(--muted);
@@ -716,7 +717,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
     <div class="brand">
       <div class="brand-orb"></div>
       WorkLog
-      <span class="sync-icon" id="syncIcon">🔄</span>
+      <span class="sync-icon" id="syncIcon"><i data-lucide="refresh-cw"></i></span>
     </div>
     <div style="text-align:right">
       <div class="header-clock" id="clockBar">--:--:--</div>
@@ -891,24 +892,24 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   <!-- ══ BOTTOM TAB BAR ══ -->
   <div class="tabbar">
     <button class="tab-btn" onclick="switchTab('dashboard')" id="tab-dashboard">
-      <span class="tab-icon">📊</span>
+      <span class="tab-icon"><i data-lucide="layout-dashboard"></i></span>
       <span class="tab-label">Dashboard</span>
     </button>
     <button class="tab-btn" onclick="switchTab('submit')" id="tab-submit">
-      <span class="tab-icon">✏️</span>
+      <span class="tab-icon"><i data-lucide="plus-circle"></i></span>
       <span class="tab-label">Submit</span>
     </button>
     <button class="tab-btn active" onclick="switchTab('running')" id="tab-running">
-      <span class="tab-icon">▶️</span>
+      <span class="tab-icon"><i data-lucide="play-circle"></i></span>
       <span class="tab-label">Running</span>
     </button>
     <button class="tab-btn" onclick="switchTab('editlog')" id="tab-editlog">
-      <span class="tab-icon">📋</span>
+      <span class="tab-icon"><i data-lucide="clipboard-list"></i></span>
       <span class="tab-label">Log</span>
       <span class="tab-badge hidden" id="editBadge">0</span>
     </button>
     <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">
-      <span class="tab-icon">⚙️</span>
+      <span class="tab-icon"><i data-lucide="settings"></i></span>
       <span class="tab-label">Settings</span>
     </button>
   </div>
@@ -1004,6 +1005,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadFromSheets();                     // pull data dari Sheets saat buka app
   setInterval(autoSync, 60000);         // auto-sync tiap 1 menit
   window.addEventListener('beforeunload', autoPause);
+  lucide.createIcons();
 });
 
 function tickClock() {
@@ -1075,7 +1077,7 @@ async function loadFromSheets() {
       })).filter(e => e.name);
       save('wl6_employees', employees);
     }
-    // Load tasks
+    // Load tasks — jangan timpa task yang sedang aktif
     const taskRes = await gasGet('tasks');
     if (taskRes.status === 'ok' && taskRes.rows.length) {
       const sheetTasks = taskRes.rows.map(r => ({
@@ -1085,10 +1087,15 @@ async function loadFromSheets() {
         totalMs: (parseFloat(r['Total Menit']) || 0) * 60000,
         unplanned: r['Mendadak'] === 'YES' || r['Mendadak'] === true
       })).filter(t => t.id && t.title);
-      // Merge: jangan timpa task yang sedang aktif
       if (sheetTasks.length) {
-        tasks = sheetTasks;
-        if (activeId && !tasks.find(t => t.id === activeId)) activeId = null;
+        // Merge: pertahankan status task aktif dari localStorage
+        tasks = sheetTasks.map(st => {
+          if (st.id === activeId) {
+            const local = tasks.find(x=>x.id===activeId);
+            return local ? {...st, status:'in-progress', totalMs: local.totalMs} : st;
+          }
+          return st;
+        });
         save('wl6_tasks', tasks);
       }
     }
@@ -1447,7 +1454,25 @@ function doBreak(){if(!activeId)return;stopActive('PAUSE');pushEvent({taskId:'',
 function markDone(id){if(activeId===id)stopActive('DONE');else{const t=tasks.find(x=>x.id===id);if(!t)return;t.status='done';save('wl6_tasks',tasks);pushEvent({taskId:id,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'DONE'});}renderAll();toast('✅ Selesai');}
 function deleteTask(id){if(activeId===id)stopActive('STOP');tasks=tasks.filter(t=>t.id!==id);save('wl6_tasks',tasks);renderAll();}
 function resubmitTask(id){const t=tasks.find(x=>x.id===id);if(!t)return;t.status='todo';t.totalMs=0;save('wl6_tasks',tasks);renderAll();toast('↑ Dikembalikan');}
-function autoPause(){if(activeId)stopActive('PAUSE');}
+function autoPause(){
+  // Catat PAUSE event tapi JANGAN hapus activeId/activeStart dari localStorage
+  // sehingga saat buka ulang PWA, task masih terdeteksi sebagai aktif
+  if (!activeId) return;
+  const t = tasks.find(x=>x.id===activeId);
+  if (t && activeStart) {
+    t.totalMs = (t.totalMs||0) + (Date.now()-activeStart.getTime());
+    t.status = 'todo';
+    save('wl6_tasks', tasks);
+    const now = new Date();
+    const ev = {id:'EV'+Date.now(),ts:now.toISOString(),tsStart:now.toISOString(),tsEnd:'',
+      incomplete:false,taskId:activeId,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'PAUSE'};
+    events.push(ev);
+    save('wl6_events', events);
+    // Simpan activeId & activeStart tetap di localStorage — akan di-restore saat buka ulang
+    save('wl6_active', activeId);
+    localStorage.setItem('wl6_activeStart', new Date().toISOString());
+  }
+}
 
 // ══════════════════════════════════════════════
 //  INTERRUPT
@@ -1576,13 +1601,19 @@ function fmtDateShort(iso) {
 
 function initDragDrop() {
   const container = document.getElementById('activeTasks');
+
+  // ── Desktop drag ──
   container.querySelectorAll('.tc[data-id]').forEach(el => {
+    // Only allow drag start from the handle
     el.addEventListener('dragstart', e => {
+      if (!e.target.closest('.tc-drag')) { e.preventDefault(); return; }
       dragSrcId = el.dataset.id;
       el.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
     });
-    el.addEventListener('dragend', () => el.classList.remove('dragging'));
+    el.addEventListener('dragend', () => {
+      container.querySelectorAll('.tc').forEach(x => x.classList.remove('dragging','drag-over'));
+    });
     el.addEventListener('dragover', e => {
       e.preventDefault();
       container.querySelectorAll('.tc').forEach(x => x.classList.remove('drag-over'));
@@ -1592,27 +1623,53 @@ function initDragDrop() {
     el.addEventListener('drop', e => {
       e.preventDefault();
       el.classList.remove('drag-over');
-      if (!dragSrcId || dragSrcId === el.dataset.id) return;
-      // reorder tasks array
-      const srcIdx = tasks.findIndex(t => t.id === dragSrcId);
-      const tgtIdx = tasks.findIndex(t => t.id === el.dataset.id);
-      if (srcIdx < 0 || tgtIdx < 0) return;
-      const [moved] = tasks.splice(srcIdx, 1);
-      tasks.splice(tgtIdx, 0, moved);
-      save('wl6_tasks', tasks);
-      renderTasks();
+      doReorder(el.dataset.id);
     });
-    // touch drag support
-    el.addEventListener('touchstart', e => { dragSrcId = el.dataset.id; el.classList.add('dragging'); }, {passive:true});
-    el.addEventListener('touchend', () => { el.classList.remove('dragging'); });
-    el.addEventListener('touchmove', e => {
+  });
+
+  // ── iOS Touch drag — attached to drag handle only ──
+  container.querySelectorAll('.tc-drag').forEach(handle => {
+    const card = handle.closest('.tc[data-id]');
+    let startY = 0, lastCard = null;
+
+    handle.addEventListener('touchstart', e => {
+      e.preventDefault(); // prevents text selection & scroll
+      dragSrcId = card.dataset.id;
+      card.classList.add('dragging');
+      startY = e.touches[0].clientY;
+      lastCard = null;
+    }, {passive: false});
+
+    handle.addEventListener('touchmove', e => {
+      e.preventDefault();
       const touch = e.touches[0];
       const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      const card = target?.closest('.tc[data-id]');
+      const over = target?.closest('.tc[data-id]');
       container.querySelectorAll('.tc').forEach(x => x.classList.remove('drag-over'));
-      if (card && card.dataset.id !== dragSrcId) card.classList.add('drag-over');
-    }, {passive:true});
+      if (over && over.dataset.id !== dragSrcId) {
+        over.classList.add('drag-over');
+        lastCard = over;
+      }
+    }, {passive: false});
+
+    handle.addEventListener('touchend', e => {
+      e.preventDefault();
+      container.querySelectorAll('.tc').forEach(x => x.classList.remove('dragging','drag-over'));
+      if (lastCard) doReorder(lastCard.dataset.id);
+      dragSrcId = null; lastCard = null;
+    }, {passive: false});
   });
+}
+
+function doReorder(targetId) {
+  if (!dragSrcId || dragSrcId === targetId) return;
+  const srcIdx = tasks.findIndex(t => t.id === dragSrcId);
+  const tgtIdx = tasks.findIndex(t => t.id === targetId);
+  if (srcIdx < 0 || tgtIdx < 0) return;
+  const [moved] = tasks.splice(srcIdx, 1);
+  tasks.splice(tgtIdx, 0, moved);
+  save('wl6_tasks', tasks);
+  renderTasks();
 }
 
 function renderTasks(){
@@ -1687,41 +1744,140 @@ function clearLog(){if(!confirm('Hapus semua event?'))return;events=[];save('wl6
 // ══════════════════════════════════════════════
 //  GANTT
 // ══════════════════════════════════════════════
-function setZoom(z){ganttZoom=z;ganttOffset=0;['day','week','month'].forEach(x=>document.getElementById('zoom-'+x).classList.toggle('active',x===z));renderGantt();}
+let ganttScale = 1.0;  // 1.0 = default, >1 = zoom in
+const GANTT_MIN_SCALE = 0.5;
+const GANTT_MAX_SCALE = 8.0;
+
+function setZoom(z){
+  ganttZoom=z; ganttOffset=0; ganttScale=1.0;
+  ['day','week','month'].forEach(x=>document.getElementById('zoom-'+x).classList.toggle('active',x===z));
+  renderGantt();
+}
 function ganttNav(dir){ganttOffset+=dir;renderGantt();}
-function ganttGoNow(){ganttOffset=0;renderGantt();}
+function ganttGoNow(){ganttOffset=0;renderGantt();
+  // scroll to current time
+  setTimeout(()=>{
+    const wrap=document.getElementById('ganttWrap');
+    const {start,end}=ganttPeriod();
+    const pct=Math.max(0,Math.min(1,(Date.now()-start)/(end-start)));
+    const inner=document.getElementById('ganttInner');
+    if(inner) wrap.scrollLeft = pct*inner.offsetWidth - wrap.offsetWidth/2;
+  },80);
+}
+
 function ganttPeriod(){
   const now=new Date();
-  if(ganttZoom==='day'){const d=new Date(now);d.setDate(d.getDate()+ganttOffset);d.setHours(0,0,0,0);return{start:d,end:new Date(d.getTime()+24*3600000),label:d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'})};}
-  if(ganttZoom==='week'){const d=new Date(now);d.setDate(d.getDate()-d.getDay()+1+ganttOffset*7);d.setHours(0,0,0,0);const e=new Date(d.getTime()+7*24*3600000);return{start:d,end:e,label:d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' – '+new Date(e-1).toLocaleDateString('id-ID',{day:'numeric',month:'short'})};}
-  const d=new Date(now.getFullYear(),now.getMonth()+ganttOffset,1);return{start:d,end:new Date(d.getFullYear(),d.getMonth()+1,1),label:d.toLocaleDateString('id-ID',{month:'long',year:'numeric'})};
+  if(ganttZoom==='day'){
+    const d=new Date(now); d.setDate(d.getDate()+ganttOffset); d.setHours(0,0,0,0);
+    return{start:d, end:new Date(d.getTime()+24*3600000),
+      label:d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'})};
+  }
+  if(ganttZoom==='week'){
+    const d=new Date(now); d.setDate(d.getDate()-d.getDay()+1+ganttOffset*7); d.setHours(0,0,0,0);
+    const e=new Date(d.getTime()+7*24*3600000);
+    return{start:d,end:e,label:d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' – '+new Date(e-1).toLocaleDateString('id-ID',{day:'numeric',month:'short'})};
+  }
+  const d=new Date(now.getFullYear(),now.getMonth()+ganttOffset,1);
+  return{start:d,end:new Date(d.getFullYear(),d.getMonth()+1,1),
+    label:d.toLocaleDateString('id-ID',{month:'long',year:'numeric'})};
 }
+
+// Dynamic tick interval based on zoom level and period
+function getTickInterval(viewMs, scale) {
+  const visibleMs = viewMs / scale;
+  const MIN_PX_BETWEEN_TICKS = 60; // minimum pixels between tick labels
+  const viewportW = document.getElementById('ganttWrap')?.offsetWidth || 300;
+  const trackW = (viewportW - 120) * scale;
+  const msPerPx = viewMs / trackW;
+  const minTickMs = MIN_PX_BETWEEN_TICKS * msPerPx;
+
+  // Candidates in ms
+  const candidates = [
+    15*60000, 30*60000, 60*60000, 2*3600000, 3*3600000,
+    6*3600000, 12*3600000, 24*3600000, 2*24*3600000, 7*24*3600000
+  ];
+  return candidates.find(c => c >= minTickMs) || candidates[candidates.length-1];
+}
+
+function generateTicks(vs, ve, intervalMs) {
+  const ticks = [];
+  // Align start to interval boundary
+  const start = new Date(Math.ceil(vs.getTime()/intervalMs)*intervalMs);
+  for(let t=new Date(start); t<=ve; t=new Date(t.getTime()+intervalMs)) {
+    let label;
+    if(intervalMs < 3600000) {
+      // sub-hour: show HH:MM
+      label = t.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    } else if(intervalMs < 24*3600000) {
+      // hourly: show HH:00
+      label = pad(t.getHours())+':00';
+    } else {
+      // daily+: show date
+      label = t.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+    }
+    ticks.push({ts:new Date(t), label});
+  }
+  return ticks;
+}
+
+function initGanttPinch() {
+  const wrap = document.getElementById('ganttWrap');
+  if (!wrap) return;
+  let lastDist = null;
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      lastDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }, {passive:true});
+  wrap.addEventListener('touchmove', e => {
+    if (e.touches.length !== 2 || !lastDist) return;
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const delta = dist / lastDist;
+    lastDist = dist;
+    const prevScale = ganttScale;
+    ganttScale = Math.max(GANTT_MIN_SCALE, Math.min(GANTT_MAX_SCALE, ganttScale * delta));
+    if (Math.abs(ganttScale - prevScale) > 0.01) renderGantt();
+  }, {passive:true});
+  wrap.addEventListener('touchend', () => { lastDist = null; });
+}
+
 function renderGantt(){
   const{start,end,label}=ganttPeriod();
   document.getElementById('ganttPeriodLbl').textContent=label;
   const wrap=document.getElementById('ganttContent');
-  let vs=new Date(start),ve=new Date(end);
-  if(ganttZoom==='day'){vs.setHours(7,0,0,0);ve.setHours(20,0,0,0);}
-  const vMs=ve-vs;
-  const pct=ts=>Math.max(0,Math.min(100,((new Date(ts)-vs)/vMs)*100));
-  const ticks=[];
-  if(ganttZoom==='day'){for(let h=7;h<=20;h++){const d=new Date(vs);d.setHours(h,0,0,0);ticks.push({ts:d,label:pad(h)+':00'});}}
-  else if(ganttZoom==='week'){let d=new Date(vs);while(d<ve){ticks.push({ts:new Date(d),label:d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric'})});d.setDate(d.getDate()+1);}}
-  else{let d=new Date(vs);while(d<ve){if(d.getDate()===1||d.getDate()%7===0)ticks.push({ts:new Date(d),label:d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})});d.setDate(d.getDate()+1);}}
+
+  // Full period — show entire day 00:00–24:00, week, or month
+  const vs=new Date(start), ve=new Date(end);
+  const viewMs=ve-vs;
+  const LABEL_W=120;
+  const baseW=(document.getElementById('ganttWrap')?.offsetWidth||375)-LABEL_W;
+  const trackW=Math.max(baseW, baseW*ganttScale);
+
+  const pct=ts=>Math.max(0,Math.min(100,((new Date(ts)-vs)/viewMs)*100));
+  const intervalMs=getTickInterval(viewMs, ganttScale);
+  const ticks=generateTicks(vs,ve,intervalMs);
+
+  // Build row data
   const evInWin=events.filter(e=>{const t=new Date(e.tsStart||e.ts);return t>=vs&&t<ve;});
   const rowMap=new Map();
   const taskIds=[...new Set(evInWin.filter(e=>e.taskId&&['START','RESUME','STOP','PAUSE','DONE'].includes(e.type)).map(e=>e.taskId))];
   taskIds.forEach(tid=>{
-    const t=tasks.find(x=>x.id===tid);if(!t)return;
+    const t=tasks.find(x=>x.id===tid); if(!t)return;
     if(!rowMap.has(tid))rowMap.set(tid,{icon:'',name:t.title,sub:t.dept||t.pic||'',segments:[]});
     const row=rowMap.get(tid);
     const tevs=evInWin.filter(e=>e.taskId===tid).sort((a,b)=>new Date(a.ts)-new Date(b.ts));
     let ss=null;
     tevs.forEach(ev=>{
-      if(ev.type==='START'||ev.type==='RESUME')ss=new Date(ev.tsStart||ev.ts);
+      if(ev.type==='START'||ev.type==='RESUME') ss=new Date(ev.tsStart||ev.ts);
       else if((ev.type==='STOP'||ev.type==='PAUSE'||ev.type==='DONE')&&ss){row.segments.push({s:ss,e:new Date(ev.ts),cat:t.cat});ss=null;}
     });
-    if(ss&&activeId===tid)row.segments.push({s:ss,e:new Date(),cat:t.cat});
+    if(ss&&activeId===tid) row.segments.push({s:ss,e:new Date(),cat:t.cat});
   });
   evInWin.filter(e=>e.type==='INT'||e.type==='BREAK'||e.type==='EOD').forEach(ev=>{
     const key=ev.type==='INT'?'int-'+(ev.intType||'x'):ev.type;
@@ -1730,26 +1886,48 @@ function renderGantt(){
     const s=new Date(ev.tsStart||ev.ts),e=ev.tsEnd?new Date(ev.tsEnd):new Date(s.getTime()+5*60000);
     row.segments.push({s,e,type:ev.type==='INT'?'int':ev.type.toLowerCase()});
   });
+
   const now=new Date();
   if(!rowMap.size){wrap.innerHTML='<div class="gantt-empty">Tidak ada aktivitas di periode ini.</div>';return;}
   const rows=[...rowMap.values()];
-  wrap.innerHTML=`<div class="gantt-canvas">
-    <div class="gantt-header-row">
-      <div class="gantt-label-col">Aktivitas</div>
-      <div class="gantt-timeline-hdr">${ticks.map(tk=>`<span class="gantt-tick-lbl" style="left:${pct(tk.ts)}%">${tk.label}</span>`).join('')}</div>
+
+  wrap.innerHTML=`
+  <div id="ganttInner" style="display:flex;flex-direction:column;min-height:100%">
+    <div class="gantt-header-row" style="position:sticky;top:0;z-index:10">
+      <div class="gantt-label-col" style="width:${LABEL_W}px;flex-shrink:0">Aktivitas</div>
+      <div style="flex:1;overflow:hidden">
+        <div class="gantt-timeline-hdr" style="width:${trackW}px;position:relative;height:28px">
+          ${ticks.map(tk=>`<span class="gantt-tick-lbl" style="left:${pct(tk.ts)}%">${tk.label}</span>`).join('')}
+        </div>
+      </div>
     </div>
-    ${rows.map(row=>`<div class="gantt-row">
-      <div class="gantt-row-label">
+    ${rows.map(row=>`
+    <div class="gantt-row">
+      <div class="gantt-row-label" style="width:${LABEL_W}px;flex-shrink:0">
         ${row.icon?`<span class="gantt-row-icon">${row.icon}</span>`:''}
         <div style="min-width:0"><div class="gantt-row-name">${esc(row.name)}</div>${row.sub?`<div class="gantt-row-sub">${esc(row.sub)}</div>`:''}</div>
       </div>
-      <div class="gantt-bars">
+      <div class="gantt-bars" style="width:${trackW}px;flex-shrink:0;position:relative;min-height:40px">
         ${ticks.map(tk=>`<div class="gantt-vline" style="left:${pct(tk.ts)}%"></div>`).join('')}
         ${now>=vs&&now<=ve?`<div class="gantt-vline now-line" style="left:${pct(now)}%"></div>`:''}
-        ${row.segments.map(seg=>{const l=pct(seg.s),w=Math.max(pct(seg.e)-l,.5);const cls=seg.type?'gb-'+seg.type:'gb-'+(seg.cat||'ops');return`<div class="gantt-bar ${cls}" style="left:${l}%;width:${w}%" title="${new Date(seg.s).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} – ${new Date(seg.e).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}"></div>`;}).join('')}
+        ${row.segments.map(seg=>{
+          const l=pct(seg.s), w=Math.max(pct(seg.e)-l, .3);
+          const cls=seg.type?'gb-'+seg.type:'gb-'+(seg.cat||'ops');
+          return`<div class="gantt-bar ${cls}" style="left:${l}%;width:${w}%" title="${new Date(seg.s).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} – ${new Date(seg.e).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}"></div>`;
+        }).join('')}
       </div>
     </div>`).join('')}
   </div>`;
+
+  // Scroll to current time on day view
+  if(ganttZoom==='day'&&ganttOffset===0){
+    const pctNow=Math.max(0,Math.min(1,(now-vs)/viewMs));
+    const ganttWrap=document.getElementById('ganttWrap');
+    setTimeout(()=>{ ganttWrap.scrollLeft = pctNow*trackW - ganttWrap.offsetWidth/2; },50);
+  }
+
+  // Init pinch zoom
+  initGanttPinch();
 }
 
 // ══════════════════════════════════════════════
