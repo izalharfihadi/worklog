@@ -49,7 +49,7 @@
 
   /* ── Dimensions — iPhone SE 2020 ── */
   --w: 375px;
-  --tab-h: 56px;       /* bottom tab bar */
+  --tab-h: 64px;       /* bottom tab bar */
   --sb-h: 52px;        /* status bar */
   --header-h: 50px;
 
@@ -188,21 +188,31 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   position: relative; z-index: 20;
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* sync indicator */
+.sync-icon {
+  font-size: 14px; line-height: 1; opacity: 0;
+  transition: opacity 300ms; display: inline-block;
+  margin-left: 6px; vertical-align: middle;
+}
+.sync-icon.syncing { opacity: 1; animation: spin 1s linear infinite; }
+.sync-icon.visible { opacity: 1; animation: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .tab-btn {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 3px;
+  align-items: center; justify-content: center; gap: 4px;
   border: none; background: none; cursor: pointer;
   color: var(--muted); transition: all var(--t);
-  position: relative; padding: 0;
+  position: relative; padding: 6px 0;
 }
 .tab-btn.active { color: var(--cyan); }
-.tab-icon { font-size: 18px; line-height: 1; }
+.tab-icon { font-size: 24px; line-height: 1; }
 .tab-label {
   font-family: var(--font); font-size: 9px; font-weight: 600;
   letter-spacing: 1px; text-transform: uppercase;
 }
 .tab-btn.active .tab-icon {
-  filter: drop-shadow(0 0 6px var(--cyan));
+  filter: drop-shadow(0 0 8px var(--cyan));
 }
 .tab-badge {
   position: absolute; top: 5px; right: calc(50% - 18px);
@@ -230,7 +240,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 
 /* ══ INTERRUPT ROW ══ */
 .int-row {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 8px;
   padding: 10px 14px; flex-shrink: 0;
   background: var(--bg-mid); border-bottom: 1px solid var(--border);
 }
@@ -239,23 +249,26 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   text-transform: uppercase; color: var(--muted); margin-right: 2px; flex-shrink: 0;
 }
 .int-btn {
-  width: 36px; height: 36px; border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg-card); cursor: pointer;
-  font-size: 18px; display: flex; align-items: center; justify-content: center;
-  transition: all var(--t); flex-shrink: 0;
+  width: 40px; height: 40px;
+  border: none; background: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: transform var(--t); flex-shrink: 0; padding: 0;
 }
-.int-btn:active { transform: scale(.88); background: var(--purple-dim); border-color: var(--border-bright); }
+.int-btn img { width: 32px; height: auto; opacity: .8; transition: opacity var(--t), transform var(--t); }
+.int-btn:active img { opacity: 1; transform: scale(.85); }
+.int-btn.state-incomplete { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 8px; }
+.int-btn.state-incomplete img { opacity: 1; }
+.int-btn.state-complete  { outline: 2px solid var(--green);  outline-offset: 2px; border-radius: 8px; }
+.int-btn.state-complete  img { opacity: 1; }
 .int-div { width: 1px; height: 20px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
 .btn-pulang {
-  display: flex; align-items: center; gap: 4px;
-  padding: 6px 12px; border: 1px solid rgba(255,45,120,.4);
-  border-radius: 20px; background: var(--magenta-dim);
-  cursor: pointer; font-family: var(--font); font-size: 11px;
-  font-weight: 700; color: var(--magenta); letter-spacing: .5px;
-  transition: all var(--t); white-space: nowrap; flex-shrink: 0;
+  width: 40px; height: 40px;
+  border: none; background: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; padding: 0; transition: transform var(--t);
 }
-.btn-pulang:active { transform: scale(.95); background: rgba(255,45,120,.25); }
+.btn-pulang img { width: 32px; height: auto; opacity: .8; transition: opacity var(--t), transform var(--t); }
+.btn-pulang:active img { opacity: 1; transform: scale(.85); }
 
 /* ══ TASK CARDS ══ */
 .task-stack { display: flex; flex-direction: column; gap: 8px; }
@@ -291,7 +304,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   border-radius: var(--r);
   background: var(--bg-card);
   display: flex; align-items: stretch; overflow: hidden;
-  transition: border-color var(--t), box-shadow var(--t);
+  transition: border-color var(--t), box-shadow var(--t), transform var(--t), opacity var(--t);
+  cursor: default;
 }
 .tc.is-active {
   border-color: var(--cyan);
@@ -299,9 +313,36 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 }
 .tc.is-done { opacity: .4; }
 .tc.is-done .tc-title { text-decoration: line-through; }
+.tc.dragging {
+  opacity: .25;
+  transform: scale(.97);
+  border-color: var(--cyan);
+}
+.tc.drag-over {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px var(--cyan-dim), 0 8px 24px rgba(0,229,255,.15);
+  transform: scale(1.01);
+}
+/* drag handle strip */
+.tc-drag {
+  width: 18px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab; background: transparent;
+  border-right: 1px solid var(--border);
+  opacity: .3; transition: opacity var(--t);
+}
+.tc-drag:active { cursor: grabbing; }
+.tc:hover .tc-drag { opacity: .7; }
+.tc-drag-dots {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.tc-drag-dots span {
+  display: block; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--text2);
+}
 
 .tc-start {
-  width: 48px; flex-shrink: 0;
+  width: 44px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   border-right: 1px solid var(--border); cursor: pointer;
   background: var(--bg-card2); font-size: 16px;
@@ -675,6 +716,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
     <div class="brand">
       <div class="brand-orb"></div>
       WorkLog
+      <span class="sync-icon" id="syncIcon">🔄</span>
     </div>
     <div style="text-align:right">
       <div class="header-clock" id="clockBar">--:--:--</div>
@@ -751,13 +793,13 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
       <!-- interrupt row -->
       <div class="int-row">
         <span class="int-row-lbl">Int.</span>
-        <button class="int-btn" onclick="triggerInt('teams','MS Teams')"><img src="int-teams.png" width="24" height="16"/></button>
-        <button class="int-btn" onclick="triggerInt('whatsapp','WhatsApp')"><img src="int-whatsapp.png" width="24" height="16"/></button>
-        <button class="int-btn" onclick="triggerInt('tamu','Tamu')"><img src="int-tamu.png" width="24" height="16"/></button>
-        <button class="int-btn" onclick="triggerInt('toilet','Toilet')"><img src="int-toilet.png" width="24" height="16"/></button>
-        <button class="int-btn" onclick="triggerInt('rokok','Rokok')"><img src="int-rokok.png" width="24" height="16"/></button>
+        <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams','MS Teams')"><img src="int-teams.png"/></button>
+        <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp','WhatsApp')"><img src="int-whatsapp.png"/></button>
+        <button class="int-btn" data-itype="tamu"     onclick="triggerInt('tamu','Orang')"><img src="int-tamu.png"/></button>
+        <button class="int-btn" data-itype="toilet"   onclick="triggerInt('toilet','Toilet')"><img src="int-toilet.png"/></button>
+        <button class="int-btn" data-itype="rokok"    onclick="triggerInt('rokok','Rokok')"><img src="int-rokok.png"/></button>
         <div class="int-div"></div>
-        <button class="btn-pulang" onclick="openPulang()"><img src="int-pulang.png" width="20" height="13"/> Pulang</button>
+        <button class="btn-pulang" onclick="openPulang()"><img src="int-pulang.png" width="32" height="auto"/></button>
       </div>
       <div class="panel-inner">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -811,8 +853,22 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
           <button class="btn-ghost" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:5px 12px;color:var(--green)" onclick="pushToSheets()">↑ Kirim ke Sheets</button>
         </div>
         <div class="emp-add-row">
-          <input type="text" id="emp-name" placeholder="Nama..." onkeydown="if(event.key==='Enter')document.getElementById('emp-dept').focus()"/>
-          <input type="text" id="emp-dept" placeholder="Dept..." onkeydown="if(event.key==='Enter')addEmployee()" style="max-width:110px"/>
+          <div style="flex:1;position:relative">
+            <input type="text" id="emp-name" placeholder="Nama..." autocomplete="off"
+              oninput="onEmpNameInput()" onkeydown="onEmpNameKeydown(event)"
+              onblur="setTimeout(closeEmpNameAc,200)"
+              onkeypress="if(event.key==='Enter')document.getElementById('emp-dept').focus()"
+              style="width:100%"/>
+            <div class="ac-dropdown" id="empNameDropdown"></div>
+          </div>
+          <div style="max-width:120px;position:relative">
+            <input type="text" id="emp-dept" placeholder="Dept..." autocomplete="off"
+              oninput="onEmpDeptInput()" onkeydown="onEmpDeptKeydown(event)"
+              onblur="setTimeout(closeEmpDeptAc,200)"
+              onkeypress="if(event.key==='Enter')addEmployee()"
+              style="width:100%"/>
+            <div class="ac-dropdown" id="empDeptDropdown"></div>
+          </div>
           <button class="btn-add-emp" onclick="addEmployee()">+</button>
         </div>
         <div id="empTableWrap">
@@ -968,13 +1024,26 @@ function tickTimer() {
 
 // Indikator sync di header
 function setSyncStatus(state) {
-  // state: 'syncing' | 'ok' | 'error' | 'idle'
   const orb = document.querySelector('.brand-orb');
-  if (!orb) return;
-  if (state === 'syncing') { orb.style.background = 'var(--amber)'; orb.style.boxShadow = '0 0 8px var(--amber)'; }
-  else if (state === 'ok') { orb.style.background = 'var(--green)'; orb.style.boxShadow = '0 0 8px var(--green)'; setTimeout(()=>setSyncStatus('idle'), 2000); }
-  else if (state === 'error') { orb.style.background = 'var(--magenta)'; orb.style.boxShadow = '0 0 8px var(--magenta)'; }
-  else { orb.style.background = 'var(--cyan)'; orb.style.boxShadow = '0 0 8px var(--cyan), 0 0 16px var(--cyan-glow)'; }
+  const ico = document.getElementById('syncIcon');
+  if (state === 'syncing') {
+    if (orb) { orb.style.background='var(--amber)'; orb.style.boxShadow='0 0 8px var(--amber)'; }
+    if (ico) { ico.classList.add('syncing'); ico.classList.remove('visible'); }
+  } else if (state === 'ok') {
+    if (orb) { orb.style.background='var(--green)'; orb.style.boxShadow='0 0 8px var(--green)'; }
+    if (ico) { ico.classList.remove('syncing'); ico.classList.add('visible'); }
+    setTimeout(() => {
+      setSyncStatus('idle');
+      if (ico) { ico.classList.remove('visible'); }
+    }, 2000);
+  } else if (state === 'error') {
+    if (orb) { orb.style.background='var(--magenta)'; orb.style.boxShadow='0 0 8px var(--magenta)'; }
+    if (ico) { ico.classList.remove('syncing'); ico.classList.remove('visible'); }
+    toast('⚠ Gagal sync ke Sheets');
+  } else {
+    if (orb) { orb.style.background='var(--cyan)'; orb.style.boxShadow='0 0 8px var(--cyan), 0 0 16px var(--cyan-glow)'; }
+    if (ico) { ico.classList.remove('syncing'); ico.classList.remove('visible'); }
+  }
 }
 
 // POST ke Apps Script
@@ -1039,10 +1108,9 @@ async function loadFromSheets() {
     }
     renderAll();
     setSyncStatus('ok');
-    toast('☁ Data dimuat dari Sheets');
+    // silent — indikator orb sudah cukup
   } catch(err) {
     setSyncStatus('error');
-    toast('⚠ Gagal konek ke Sheets');
     console.error('loadFromSheets:', err);
   }
 }
@@ -1063,7 +1131,7 @@ async function pushToSheets() {
       rows: employees
     });
     setSyncStatus('ok');
-    toast('☁ Tersimpan ke Sheets');
+    // silent
   } catch(err) {
     setSyncStatus('error');
     toast('⚠ Gagal sync ke Sheets');
@@ -1271,6 +1339,73 @@ function highlightAc(items,idx){items.forEach((el,i)=>el.classList.toggle('focus
 function showDept(dId,nId,dept){const d=document.getElementById(dId),n=document.getElementById(nId);if(dept){d.classList.add('visible');n.textContent=dept;}else{d.classList.remove('visible');}}
 
 // ══════════════════════════════════════════════
+//  AUTOCOMPLETE — SETTINGS (nama & dept)
+// ══════════════════════════════════════════════
+let empNameFocusIdx = -1, empDeptFocusIdx = -1;
+
+function onEmpNameInput() {
+  const q = (document.getElementById('emp-name').value||'').trim().toLowerCase();
+  if (!q) { closeEmpNameAc(); return; }
+  const matches = employees
+    .filter(e => e.name.toLowerCase().includes(q))
+    .slice(0, 6);
+  if (!matches.length) { closeEmpNameAc(); return; }
+  const dd = document.getElementById('empNameDropdown');
+  dd.innerHTML = matches.map((e,i) => `
+    <div class="ac-item" data-idx="${i}">
+      <span class="ac-name">${esc(e.name)}</span>
+      <span class="ac-dept" style="color:var(--amber);font-size:9px">⚠ sudah ada</span>
+    </div>`).join('');
+  dd.querySelectorAll('.ac-item').forEach((el,i) =>
+    el.addEventListener('mousedown', ev => { ev.preventDefault(); document.getElementById('emp-name').value = matches[i].name; closeEmpNameAc(); toast('⚠ '+matches[i].name+' sudah ada di master'); })
+  );
+  dd.classList.add('open');
+  empNameFocusIdx = -1;
+}
+function onEmpNameKeydown(e) {
+  const dd = document.getElementById('empNameDropdown');
+  if (!dd.classList.contains('open')) return;
+  const items = dd.querySelectorAll('.ac-item');
+  if (e.key==='ArrowDown')  { e.preventDefault(); empNameFocusIdx=Math.min(empNameFocusIdx+1,items.length-1); highlightAc(items,empNameFocusIdx); }
+  else if (e.key==='ArrowUp')   { e.preventDefault(); empNameFocusIdx=Math.max(empNameFocusIdx-1,0); highlightAc(items,empNameFocusIdx); }
+  else if (e.key==='Escape') closeEmpNameAc();
+}
+function closeEmpNameAc() {
+  const dd = document.getElementById('empNameDropdown');
+  dd.classList.remove('open'); dd.innerHTML='';
+}
+
+function onEmpDeptInput() {
+  const q = (document.getElementById('emp-dept').value||'').trim().toLowerCase();
+  if (!q) { closeEmpDeptAc(); return; }
+  // Kumpulkan dept unik dari master
+  const depts = [...new Set(employees.map(e=>e.dept))].filter(d=>d.toLowerCase().includes(q)).slice(0,6);
+  if (!depts.length) { closeEmpDeptAc(); return; }
+  const dd = document.getElementById('empDeptDropdown');
+  dd.innerHTML = depts.map((d,i) => `
+    <div class="ac-item" data-idx="${i}">
+      <span class="ac-name">${esc(d)}</span>
+    </div>`).join('');
+  dd.querySelectorAll('.ac-item').forEach((el,i) =>
+    el.addEventListener('mousedown', ev => { ev.preventDefault(); document.getElementById('emp-dept').value = depts[i]; closeEmpDeptAc(); })
+  );
+  dd.classList.add('open');
+  empDeptFocusIdx = -1;
+}
+function onEmpDeptKeydown(e) {
+  const dd = document.getElementById('empDeptDropdown');
+  if (!dd.classList.contains('open')) return;
+  const items = dd.querySelectorAll('.ac-item');
+  if (e.key==='ArrowDown')  { e.preventDefault(); empDeptFocusIdx=Math.min(empDeptFocusIdx+1,items.length-1); highlightAc(items,empDeptFocusIdx); }
+  else if (e.key==='ArrowUp')   { e.preventDefault(); empDeptFocusIdx=Math.max(empDeptFocusIdx-1,0); highlightAc(items,empDeptFocusIdx); }
+  else if (e.key==='Escape') closeEmpDeptAc();
+}
+function closeEmpDeptAc() {
+  const dd = document.getElementById('empDeptDropdown');
+  dd.classList.remove('open'); dd.innerHTML='';
+}
+
+// ══════════════════════════════════════════════
 //  SUBMIT
 // ══════════════════════════════════════════════
 function submitTask() {
@@ -1387,12 +1522,32 @@ function saveEdit(){
 // ══════════════════════════════════════════════
 //  RENDER
 // ══════════════════════════════════════════════
-function renderAll(){renderStatusBar();renderTasks();updateBadge();}
+function renderAll(){renderStatusBar();renderTasks();updateBadge();renderIntState();}
 
 function renderStatusBar(){
   const idle=document.getElementById('sbIdle'),act=document.getElementById('sbActive');
   if(activeId){const t=tasks.find(x=>x.id===activeId);idle.style.display='none';act.classList.add('on');document.getElementById('sbName').textContent=t?t.title:'—';document.getElementById('sbTimer').textContent=fmtMs(activeStart?Date.now()-activeStart.getTime():0);}
   else{idle.style.display='';act.classList.remove('on');}
+}
+
+function renderIntState(){
+  // Hanya aktif saat ada task yang sedang running
+  const btns = document.querySelectorAll('.int-btn[data-itype]');
+  btns.forEach(btn => {
+    const itype = btn.dataset.itype;
+    btn.classList.remove('state-incomplete','state-complete');
+    if (!activeId) return;
+    // Cari event INT tipe ini yang terjadi setelah task aktif mulai
+    const taskStart = events.filter(e=>e.taskId===activeId&&e.type==='START').slice(-1)[0];
+    if (!taskStart) return;
+    const intEvs = events.filter(e=>
+      e.type==='INT' && e.intType===itype &&
+      new Date(e.ts) >= new Date(taskStart.ts)
+    );
+    if (!intEvs.length) return;
+    const lastInt = intEvs[intEvs.length-1];
+    btn.classList.add(lastInt.incomplete ? 'state-incomplete' : 'state-complete');
+  });
 }
 
 // ══════════════════════════════════════════════
@@ -1468,6 +1623,7 @@ function renderTasks(){
   else {
     try { ae.remove(); } catch(e) {}
     ac.innerHTML = active.map(t => { const isAct = activeId === t.id; return `<div class="tc${isAct?' is-active':''}" draggable="true" data-id="${t.id}">
+      <div class="tc-drag"><div class="tc-drag-dots"><span></span><span></span><span></span><span></span></div></div>
       <div class="tc-start" onclick="startTask('${t.id}')">${isAct?'⏸':'▶'}</div>
       <div class="tc-body">
         <div class="tc-title">${esc(t.title)}</div>
