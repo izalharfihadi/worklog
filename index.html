@@ -261,8 +261,18 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 }
 .int-btn svg { width: 26px; height: 26px; stroke: currentColor; transition: all var(--t); }
 .int-btn:active { color: var(--cyan); transform: scale(.88); }
-.int-btn.state-incomplete { outline: 2px solid var(--amber); outline-offset: 2px; color: var(--amber); }
-.int-btn.state-complete   { outline: 2px solid var(--green);  outline-offset: 2px; color: var(--green); }
+.int-btn.state-incomplete {
+  outline: 2px solid var(--amber); outline-offset: 2px;
+  color: var(--amber);
+  animation: int-pulse 1.8s ease-in-out infinite;
+}
+.int-btn.state-complete {
+  outline: 2px solid var(--green); outline-offset: 2px; color: var(--green);
+}
+@keyframes int-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,183,0,0); }
+  50%      { box-shadow: 0 0 0 4px rgba(255,183,0,.25); }
+}
 .int-div { width: 1px; height: 20px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
 .btn-pulang {
   width: 40px; height: 40px;
@@ -310,6 +320,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   display: flex; align-items: stretch; overflow: hidden;
   transition: border-color var(--t), box-shadow var(--t), transform var(--t), opacity var(--t);
   cursor: default;
+  user-select: none; -webkit-user-select: none;
 }
 .tc.is-active {
   border-color: var(--cyan);
@@ -318,16 +329,13 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 .tc.is-done { opacity: .4; }
 .tc.is-done .tc-title { text-decoration: line-through; }
 .tc.dragging {
-  opacity: .25;
-  transform: scale(.97);
-  border-color: var(--cyan);
+  opacity: .25; transform: scale(.97); border-color: var(--cyan);
 }
 .tc.drag-over {
   border-color: var(--cyan);
   box-shadow: 0 0 0 2px var(--cyan-dim), 0 8px 24px rgba(0,229,255,.15);
   transform: scale(1.01);
 }
-/* drag handle strip */
 .tc-drag {
   width: 18px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -337,22 +345,18 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 }
 .tc-drag:active { cursor: grabbing; }
 .tc:hover .tc-drag { opacity: .7; }
-.tc-drag-dots {
-  display: flex; flex-direction: column; gap: 3px;
-}
-.tc-drag-dots span {
-  display: block; width: 3px; height: 3px; border-radius: 50%;
-  background: var(--text2);
-}
+.tc-drag-dots { display: flex; flex-direction: column; gap: 3px; }
+.tc-drag-dots span { display: block; width: 3px; height: 3px; border-radius: 50%; background: var(--text2); }
 
 .tc-start {
   width: 44px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   border-right: 1px solid var(--border); cursor: pointer;
-  background: var(--bg-card2); font-size: 16px;
+  background: var(--bg-card2); color: var(--muted);
   transition: all var(--t);
 }
-.tc-start:active { background: var(--cyan-dim); }
+.tc-start svg { width: 18px; height: 18px; stroke: currentColor; }
+.tc-start:active { background: var(--cyan-dim); color: var(--cyan); }
 .tc.is-active .tc-start { background: var(--cyan-dim); color: var(--cyan); }
 
 .tc-body { flex: 1; padding: 10px 12px; min-width: 0; }
@@ -744,8 +748,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 
     <!-- DASHBOARD -->
     <div class="panel" id="panel-dashboard">
-      <div style="display:flex;flex-direction:column;height:100%;">
-        <div class="gantt-controls">
+      <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+        <div class="gantt-controls" style="flex-shrink:0">
           <button class="gantt-zoom-btn active" id="zoom-day"   onclick="setZoom('day')">Hari</button>
           <button class="gantt-zoom-btn"        id="zoom-week"  onclick="setZoom('week')">Minggu</button>
           <button class="gantt-zoom-btn"        id="zoom-month" onclick="setZoom('month')">Bulan</button>
@@ -756,7 +760,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <button class="gantt-nav-btn" onclick="ganttNav(1)">›</button>
           </div>
         </div>
-        <div class="gantt-wrap" id="ganttWrap">
+        <div class="gantt-wrap" id="ganttWrap" style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;">
           <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
         </div>
       </div>
@@ -1556,22 +1560,43 @@ function renderStatusBar(){
 }
 
 function renderIntState(){
-  // Hanya aktif saat ada task yang sedang running
   const btns = document.querySelectorAll('.int-btn[data-itype]');
   btns.forEach(btn => {
     const itype = btn.dataset.itype;
     btn.classList.remove('state-incomplete','state-complete');
-    if (!activeId) return;
-    // Cari event INT tipe ini yang terjadi setelah task aktif mulai
-    const taskStart = events.filter(e=>e.taskId===activeId&&e.type==='START').slice(-1)[0];
-    if (!taskStart) return;
-    const intEvs = events.filter(e=>
-      e.type==='INT' && e.intType===itype &&
-      new Date(e.ts) >= new Date(taskStart.ts)
-    );
-    if (!intEvs.length) return;
-    const lastInt = intEvs[intEvs.length-1];
-    btn.classList.add(lastInt.incomplete ? 'state-incomplete' : 'state-complete');
+
+    if (!activeId) {
+      // Tidak ada task aktif — cek apakah ada INT incomplete hari ini
+      const todayInt = events.filter(e =>
+        e.type==='INT' && e.intType===itype && e.incomplete
+      );
+      if (todayInt.length) btn.classList.add('state-incomplete');
+      return;
+    }
+
+    // Ada task aktif — cek apakah INT ini sedang berlangsung
+    // "sedang berlangsung" = ada INT event setelah STOP/PAUSE terakhir task ini
+    // dan belum ada START/RESUME setelah INT tersebut
+    const taskEvs = events
+      .filter(e => e.taskId === activeId || (e.type==='INT' && e.intType===itype))
+      .sort((a,b) => new Date(a.ts) - new Date(b.ts));
+
+    // Ambil event terakhir yang relevan
+    const lastRelevant = [...events]
+      .filter(e =>
+        (e.taskId===activeId && ['START','RESUME','STOP','PAUSE'].includes(e.type)) ||
+        (e.type==='INT' && e.intType===itype)
+      )
+      .sort((a,b) => new Date(a.ts) - new Date(b.ts))
+      .slice(-1)[0];
+
+    if (!lastRelevant) return;
+
+    if (lastRelevant.type === 'INT') {
+      // INT adalah event terakhir — interrupt sedang berlangsung
+      btn.classList.add(lastRelevant.incomplete ? 'state-incomplete' : 'state-complete');
+    }
+    // Jika event terakhir adalah START/RESUME — sudah kembali kerja, tidak ada outline
   });
 }
 
@@ -1681,39 +1706,38 @@ function renderTasks(){
     try { ae.remove(); } catch(e) {}
     ac.innerHTML = active.map(t => { const isAct = activeId === t.id; return `<div class="tc${isAct?' is-active':''}" draggable="true" data-id="${t.id}">
       <div class="tc-drag"><div class="tc-drag-dots"><span></span><span></span><span></span><span></span></div></div>
-      <div class="tc-start" onclick="startTask('${t.id}')">${isAct?'⏸':'▶'}</div>
+      <div class="tc-start" onclick="startTask('${t.id}')"><i data-lucide="${isAct?'circle-pause':'play'}"></i></div>
       <div class="tc-body">
         <div class="tc-title">${esc(t.title)}</div>
         <div class="tc-meta">
           ${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}
           ${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}
           <span class="tc-elapsed" id="el-${t.id}">${calcElapsed(t.id)}</span>
-          ${t.unplanned?'<span class="tc-unplanned">mendadak</span>':''}
           <span class="tc-date">${fmtDateShort(t.createdAt)}</span>
         </div>
       </div>
       <div class="tc-actions">
-        <button class="btn-tc done" onclick="markDone('${t.id}')">✓</button>
-        <button class="btn-tc del"  onclick="deleteTask('${t.id}')">✕</button>
+        <button class="btn-tc done" onclick="markDone('${t.id}')"><i data-lucide="check"></i></button>
       </div>
     </div>`; }).join('');
     initDragDrop();
+    lucide.createIcons();
   }
 
   const cs = document.getElementById('completedSection'), dc = document.getElementById('doneTasks');
   if (!done.length) { cs.style.display='none'; return; }
   cs.style.display = '';
   dc.innerHTML = done.map(t => `<div class="tc is-done">
-    <div class="tc-start" style="cursor:default">✓</div>
+    <div class="tc-start" style="cursor:default"><i data-lucide="check-circle"></i></div>
     <div class="tc-body">
       <div class="tc-title">${esc(t.title)}</div>
       <div class="tc-meta">${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}<span class="tc-elapsed">${calcElapsed(t.id)}</span><span class="tc-date">${fmtDateShort(t.createdAt)}</span></div>
     </div>
     <div class="tc-actions">
-      <button class="btn-tc resub" onclick="resubmitTask('${t.id}')">↑</button>
-      <button class="btn-tc del"   onclick="deleteTask('${t.id}')">✕</button>
+      <button class="btn-tc resub" onclick="resubmitTask('${t.id}')"><i data-lucide="rotate-ccw"></i></button>
     </div>
   </div>`).join('');
+  lucide.createIcons();
 }
 
 function renderEvents(){
