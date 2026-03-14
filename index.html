@@ -564,6 +564,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 8px;
   background: var(--cyan-dim); color: var(--cyan);
   border: 1px solid rgba(0,229,255,.25); font-family: var(--mono);
+  display: inline-block; white-space: nowrap; max-width: 120px;
+  overflow: hidden; text-overflow: ellipsis;
 }
 .emp-edit-input {
   width: 100%; font-family: var(--font); font-size: 13px; font-weight: 500;
@@ -660,7 +662,50 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 }
 .btn-reset-exec:active { opacity: .7; }
 
-/* ══ PRODUCT TOUR ══ */
+/* ══ CUSTOM CONFIRM MODAL ══ */
+.confirm-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 300; opacity: 0; pointer-events: none;
+  transition: opacity 180ms ease;
+}
+.confirm-overlay.open { opacity: 1; pointer-events: all; }
+.confirm-box {
+  background: var(--bg-card2); border: 1px solid var(--border-md);
+  border-radius: 14px; width: 300px; max-width: 90vw;
+  box-shadow: 0 16px 48px rgba(0,0,0,.5);
+  transform: scale(.94); transition: transform 200ms cubic-bezier(.33,1,.68,1);
+  overflow: hidden;
+}
+.confirm-overlay.open .confirm-box { transform: scale(1); }
+.confirm-box-icon {
+  font-size: 32px; text-align: center; padding: 22px 18px 8px;
+}
+.confirm-box-title {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  text-align: center; padding: 0 18px 6px;
+}
+.confirm-box-body {
+  font-size: 11px; color: var(--text2); font-family: var(--mono);
+  text-align: center; padding: 0 18px 20px; line-height: 1.6;
+}
+.confirm-box-actions {
+  display: flex; border-top: 1px solid var(--border);
+}
+.btn-confirm-cancel {
+  flex: 1; padding: 14px; border: none; background: none;
+  font-family: var(--font); font-size: 14px; font-weight: 500;
+  color: var(--muted); cursor: pointer; border-right: 1px solid var(--border);
+  transition: background var(--t);
+}
+.btn-confirm-cancel:active { background: var(--bg-card); }
+.btn-confirm-ok {
+  flex: 1; padding: 14px; border: none; background: none;
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  color: var(--magenta); cursor: pointer;
+  transition: background var(--t);
+}
+.btn-confirm-ok:active { background: var(--magenta-dim); }
 .tour-overlay {
   position: fixed; inset: 0; z-index: 500;
   pointer-events: none;
@@ -885,8 +930,16 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <button class="gantt-nav-btn" onclick="ganttNav(1)">›</button>
           </div>
         </div>
-        <div class="gantt-wrap" id="ganttWrap" style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;">
-          <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
+        <div style="flex:1;display:flex;overflow:hidden;position:relative">
+          <!-- Fixed label column -->
+          <div id="ganttLabels" style="width:120px;flex-shrink:0;overflow:hidden;border-right:1px solid var(--border);background:var(--bg-deep);z-index:5;display:flex;flex-direction:column">
+            <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
+            <div id="ganttLabelRows" style="overflow:hidden;flex:1"></div>
+          </div>
+          <!-- Scrollable timeline -->
+          <div id="ganttWrap" style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;" onscroll="syncGanttScroll(this)">
+            <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1097,6 +1150,19 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 
 </div><!-- /shell -->
 
+<!-- ══ CUSTOM CONFIRM ══ -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-box-icon" id="confirmIcon">⚠️</div>
+    <div class="confirm-box-title" id="confirmTitle">Konfirmasi</div>
+    <div class="confirm-box-body" id="confirmBody">Apakah kamu yakin?</div>
+    <div class="confirm-box-actions">
+      <button class="btn-confirm-cancel" id="confirmCancel" onclick="resolveConfirm(false)">Batal</button>
+      <button class="btn-confirm-ok" id="confirmOk" onclick="resolveConfirm(true)">Hapus</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ PRODUCT TOUR ══ -->
 <div class="tour-overlay" id="tourOverlay">
   <div class="tour-backdrop"></div>
@@ -1106,7 +1172,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
     <div class="tour-title" id="tourTitle">Selamat datang di WorkLog</div>
     <div class="tour-body" id="tourBody">Pencatat waktu kerjamu yang tidak pernah berhenti. Setiap detik aktivitasmu terekam — tidak ada celah.</div>
     <div class="tour-footer">
-      <button class="btn-tour-next" id="tourNextBtn" onclick="tourNext()">Mulai →</button>
+      <button class="btn-tour-next" id="tourNextBtn" onclick="tourNext(event)">Mulai →</button>
     </div>
   </div>
 </div>
@@ -1849,31 +1915,22 @@ function renderStatusBar(){
 }
 
 function renderIntState(){
-  // Clear all states first
-  document.querySelectorAll('.int-btn[data-itype]').forEach(btn => {
-    btn.classList.remove('state-incomplete','state-complete','state-active');
-  });
-  document.querySelectorAll('.btn-pulang[data-itype]').forEach(btn => {
-    btn.classList.remove('state-active');
-  });
+  // Clear all states
+  document.querySelectorAll('.int-btn[data-itype]').forEach(btn =>
+    btn.classList.remove('state-incomplete','state-complete','state-active'));
+  document.querySelectorAll('.btn-pulang[data-itype]').forEach(btn =>
+    btn.classList.remove('state-active'));
 
-  // Highlight currently active status
+  // Only highlight the CURRENTLY active status — one at a time
   if (currentStatus === 'home') {
-    const homeBtn = document.querySelector('.btn-pulang[data-itype="home"]');
-    if (homeBtn) homeBtn.classList.add('state-active');
+    const btn = document.querySelector('.btn-pulang[data-itype="home"]');
+    if (btn) btn.classList.add('state-active');
   } else if (currentStatus.startsWith('int-')) {
     const intType = currentStatus.replace('int-','');
     const btn = document.querySelector(`.int-btn[data-itype="${intType}"]`);
-    if (btn) btn.classList.add('state-incomplete');
+    if (btn) btn.classList.add('state-incomplete'); // amber pulse = currently in this interrupt
   }
-  // If currentStatus === 'task', task card itself is highlighted — no int-row highlight needed
-
-  // Also show yellow on any incomplete INT events that haven't been filled
-  events.filter(e=>e.type==='INT'&&e.incomplete).forEach(ev=>{
-    if (currentStatus === 'int-'+ev.intType) return; // already handled above
-    const btn = document.querySelector(`.int-btn[data-itype="${ev.intType}"]`);
-    if (btn && !btn.classList.contains('state-incomplete')) btn.classList.add('state-incomplete');
-  });
+  // currentStatus === 'task' → no icon highlight, task card handles its own highlight
 }
 
 // ══════════════════════════════════════════════
@@ -2041,7 +2098,37 @@ function renderEvents(){
     </div>`;}).join('');
 }
 
-function clearLog(){if(!confirm('Hapus semua event?'))return;events=[];save('wl6_events',events);updateBadge();renderEvents();}
+async function clearLog(){
+  const ok = await showConfirm({
+    icon:'🗑️', title:'Hapus Log?',
+    body:'Semua event hari ini akan dihapus dari PWA. Tidak dapat dibatalkan.',
+    okLabel:'Hapus', okColor:'var(--magenta)'
+  });
+  if(!ok) return;
+  events=[]; save('wl6_events',events); updateBadge(); renderEvents();
+}
+
+// ══════════════════════════════════════════════
+//  CUSTOM CONFIRM DIALOG
+// ══════════════════════════════════════════════
+let _confirmResolve = null;
+
+function showConfirm({icon='⚠️', title, body, okLabel='Hapus', okColor='var(--magenta)'}){
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    document.getElementById('confirmIcon').textContent = icon;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmBody').textContent = body;
+    document.getElementById('confirmOk').textContent = okLabel;
+    document.getElementById('confirmOk').style.color = okColor;
+    document.getElementById('confirmOverlay').classList.add('open');
+  });
+}
+
+function resolveConfirm(result){
+  document.getElementById('confirmOverlay').classList.remove('open');
+  if(_confirmResolve){ _confirmResolve(result); _confirmResolve=null; }
+}
 
 // ══════════════════════════════════════════════
 //  ADVANCED SETTINGS
@@ -2074,25 +2161,50 @@ async function execReset(type){
     if(val!=='RESET'){toast('⚠ Ketik RESET untuk konfirmasi');return;}
   }
 
+  // Custom confirm for done tasks
+  if(type==='done'){
+    const ok = await showConfirm({
+      icon:'🗑️',
+      title:'Hapus Done Tasks?',
+      body:'Semua task selesai akan dihapus dari PWA dan Sheets. Task aktif dan pending tetap.',
+      okLabel:'Hapus', okColor:'var(--magenta)'
+    });
+    if(!ok) return;
+  }
+
+  // Force-clear syncPending to avoid deadlock from previous reset
+  syncPending = false;
   setSyncStatus('syncing');
+
   try {
     if(type==='tasks'){
       tasks=[]; activeId=null; activeStart=null;
       localStorage.removeItem('wl6_activeStart'); save('wl6_active',null);
       save('wl6_tasks',[]);
-      if(currentStatus==='task'){currentStatus='home';homeStart=new Date();save('wl6_status','home');localStorage.setItem('wl6_homeStart',homeStart.toISOString());}
+      if(currentStatus==='task'){
+        currentStatus='home'; homeStart=new Date();
+        save('wl6_status','home');
+        localStorage.setItem('wl6_homeStart',homeStart.toISOString());
+      }
       await gasPost('syncTasks',{rows:[]});
       toast('✓ Semua task dihapus');
     }
     else if(type==='done'){
-      if(!confirm('Hapus semua done tasks?'))return;
       tasks=tasks.filter(t=>t.status!=='done');
       save('wl6_tasks',tasks);
-      await gasPost('syncTasks',{rows:tasks.map(t=>({...t,totalMin:Math.round((t.totalMs||0)/60000),unplanned:t.unplanned?'YES':'NO'}))});
+      // Sync remaining tasks (may be empty — that's fine)
+      const rows=tasks.map(t=>({...t,totalMin:Math.round((t.totalMs||0)/60000),unplanned:t.unplanned?'YES':'NO'}));
+      await gasPost('syncTasks',{rows});
       toast('✓ Done tasks dihapus');
     }
     else if(type==='all'){
-      // Nuclear — clear everything
+      const ok = await showConfirm({
+        icon:'💥',
+        title:'Factory Reset?',
+        body:'Seluruh data lokal dan Sheets akan dihapus permanen. App kembali seperti install baru.',
+        okLabel:'Reset Semua', okColor:'var(--magenta)'
+      });
+      if(!ok){ setSyncStatus('idle'); return; }
       const keys=['wl6_tasks','wl6_events','wl6_employees','wl6_active','wl6_status',
         'wl6_homeStart','wl6_activeStart','wl6_onboarded'];
       keys.forEach(k=>localStorage.removeItem(k));
@@ -2106,14 +2218,15 @@ async function execReset(type){
     setSyncStatus('ok');
     hideAdvanced();
     renderAll();
-    // Reset confirm rows
     ['tasks','all'].forEach(t=>{
       const el=document.getElementById('confirm-'+t);
-      if(el)el.classList.remove('visible');
+      if(el){ el.classList.remove('visible'); const inp=document.getElementById('input-'+t); if(inp)inp.value=''; }
     });
   } catch(err){
     setSyncStatus('error');
     console.error('execReset:',err);
+  } finally {
+    syncPending = false;
   }
 }
 
@@ -2184,7 +2297,8 @@ function renderTourStep(){
   }
 }
 
-function tourNext(){
+function tourNext(e){
+  if(e) e.stopPropagation();
   tourStep++;
   if(tourStep >= TOUR_STEPS.length){
     endTour(); return;
@@ -2193,8 +2307,11 @@ function tourNext(){
 }
 
 function endTour(){
-  document.getElementById('tourOverlay').classList.remove('active');
+  // Set flag FIRST before removing overlay — prevents click-through to home button
   localStorage.setItem('wl6_onboarded','1');
+  const overlay = document.getElementById('tourOverlay');
+  overlay.style.pointerEvents = 'none';
+  setTimeout(()=>{ overlay.classList.remove('active'); overlay.style.pointerEvents = ''; }, 50);
 }
 
 // ══════════════════════════════════════════════
@@ -2240,14 +2357,11 @@ function ganttPeriod(){
 
 // Dynamic tick interval based on zoom level and period
 function getTickInterval(viewMs, scale) {
-  const visibleMs = viewMs / scale;
-  const MIN_PX_BETWEEN_TICKS = 60; // minimum pixels between tick labels
-  const viewportW = document.getElementById('ganttWrap')?.offsetWidth || 300;
-  const trackW = (viewportW - 120) * scale;
+  const viewportW = document.getElementById('ganttWrap')?.offsetWidth || 255;
+  const trackW = viewportW * scale;
   const msPerPx = viewMs / trackW;
+  const MIN_PX_BETWEEN_TICKS = 55;
   const minTickMs = MIN_PX_BETWEEN_TICKS * msPerPx;
-
-  // Candidates in ms
   const candidates = [
     15*60000, 30*60000, 60*60000, 2*3600000, 3*3600000,
     6*3600000, 12*3600000, 24*3600000, 2*24*3600000, 7*24*3600000
@@ -2311,8 +2425,8 @@ function renderGantt(){
   // Full period — show entire day 00:00–24:00, week, or month
   const vs=new Date(start), ve=new Date(end);
   const viewMs=ve-vs;
-  const LABEL_W=120;
-  const baseW=(document.getElementById('ganttWrap')?.offsetWidth||375)-LABEL_W;
+  const LABEL_W=120; // kept for reference only — label column is now external
+  const baseW=document.getElementById('ganttWrap')?.offsetWidth||255;
   const trackW=Math.max(baseW, baseW*ganttScale);
 
   const pct=ts=>Math.max(0,Math.min(100,((new Date(ts)-vs)/viewMs)*100));
@@ -2379,29 +2493,18 @@ function renderGantt(){
 
   wrap.innerHTML=`
   <div id="ganttInner" style="position:relative">
-    <!-- Sticky header row -->
-    <div style="display:flex;position:sticky;top:0;z-index:20;background:var(--bg-mid);border-bottom:1px solid var(--border)">
-      <div style="width:${LABEL_W}px;flex-shrink:0;position:sticky;left:0;z-index:21;background:var(--bg-mid);border-right:1px solid var(--border);padding:6px 8px;font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px;display:flex;align-items:center">AKTIVITAS</div>
-      <div style="overflow:hidden;flex:1">
-        <div style="width:${trackW}px;position:relative;height:28px">
-          ${ticks.map(tk=>`<span class="gantt-tick-lbl" style="left:${pct(tk.ts)}%">${tk.label}</span>`).join('')}
-        </div>
+    <!-- Timeline header (scrolls horizontally with content) -->
+    <div style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border)">
+      <div style="width:${trackW}px;position:relative;height:28px;margin-left:0">
+        ${ticks.map(tk=>`<span class="gantt-tick-lbl" style="left:${pct(tk.ts)}%">${tk.label}</span>`).join('')}
       </div>
     </div>
-    <!-- Data rows -->
+    <!-- Data rows — timeline bars only, no labels -->
     ${rows.map((row,ri)=>{
       const key=[...rowMap.keys()][ri];
       const ev=rowEvMap.get(key);
-      const iconHtml=rowIconHtml(row,ev);
-      return`<div style="display:flex;border-bottom:1px solid var(--border);min-height:40px">
-        <div style="width:${LABEL_W}px;flex-shrink:0;position:sticky;left:0;z-index:10;background:var(--bg-card);border-right:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px">
-          ${iconHtml}
-          <div style="min-width:0">
-            <div class="gantt-row-name">${esc(row.name)}</div>
-            ${row.sub?`<div class="gantt-row-sub">${esc(row.sub)}</div>`:''}
-          </div>
-        </div>
-        <div style="width:${trackW}px;flex-shrink:0;position:relative;min-height:40px">
+      return`<div data-gantt-row="${ri}" style="border-bottom:1px solid var(--border);min-height:40px;position:relative">
+        <div style="width:${trackW}px;min-height:40px;position:relative">
           ${ticks.map(tk=>`<div class="gantt-vline" style="left:${pct(tk.ts)}%"></div>`).join('')}
           ${now>=vs&&now<=ve?`<div class="gantt-vline now-line" style="left:${pct(now)}%"></div>`:''}
           ${row.segments.map(seg=>{
@@ -2414,17 +2517,46 @@ function renderGantt(){
     }).join('')}
   </div>`;
 
+  // Build label column separately (no scroll, fixed)
+  const labelRows = document.getElementById('ganttLabelRows');
+  labelRows.innerHTML = rows.map((row,ri)=>{
+    const key=[...rowMap.keys()][ri];
+    const ev=rowEvMap.get(key);
+    const iconHtml=rowIconHtml(row,ev);
+    return`<div style="min-height:40px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:var(--bg-deep)">
+      ${iconHtml}
+      <div style="min-width:0;overflow:hidden">
+        <div class="gantt-row-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.name)}</div>
+        ${row.sub?`<div class="gantt-row-sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.sub)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Sync label rows height with timeline rows after render
+  requestAnimationFrame(()=>{
+    const timeRows = wrap.querySelectorAll('[data-gantt-row]');
+    const labelRowEls = labelRows.querySelectorAll('div[style]');
+    timeRows.forEach((tr,i)=>{
+      const h = tr.offsetHeight;
+      if(labelRowEls[i]) labelRowEls[i].style.minHeight = h+'px';
+    });
+    lucide.createIcons();
+  });
+
   // Scroll to current time on day view
   if(ganttZoom==='day'&&ganttOffset===0){
     const pctNow=Math.max(0,Math.min(1,(now-vs)/viewMs));
-    const ganttWrap=document.getElementById('ganttWrap');
-    setTimeout(()=>{ ganttWrap.scrollLeft = pctNow*trackW - ganttWrap.offsetWidth/2; },50);
+    setTimeout(()=>{ wrap.scrollLeft = pctNow*trackW - wrap.offsetWidth/2; },80);
   }
 
   // Init pinch zoom
   initGanttPinch();
-  // Re-render Lucide icons injected into gantt rows
-  lucide.createIcons();
+}
+
+function syncGanttScroll(el){
+  // Sync vertical scroll of label column with timeline
+  const labelRows = document.getElementById('ganttLabelRows');
+  if(labelRows) labelRows.scrollTop = el.scrollTop;
 }
 
 // ══════════════════════════════════════════════
