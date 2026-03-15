@@ -3085,61 +3085,83 @@ function renderGantt(){
   initGanttPinch();
 }
 
-// ── Pan + Pinch zoom ──
+// ── Pan + Pinch zoom — init once, listeners persist ──
+let _ganttPinchReady = false;
 function initGanttPinch(){
+  if(_ganttPinchReady) return;
   const wrap = document.getElementById('ganttWrap');
-  if(!wrap||wrap._pinchInited) return;
-  wrap._pinchInited = true;
+  if(!wrap) return;
+  _ganttPinchReady = true;
 
-  let lastDist=null, pinchOriginMs=0, startMsPerPx=0;
-  let panStartX=null, panStartAnchor=0, isPinching=false;
+  let mode = null;          // 'pan' | 'pinch' | null
+  let panStartX = 0, panStartAnchor = 0, currentDx = 0;
+  let pinchStartDist = 0, pinchStartMsPerPx = 0, pinchOriginMs = 0;
+  let lastPinchScale = 1;   // track final scale for commit
+
+  function getInner(){ return document.getElementById('ganttInner'); }
 
   wrap.addEventListener('touchstart', e=>{
-    if(e.touches.length===2){
-      isPinching=true; panStartX=null;
-      lastDist = Math.hypot(
-        e.touches[0].clientX-e.touches[1].clientX,
-        e.touches[0].clientY-e.touches[1].clientY
-      );
-      startMsPerPx = ganttMsPerPx;
-      const midX = (e.touches[0].clientX+e.touches[1].clientX)/2
-                 - wrap.getBoundingClientRect().left;
-      pinchOriginMs = ganttAnchorMs + midX * ganttMsPerPx;
-    } else if(e.touches.length===1 && !isPinching){
+    if(e.touches.length === 1 && mode !== 'pinch'){
+      mode = 'pan';
       panStartX = e.touches[0].clientX;
       panStartAnchor = ganttAnchorMs;
+      currentDx = 0;
+    } else if(e.touches.length === 2){
+      mode = 'pinch'; lastPinchScale = 1;
+      pinchStartDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      pinchStartMsPerPx = ganttMsPerPx;
+      const rect = wrap.getBoundingClientRect();
+      const midX = (e.touches[0].clientX + e.touches[1].clientX)/2 - rect.left;
+      pinchOriginMs = ganttAnchorMs + midX * ganttMsPerPx;
     }
   },{passive:true});
 
   wrap.addEventListener('touchmove', e=>{
-    if(e.touches.length===2 && lastDist){
-      isPinching=true;
+    const inner = getInner(); if(!inner) return;
+
+    if(mode === 'pan' && e.touches.length === 1){
+      currentDx = e.touches[0].clientX - panStartX;
+      inner.style.transform = `translateX(${currentDx}px)`;
+
+    } else if(mode === 'pinch' && e.touches.length === 2){
       const dist = Math.hypot(
-        e.touches[0].clientX-e.touches[1].clientX,
-        e.touches[0].clientY-e.touches[1].clientY
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
       );
-      const scale = lastDist/dist;
+      lastPinchScale = dist / pinchStartDist; // >1 zoom in, <1 zoom out
+      const vw = ganttViewportW();
       const newMsPerPx = Math.max(
-        GANTT_MS_MIN/ganttViewportW(),
-        Math.min(GANTT_MS_MAX/ganttViewportW(), startMsPerPx*scale)
+        GANTT_MS_MIN / vw,
+        Math.min(GANTT_MS_MAX / vw, pinchStartMsPerPx / lastPinchScale)
       );
-      ganttMsPerPx  = newMsPerPx;
-      ganttAnchorMs = pinchOriginMs - (pinchOriginMs - panStartAnchor) * (newMsPerPx/startMsPerPx);
-      if(!wrap._pinchRaf){
-        wrap._pinchRaf = requestAnimationFrame(()=>{ renderGantt(); wrap._pinchRaf=null; });
-      }
-    } else if(e.touches.length===1 && panStartX!==null && !isPinching){
-      const dx = e.touches[0].clientX - panStartX;
-      ganttAnchorMs = panStartAnchor - dx * ganttMsPerPx;
-      if(!wrap._panRaf){
-        wrap._panRaf = requestAnimationFrame(()=>{ renderGantt(); wrap._panRaf=null; });
-      }
+      // Visual: scaleX around pinch origin pixel
+      const originPx = (pinchOriginMs - ganttAnchorMs) / ganttMsPerPx;
+      inner.style.transformOrigin = `${originPx}px 0`;
+      inner.style.transform = `scaleX(${lastPinchScale})`;
     }
   },{passive:true});
 
-  wrap.addEventListener('touchend', ()=>{
-    if(isPinching){ renderGantt(); }
-    lastDist=null; panStartX=null; isPinching=false;
+  wrap.addEventListener('touchend', e=>{
+    const inner = getInner();
+    if(inner){ inner.style.transform = ''; inner.style.transformOrigin = ''; }
+
+    if(mode === 'pan'){
+      ganttAnchorMs = panStartAnchor - currentDx * ganttMsPerPx;
+    } else if(mode === 'pinch'){
+      const vw = ganttViewportW();
+      ganttMsPerPx = Math.max(
+        GANTT_MS_MIN / vw,
+        Math.min(GANTT_MS_MAX / vw, pinchStartMsPerPx / lastPinchScale)
+      );
+      // Keep pinch origin stationary
+      ganttAnchorMs = pinchOriginMs - (pinchOriginMs - ganttAnchorMs) * (ganttMsPerPx / pinchStartMsPerPx);
+    }
+
+    mode = null; currentDx = 0;
+    renderGantt();
   },{passive:true});
 }
 
