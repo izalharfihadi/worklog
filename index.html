@@ -1456,7 +1456,7 @@ if (currentStatus === 'home' && sHS) homeStart = new Date(sHS);
 
 let acFocusIdx = -1, selectedDept = '';
 let macFocusIdx = -1, mSelectedDept = '';
-let ganttZoom = 'day', ganttOffset = 0;
+let ganttAnchorMs  = 0, ganttMsPerPx = 0; // infinite timeline state
 
 const CAT  = {ops:'Operasional',adm:'Administrasi',mtg:'Koordinasi',ext:'Pekerjaan Org Lain'};
 const IICO = {teams:'💬',whatsapp:'📱',tamu:'🤝',toilet:'🚽',rokok:'🚬'};
@@ -2795,8 +2795,8 @@ let ganttZoom   = 'day'; // 'day'|'week'|'month' — zoom preset label only
 let ganttOffset = 0;     // kept for ‹ › nav compat
 
 // Core state
-let ganttAnchorMs  = 0;   // timestamp of left edge of viewport (ms)
-let ganttMsPerPx   = 0;   // how many ms per pixel
+// Core state — declared at top of file
+// ganttAnchorMs, ganttMsPerPx
 
 // Zoom presets (ms visible in viewport)
 const GANTT_PRESET = {
