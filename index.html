@@ -1154,10 +1154,41 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 
     <!-- SETTINGS -->
     <div class="panel" id="panel-settings">
-      <!-- Main settings view -->
-      <div id="settings-main" class="panel-inner">
-        <div class="settings-title">Master Karyawan</div>
 
+      <!-- ── Menu utama Settings ── -->
+      <div id="settings-main" class="panel-inner">
+        <div class="settings-title" style="margin-bottom:20px">Pengaturan</div>
+
+        <button class="adv-link" onclick="showSettingsSub('karyawan')" style="border-top:1px solid var(--border)">
+          <div>
+            <div class="adv-link-label">Master Karyawan</div>
+            <div class="adv-link-sub">Autocomplete PIC + departemen</div>
+          </div>
+          <i data-lucide="chevron-right"></i>
+        </button>
+
+        <button class="adv-link" onclick="exportCSV()">
+          <div>
+            <div class="adv-link-label">Export CSV</div>
+            <div class="adv-link-sub">Download semua events sebagai file CSV</div>
+          </div>
+          <i data-lucide="download"></i>
+        </button>
+
+        <button class="adv-link" onclick="showSettingsSub('advanced')">
+          <div>
+            <div class="adv-link-label">Advanced</div>
+            <div class="adv-link-sub">Reset data · opsi developer</div>
+          </div>
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- ── Sub: Master Karyawan ── -->
+      <div id="settings-karyawan" class="panel-inner" style="display:none">
+        <button class="adv-back" onclick="showSettingsSub('main')">
+          <i data-lucide="arrow-left"></i> Master Karyawan
+        </button>
         <div class="emp-add-row">
           <div style="flex:1;position:relative">
             <input type="text" id="emp-name" placeholder="Nama..." autocomplete="off"
@@ -1189,38 +1220,17 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <tbody id="empTbody"></tbody>
           </table>
         </div>
-
-        <!-- Export CSV -->
-        <button class="adv-link" onclick="exportCSV()" style="border-top:1px solid var(--border);margin-top:20px">
-          <div>
-            <div class="adv-link-label">Export CSV</div>
-            <div class="adv-link-sub">Download semua events sebagai file CSV</div>
-          </div>
-          <i data-lucide="download"></i>
-        </button>
-
-        <!-- Advanced link -->
-        <button class="adv-link" onclick="showAdvanced()">
-          <div>
-            <div class="adv-link-label">Advanced</div>
-            <div class="adv-link-sub">Reset data · opsi developer</div>
-          </div>
-          <i data-lucide="chevron-right"></i>
-        </button>
       </div>
 
-      <!-- Advanced settings view -->
+      <!-- ── Sub: Advanced ── -->
       <div id="settings-advanced" class="panel-inner" style="display:none">
-        <button class="adv-back" onclick="hideAdvanced()">
+        <button class="adv-back" onclick="showSettingsSub('main')">
           <i data-lucide="arrow-left"></i> Advanced
         </button>
-
         <div style="margin-bottom:20px">
           <div style="font-size:15px;font-weight:700;margin-bottom:4px">Advanced</div>
           <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Operasi data sensitif</div>
         </div>
-
-        <!-- Single Reset card -->
         <div class="reset-card" style="border-color:rgba(255,45,120,.3)">
           <div class="reset-card-title" style="color:var(--magenta)">
             <i data-lucide="trash-2"></i> Reset Data
@@ -1229,6 +1239,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
           <button class="btn-reset-trigger" onclick="openResetModal()">Pilih dan reset →</button>
         </div>
       </div>
+
     </div>
 
   </div><!-- /panels -->
@@ -1407,7 +1418,6 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
     </div>
     <div class="modal-body">
       <input type="hidden" id="mEvId"/>
-      <div class="field"><label>Nama Kegiatan</label><input type="text" id="m-name" placeholder="apa yang terjadi..."/></div>
       <div class="field" style="position:relative">
         <label>PIC / Dengan Siapa</label>
         <input type="text" id="m-pic" placeholder="nama orang..." autocomplete="off"
@@ -1416,10 +1426,6 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
         <div class="dept-display" id="mDeptDisplay">
           <div class="dept-tag">🏢 <span id="mDeptName">—</span></div>
         </div>
-      </div>
-      <div class="field time-row">
-        <div><label>Waktu Mulai</label><input type="time" id="m-start" step="1"/></div>
-        <div><label>Waktu Selesai</label><input type="time" id="m-end" step="1"/></div>
       </div>
       <div class="field"><label>Catatan / Topik</label><input type="text" id="m-notes" placeholder="apa yang dibahas..."/></div>
     </div>
@@ -1465,13 +1471,14 @@ let syncPending = false;
 //  INIT
 // ══════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  // First launch ever — seed home status
+  // Set home status silently on first launch — NO event push
+  // Event HOME hanya dicatat saat user secara eksplisit klik tombol Home
   if (!load('wl6_status')) {
     currentStatus = 'home';
     homeStart = new Date();
     save('wl6_status', 'home');
     localStorage.setItem('wl6_homeStart', homeStart.toISOString());
-    pushEvent({taskId:'', title:'Rumah', type:'HOME', pic:'—', dept:'—', cat:'—'});
+    // Tidak push event HOME di sini — mencegah Edit Log terisi saat refresh/update
   }
   tickClock(); setInterval(tickClock, 1000);
   setInterval(tickTimer, 1000);
@@ -1645,7 +1652,7 @@ function switchTab(name) {
   });
   if (name==='editlog')   renderEvents();
   if (name==='dashboard') renderGantt();
-  if (name==='settings')  { renderEmployees(); hideAdvanced(); }
+  if (name==='settings')  { showSettingsSub('main'); }
   lucide.createIcons();
 }
 
@@ -1967,9 +1974,11 @@ function setStatus(newStatus, opts={}) {
     const intType = newStatus.replace('int-','');
     const labels = {teams:'MS Teams',whatsapp:'WhatsApp',tamu:'Orang',toilet:'Toilet',rokok:'Rokok'};
     const label = labels[intType] || intType;
+    // Toilet tidak perlu dilengkapi — langsung complete
+    const isComplete = intType === 'toilet';
     events.push({id:'EV'+Date.now(), ts:now.toISOString(), tsStart:now.toISOString(), tsEnd:'',
       taskId:'', title:label, pic:'—', dept:'—', cat:'—',
-      type:'INT', intType, incomplete:true, notes:''});
+      type:'INT', intType, incomplete:!isComplete, notes:''});
     save('wl6_events', events);
     updateBadge();
     appendEventToSheets(events[events.length-1]);
@@ -2069,35 +2078,29 @@ function updateBadge(){const n=events.filter(e=>e.incomplete).length;const b=doc
 // ══════════════════════════════════════════════
 function openEditModal(evId){
   const ev=events.find(e=>e.id===evId);if(!ev)return;
+  // Toilet tidak perlu edit — aktivitas pribadi tanpa PIC
+  if(ev.intType==='toilet'){toast('Toilet tidak perlu dilengkapi');return;}
   document.getElementById('mEvId').value=evId;
-  document.getElementById('mIcon').textContent=ev.icon||'📝';
+  document.getElementById('mIcon').textContent=
+    ev.intType==='rokok'?'🚬':ev.intType==='whatsapp'?'💬':ev.intType==='teams'?'💻':ev.intType==='tamu'?'👤':'📝';
   document.getElementById('mTitle').textContent='Lengkapi: '+(ev.title||'Event');
-  document.getElementById('m-name').value=ev.title||'';
   document.getElementById('m-pic').value=ev.pic!=='—'?ev.pic:'';
   document.getElementById('m-notes').value=ev.notes||'';
   mSelectedDept=ev.dept&&ev.dept!=='—'?ev.dept:'';
   showDept('mDeptDisplay','mDeptName',mSelectedDept);
-  const st=new Date(ev.tsStart||ev.ts);
-  document.getElementById('m-start').value=toTI(st);
-  document.getElementById('m-end').value=ev.tsEnd?toTI(new Date(ev.tsEnd)):'';
   document.getElementById('editModal').classList.add('open');
 }
 function closeModal(e){if(e&&e.target!==document.getElementById('editModal'))return;document.getElementById('editModal').classList.remove('open');}
 function saveEdit(){
   const evId=document.getElementById('mEvId').value;
   const ev=events.find(e=>e.id===evId);if(!ev)return;
-  const name=v('m-name'),pic=v('m-pic');
-  if(!name){toast('⚠ Nama wajib');return;}
-  if(!pic){toast('⚠ PIC wajib');return;}
+  const pic=v('m-pic');
   const dept=mSelectedDept||lookupDept(pic)||'';
-  ev.title=name;ev.pic=pic;ev.dept=dept;ev.notes=v('m-notes');ev.incomplete=false;
-  const ts=v('m-start'),te=v('m-end');
-  if(ts){const d=new Date(ev.ts);applyT(d,ts);ev.tsStart=d.toISOString();}
-  if(te){const d=new Date(ev.ts);applyT(d,te);ev.tsEnd=d.toISOString();}
+  ev.pic=pic||'—';ev.dept=dept;ev.notes=v('m-notes');ev.incomplete=false;
   save('wl6_events',events);updateBadge();renderAll();
   document.getElementById('editModal').classList.remove('open');
   toast('✓ Event diperbarui');
-  pushToSheets();
+  appendEventToSheets(ev);
 }
 
 // ══════════════════════════════════════════════
@@ -2595,18 +2598,20 @@ function resolveConfirm(result){
 }
 
 // ══════════════════════════════════════════════
-//  ADVANCED SETTINGS
+//  SETTINGS NAVIGATION
 // ══════════════════════════════════════════════
-function showAdvanced(){
-  document.getElementById('settings-main').style.display='none';
-  document.getElementById('settings-advanced').style.display='';
+function showSettingsSub(sub){
+  // sub: 'main' | 'karyawan' | 'advanced'
+  ['main','karyawan','advanced'].forEach(s=>{
+    const el=document.getElementById('settings-'+s);
+    if(el) el.style.display = s===sub ? '' : 'none';
+  });
+  if(sub==='karyawan') renderEmployees();
   lucide.createIcons();
 }
-function hideAdvanced(){
-  document.getElementById('settings-advanced').style.display='none';
-  document.getElementById('settings-main').style.display='';
-  lucide.createIcons();
-}
+// Legacy aliases
+function showAdvanced(){ showSettingsSub('advanced'); }
+function hideAdvanced(){ showSettingsSub('main'); }
 
 // ── Reset Modal (checkbox) ──
 const resetChecks = { tasks:false, events:false, employees:false };
@@ -2847,9 +2852,8 @@ function initGanttPinch() {
   wrap._pinchInited = true;
 
   let lastDist = null;
-  let pinchScale = 1;        // visual scale during active pinch
-  let pinchOriginX = 0;      // pinch center x relative to ganttInner
-  let baseScrollLeft = 0;
+  let pinchScale = 1;
+  let pinchOriginX = 0;
 
   wrap.addEventListener('touchstart', e => {
     if (e.touches.length !== 2) return;
@@ -2858,11 +2862,13 @@ function initGanttPinch() {
       e.touches[0].clientY - e.touches[1].clientY
     );
     pinchScale = 1;
-    baseScrollLeft = wrap.scrollLeft;
-    // Pinch origin = midpoint of two fingers relative to ganttInner left
     const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
     const wrapRect = wrap.getBoundingClientRect();
     pinchOriginX = midX - wrapRect.left + wrap.scrollLeft;
+
+    // Hide tick labels during pinch — prevents visual distortion
+    const inner = document.getElementById('ganttInner');
+    if (inner) inner.querySelectorAll('.gantt-tick-lbl').forEach(el => el.style.opacity='0');
   }, {passive:true});
 
   wrap.addEventListener('touchmove', e => {
@@ -2873,33 +2879,30 @@ function initGanttPinch() {
     );
     pinchScale = dist / lastDist;
 
-    // Apply CSS transform for smooth visual feedback
+    // Apply CSS scaleX for smooth visual — only scales bars, not text (opacity 0)
     const inner = document.getElementById('ganttInner');
     if (inner) {
       inner.style.transformOrigin = `${pinchOriginX}px 0`;
       inner.style.transform = `scaleX(${pinchScale})`;
     }
-    // Also scale label rows visually (height stays, no horizontal scale needed)
   }, {passive:true});
 
-  wrap.addEventListener('touchend', e => {
+  wrap.addEventListener('touchend', () => {
     if (lastDist === null) return;
-    // Clamp and apply new scale to ganttScale
     const newScale = Math.max(GANTT_MIN_SCALE, Math.min(GANTT_MAX_SCALE, ganttScale * pinchScale));
-
-    // Reset CSS transform before rebuild
     const inner = document.getElementById('ganttInner');
     if (inner) { inner.style.transform = ''; inner.style.transformOrigin = ''; }
 
     if (Math.abs(newScale - ganttScale) > 0.02) {
-      // Preserve scroll position relative to pinch origin
       const prevScrollLeft = wrap.scrollLeft;
       ganttScale = newScale;
       renderGantt();
-      // After rebuild, scroll to keep pinch origin in view
       requestAnimationFrame(() => {
-        wrap.scrollLeft = pinchOriginX * newScale / ganttScale - (pinchOriginX - prevScrollLeft);
+        wrap.scrollLeft = pinchOriginX * (newScale / (ganttScale / pinchScale)) - (pinchOriginX - prevScrollLeft);
       });
+    } else {
+      // Restore tick labels if no scale change
+      if (inner) inner.querySelectorAll('.gantt-tick-lbl').forEach(el => el.style.opacity='');
     }
     lastDist = null; pinchScale = 1;
   }, {passive:true});
@@ -2913,9 +2916,10 @@ function renderGantt(){
   // Full period — show entire day 00:00–24:00, week, or month
   const vs=new Date(start), ve=new Date(end);
   const viewMs=ve-vs;
-  const LABEL_W=120; // kept for reference only — label column is now external
+  const LABEL_W=120;
   const baseW=document.getElementById('ganttWrap')?.offsetWidth||255;
-  const trackW=Math.max(baseW, baseW*ganttScale);
+  // trackW always >= baseW so no empty space on zoom out
+  const trackW=Math.max(baseW, Math.round(baseW*ganttScale));
 
   const pct=ts=>Math.max(0,Math.min(100,((new Date(ts)-vs)/viewMs)*100));
   const intervalMs=getTickInterval(viewMs, ganttScale);
