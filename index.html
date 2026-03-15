@@ -1648,7 +1648,10 @@ function switchTab(name) {
     document.getElementById('tab-'+t).classList.toggle('active', t===name);
   });
   if (name==='editlog')   renderEvents();
-  if (name==='dashboard') { renderGantt(); setTimeout(initGanttPinch, 100); }
+  if (name==='dashboard') {
+    // Small delay ensures panel is visible and has correct dimensions
+    setTimeout(()=>{ ganttReset(); renderGantt(); initGanttPinch(); }, 30);
+  }
   if (name==='settings')  { showSettingsSub('main'); }
   lucide.createIcons();
 }
@@ -2821,7 +2824,9 @@ const GANTT_MS_MAX = 90 * 24 * 3600000; // max zoom out: 90 hari visible
 
 // ── Helpers ──
 function ganttViewportW(){
-  return document.getElementById('ganttWrap')?.offsetWidth || 255;
+  const el = document.getElementById('ganttWrap');
+  // Use clientWidth for accuracy when panel is visible
+  return (el && el.clientWidth > 0) ? el.clientWidth : (el?.offsetWidth || 255);
 }
 function ganttTotalMs(){
   return ganttMsPerPx * ganttViewportW();
@@ -2830,16 +2835,20 @@ function ganttAnchorEnd(){
   return ganttAnchorMs + ganttTotalMs();
 }
 
-// ── Init & Presets ──
+// ── Init — always anchor to "now" so data is always visible ──
 function ganttInitIfNeeded(){
-  if (ganttMsPerPx > 0) return;
   const vw = ganttViewportW();
-  const visibleMs = GANTT_PRESET.day;
+  const visibleMs = GANTT_PRESET.day; // 10 jam default
   ganttMsPerPx = visibleMs / vw;
-  // Anchor to 07:00 today
-  const now = new Date();
-  const d = new Date(now); d.setHours(7,0,0,0);
-  ganttAnchorMs = d.getTime();
+  // Anchor: now at 70% from left → user sees past 7 jam + future 3 jam
+  ganttAnchorMs = Date.now() - visibleMs * 0.7;
+}
+
+// Force re-init when switching to dashboard tab
+function ganttReset(){
+  // Reset so next renderGantt re-initializes with correct viewport size
+  ganttMsPerPx = 0;
+  ganttInitIfNeeded();
 }
 
 function setZoom(z){
@@ -2849,26 +2858,30 @@ function setZoom(z){
   const vw = ganttViewportW();
   const visibleMs = GANTT_PRESET[z] || GANTT_PRESET.day;
   ganttMsPerPx = visibleMs / vw;
-  // Re-anchor to keep "now" in view
-  const now = Date.now();
-  ganttAnchorMs = now - visibleMs * 0.4; // now at 40% from left
+  ganttAnchorMs = Date.now() - visibleMs * 0.7;
   renderGantt();
 }
 
 function ganttGoNow(){
-  ganttInitIfNeeded();
   const vw = ganttViewportW();
-  const visibleMs = ganttMsPerPx * vw;
-  ganttAnchorMs = Date.now() - visibleMs * 0.6; // now at 60% from left
+  const visibleMs = ganttMsPerPx * vw || GANTT_PRESET.day;
+  ganttAnchorMs = Date.now() - visibleMs * 0.7;
   renderGantt();
-  // No need to scroll — anchor IS the scroll
 }
 
 function ganttNav(dir){
-  ganttInitIfNeeded();
   const visibleMs = ganttTotalMs();
-  ganttAnchorMs += dir * visibleMs * 0.8; // pan 80% of visible window
+  const newAnchor = ganttAnchorMs + dir * visibleMs * 0.8;
+  ganttAnchorMs = clampGanttAnchor(newAnchor);
   renderGantt();
+}
+
+function clampGanttAnchor(anchor){
+  // Left boundary: first event or 07:00 today, whichever is earlier
+  const today7 = new Date(); today7.setHours(7,0,0,0);
+  const firstEvent = events.length ? Math.min(...events.map(e=>new Date(e.ts).getTime())) : today7.getTime();
+  const leftBound = Math.min(firstEvent, today7.getTime()) - 30*60000; // 30 min buffer
+  return Math.max(leftBound, anchor);
 }
 
 // ── Tick generation ──
@@ -3128,8 +3141,8 @@ function initGanttPinch(){
     if(wrap._pinchRaf){ cancelAnimationFrame(wrap._pinchRaf); wrap._pinchRaf=null; }
 
     if(mode === 'pan'){
-      // Commit pan
-      ganttAnchorMs = panStartAnchor - currentDx * ganttMsPerPx;
+      // Commit pan with boundary clamp
+      ganttAnchorMs = clampGanttAnchor(panStartAnchor - currentDx * ganttMsPerPx);
     }
     // pinch: already committed ganttMsPerPx + ganttAnchorMs during touchmove
 
