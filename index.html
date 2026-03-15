@@ -3257,10 +3257,13 @@ function initGanttPinch(){
     ganttAnchorMs = newAnchor;
     var vw = ganttViewportW();
     var baseOffset = -(GANTT_BUFFER * vw);
+    // Use actual anchor diff for translateX — respects clamp boundary
+    var actualDeltaMs = panStartAnchor - newAnchor;
+    var actualDeltaPx = actualDeltaMs / ganttMsPerPx;
     var inner = document.getElementById('ganttInner');
-    if(inner) inner.style.transform = 'translateX('+(baseOffset + e.deltaX)+'px)';
+    if(inner) inner.style.transform = 'translateX('+(baseOffset + actualDeltaPx)+'px)';
     updateEdgeGlow();
-    var driftPx = Math.abs(e.deltaX);
+    var driftPx = Math.abs(actualDeltaPx);
     if(driftPx > GANTT_BUFFER * vw * 0.5){
       if(!_panRaf) _panRaf = requestAnimationFrame(function(){
         renderGantt(); _panRaf=null;
