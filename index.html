@@ -1069,8 +1069,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
             <div id="ganttLabelRows" style="overflow:hidden;flex:1;background:var(--bg-deep)"></div>
           </div>
-          <!-- Scrollable timeline -->
-          <div id="ganttWrap" style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg-deep)" onscroll="syncGanttScroll(this)">
+          <!-- Scrollable timeline - pan handled via touch events, not native scroll -->
+          <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:none" onscroll="syncGanttScroll(this)">
             <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
           </div>
         </div>
@@ -2784,7 +2784,19 @@ function endTour(){
   localStorage.setItem('wl6_onboarded','1');
   const overlay = document.getElementById('tourOverlay');
   overlay.style.pointerEvents = 'none';
-  setTimeout(()=>{ overlay.classList.remove('active'); overlay.style.pointerEvents = ''; }, 50);
+  setTimeout(()=>{
+    overlay.classList.remove('active');
+    overlay.style.pointerEvents = '';
+    // Klik mengerti = klik Home — mulai pencatatan HOME event
+    if(currentStatus !== 'home') setStatus('home');
+    else {
+      // Sudah home tapi belum ada event — push satu HOME event
+      if(!events.find(e=>e.type==='HOME')){
+        pushEvent({taskId:'',title:'Rumah',type:'HOME',pic:'—',dept:'—',cat:'—'});
+      }
+    }
+    renderAll();
+  }, 50);
 }
 
 // ══════════════════════════════════════════════
@@ -2986,8 +2998,20 @@ function renderGantt(){
     return;
   }
 
-  const rows = [...rowMap.values()];
-  const keys = [...rowMap.keys()];
+  // Filter: hanya tampilkan rows yang punya segmen dalam window
+  // (rows tanpa segmen tetap ada di rowMap untuk icon lookup tapi jangan dirender)
+  const allRows = [...rowMap.values()];
+  const allKeys = [...rowMap.keys()];
+  // Tampilkan semua rows yang punya minimal satu segmen ATAU yang sedang aktif
+  const visibleIndices = allRows.map((r,i)=>i).filter(i=>{
+    const r=allRows[i];
+    if(r.segments.length>0) return true;
+    // Task yang sedang aktif — tampilkan meski belum ada segmen di window
+    if(r.evType==='TASK' && allKeys[i]===activeId) return true;
+    return false;
+  });
+  const rows = visibleIndices.map(i=>allRows[i]);
+  const keys = visibleIndices.map(i=>allKeys[i]);
 
   // Icon map
   const intIconMap = {
@@ -3061,53 +3085,61 @@ function renderGantt(){
   initGanttPinch();
 }
 
-// ── Pinch zoom — infinite version ──
+// ── Pan + Pinch zoom ──
 function initGanttPinch(){
   const wrap = document.getElementById('ganttWrap');
   if(!wrap||wrap._pinchInited) return;
   wrap._pinchInited = true;
 
   let lastDist=null, pinchOriginMs=0, startMsPerPx=0;
+  let panStartX=null, panStartAnchor=0, isPinching=false;
 
   wrap.addEventListener('touchstart', e=>{
-    if(e.touches.length!==2) return;
-    lastDist = Math.hypot(
-      e.touches[0].clientX-e.touches[1].clientX,
-      e.touches[0].clientY-e.touches[1].clientY
-    );
-    startMsPerPx = ganttMsPerPx;
-    // Pinch origin in ms
-    const midX = (e.touches[0].clientX+e.touches[1].clientX)/2
-               - wrap.getBoundingClientRect().left;
-    pinchOriginMs = ganttAnchorMs + midX * ganttMsPerPx;
+    if(e.touches.length===2){
+      isPinching=true; panStartX=null;
+      lastDist = Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+      startMsPerPx = ganttMsPerPx;
+      const midX = (e.touches[0].clientX+e.touches[1].clientX)/2
+                 - wrap.getBoundingClientRect().left;
+      pinchOriginMs = ganttAnchorMs + midX * ganttMsPerPx;
+    } else if(e.touches.length===1 && !isPinching){
+      panStartX = e.touches[0].clientX;
+      panStartAnchor = ganttAnchorMs;
+    }
   },{passive:true});
 
   wrap.addEventListener('touchmove', e=>{
-    if(e.touches.length!==2||!lastDist) return;
-    const dist = Math.hypot(
-      e.touches[0].clientX-e.touches[1].clientX,
-      e.touches[0].clientY-e.touches[1].clientY
-    );
-    const scale = lastDist/dist; // >1 = zoom out, <1 = zoom in
-    const newMsPerPx = Math.max(
-      GANTT_MS_MIN/ganttViewportW(),
-      Math.min(GANTT_MS_MAX/ganttViewportW(), startMsPerPx*scale)
-    );
-    // Keep pinch origin stationary
-    ganttMsPerPx  = newMsPerPx;
-    ganttAnchorMs = pinchOriginMs - (pinchOriginMs - ganttAnchorMs) * (newMsPerPx/startMsPerPx);
-    // Throttled render
-    if(!wrap._pinchRaf){
-      wrap._pinchRaf = requestAnimationFrame(()=>{
-        renderGantt();
-        wrap._pinchRaf = null;
-      });
+    if(e.touches.length===2 && lastDist){
+      isPinching=true;
+      const dist = Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+      const scale = lastDist/dist;
+      const newMsPerPx = Math.max(
+        GANTT_MS_MIN/ganttViewportW(),
+        Math.min(GANTT_MS_MAX/ganttViewportW(), startMsPerPx*scale)
+      );
+      ganttMsPerPx  = newMsPerPx;
+      ganttAnchorMs = pinchOriginMs - (pinchOriginMs - panStartAnchor) * (newMsPerPx/startMsPerPx);
+      if(!wrap._pinchRaf){
+        wrap._pinchRaf = requestAnimationFrame(()=>{ renderGantt(); wrap._pinchRaf=null; });
+      }
+    } else if(e.touches.length===1 && panStartX!==null && !isPinching){
+      const dx = e.touches[0].clientX - panStartX;
+      ganttAnchorMs = panStartAnchor - dx * ganttMsPerPx;
+      if(!wrap._panRaf){
+        wrap._panRaf = requestAnimationFrame(()=>{ renderGantt(); wrap._panRaf=null; });
+      }
     }
   },{passive:true});
 
   wrap.addEventListener('touchend', ()=>{
-    lastDist=null;
-    renderGantt(); // final clean render
+    if(isPinching){ renderGantt(); }
+    lastDist=null; panStartX=null; isPinching=false;
   },{passive:true});
 }
 
