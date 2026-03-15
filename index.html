@@ -3152,10 +3152,10 @@ function initGanttPinch(){
     // ── Momentum / inertia ──
     // Hammer velocityX: px/ms, positive = right swipe (pan left = negative anchor shift)
     var velocity = -e.velocityX; // px/ms, direction: positive = moving forward in time
-    var FRICTION  = 0.97;        // deceleration per frame (Apple-like feel)
-    var MIN_VEL   = 0.01;        // stop threshold px/ms
+    var FRICTION  = 0.90;        // deceleration per frame — higher = stops faster
+    var MIN_VEL   = 0.05;        // stop threshold px/ms — higher = stops sooner
 
-    if(Math.abs(velocity) < MIN_VEL) return; // too slow, skip momentum
+    if(Math.abs(velocity) < 0.1) return; // ignore slow releases — no momentum
 
     function momentumStep(){
       velocity *= FRICTION;
