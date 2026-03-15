@@ -306,9 +306,9 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .5px;
 }
 .sort-btn {
-  padding: 3px 9px; border-radius: 10px; border: 1px solid var(--border);
-  background: none; cursor: pointer; font-family: var(--mono); font-size: 9px;
-  color: var(--muted); transition: all var(--t); letter-spacing: .5px;
+  padding: 4px 10px; border-radius: 10px; border: 1px solid var(--border);
+  background: none; cursor: pointer; font-family: var(--font-body); font-size: 12px;
+  color: var(--muted); transition: all var(--t);
 }
 .sort-btn.active { background: var(--purple-dim); border-color: var(--border-bright); color: var(--cyan); }
 .sort-btn:active { transform: scale(.94); }
@@ -317,7 +317,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
 .tc.dragging { opacity: .35; border-color: var(--cyan); cursor: grabbing; }
 .tc.drag-over { border-color: var(--cyan); box-shadow: 0 0 0 2px var(--cyan-dim); }
 .tc-date {
-  font-size: 9px; color: var(--muted); font-family: var(--mono);
+  font-size: 11px; color: var(--muted); font-family: var(--font-body);
   letter-spacing: .3px; white-space: nowrap;
 }
 
@@ -897,7 +897,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   display: flex; padding: 0 14px 8px; gap: 8px;
 }
 .gantt-zoom-btn {
-  flex: 1; font-family: var(--mono); font-size: 11px; padding: 8px 0;
+  flex: 1; font-family: var(--font-body); font-size: 13px; font-weight: 500; padding: 8px 0;
   border-radius: 20px; border: 1px solid var(--border-md);
   background: var(--bg-card); cursor: pointer; color: var(--text2);
   transition: all var(--t); text-align: center;
@@ -913,11 +913,11 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   border-radius: 6px; background: var(--bg-card); cursor: pointer; color: var(--text2);
 }
 .gantt-period-lbl {
-  font-family: var(--mono); font-size: 9px; color: var(--text2);
-  min-width: 80px; text-align: center; letter-spacing: .3px;
+  font-family: var(--font-body); font-size: 13px; color: var(--text2);
+  min-width: 80px; text-align: center;
 }
 .btn-gantt-now {
-  font-family: var(--mono); font-size: 9px; padding: 5px 9px; border-radius: 6px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 500; padding: 5px 10px; border-radius: 6px;
   border: 1px solid rgba(0,229,255,.3); background: var(--cyan-dim);
   cursor: pointer; color: var(--cyan);
 }
@@ -932,7 +932,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
 }
 .gantt-timeline-hdr { flex: 1; position: relative; height: 26px; overflow: hidden; }
 .gantt-tick-lbl {
-  position: absolute; font-family: var(--mono); font-size: 8px;
+  position: absolute; font-family: var(--font-body); font-size: 10px;
   color: var(--muted); transform: translateX(-50%); top: 4px; white-space: nowrap;
 }
 .gantt-row { display: flex; border-bottom: 1px solid var(--border); min-height: 40px; }
@@ -941,8 +941,8 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   padding: 7px 8px; display: flex; align-items: center; gap: 5px;
 }
 .gantt-row-icon { font-size: 12px; flex-shrink: 0; }
-.gantt-row-name { font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
-.gantt-row-sub { font-size: 9px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
+.gantt-row-name { font-size: 13px; font-weight: 500; font-family: var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.gantt-row-sub { font-size: 11px; color: var(--muted); font-family: var(--font-body); margin-top: 1px; }
 .gantt-bars { flex: 1; position: relative; min-height: 40px; }
 .gantt-vline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border); pointer-events: none; }
 .gantt-vline.now-line { background: var(--magenta); opacity: .7; width: 2px; box-shadow: 0 0 6px var(--magenta); }
@@ -961,7 +961,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
 .gb-break { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(139,92,246,.3); }
 .gb-eod   { background: var(--magenta-dim); color: var(--magenta); }
 .gb-home  { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,229,255,.2); }
-.gantt-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 11px; font-family: var(--mono); }
+.gantt-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 13px; font-family: var(--font-body); }
 
 /* ══ MODAL ══ */
 .modal-overlay {
@@ -1069,7 +1069,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
         <div style="flex:1;display:flex;overflow:hidden;position:relative;background:var(--bg-deep)">
           <!-- Fixed label column -->
           <div id="ganttLabels" style="width:120px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-deep);border-right:1px solid var(--border);z-index:10">
-            <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
+            <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
             <div id="ganttLabelRows" style="overflow:hidden;flex:1;background:var(--bg-deep)"></div>
           </div>
           <!-- Timeline -->
