@@ -57,6 +57,8 @@
 
   --font: 'Rajdhani', sans-serif;
   --mono: 'IBM Plex Mono', monospace;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --r: 12px;
   --r-sm: 7px;
   --t: 150ms ease;
@@ -64,7 +66,7 @@
 
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; background: var(--bg-deep); }
-body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
+body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-font-smoothing: antialiased; }
 
 /* ══ SHELL ══ */
 .shell {
@@ -367,7 +369,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 
 .tc-body { flex: 1; padding: 10px 12px; min-width: 0; }
 .tc-title {
-  font-size: 14px; font-weight: 600; letter-spacing: .3px;
+  font-size: 15px; font-weight: 600; letter-spacing: .1px; font-family: var(--font-body);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   color: var(--text);
 }
@@ -447,7 +449,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 /* ══ SUBMIT FORM ══ */
 .field { margin-bottom: 14px; position: relative; }
 .field label {
-  display: block; font-size: 9px; font-weight: 600; letter-spacing: 1.2px;
+  display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
   text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
   font-family: var(--mono);
 }
@@ -546,7 +548,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 .ev-HOME   { background: var(--cyan-dim); color: var(--cyan); }
 .ev-ts { font-family: var(--mono); font-size: 9px; color: var(--muted); }
 .ev-body { flex: 1; padding: 9px 10px; min-width: 0; }
-.ev-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.ev-title { font-size: 15px; font-weight: 500; color: var(--text); font-family: var(--font-body); }
 .ev-sub { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
 .ev-incomplete-lbl {
   font-size: 9px; color: var(--amber); font-weight: 700;
@@ -656,7 +658,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 }
 .emp-swipe-wrap.open .emp-swipe-actions { transform: translateX(0); }
 .emp-row-num { font-family:var(--mono); font-size:10px; color:var(--muted); width:20px; flex-shrink:0; }
-.emp-row-name { font-size:13px; font-weight:600; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.emp-row-name { font-size:15px; font-weight:500; color:var(--text); font-family:var(--font-body); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 /* ══ EDIT TASK/EMP MODAL ══ */
 .edit-modal-overlay {
@@ -700,8 +702,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   width: 100%; font-family: var(--font); text-align: left;
 }
 .adv-link:active { color: var(--text); }
-.adv-link-label { font-size: 13px; font-weight: 600; letter-spacing: .3px; color: var(--text); text-align: left; }
-.adv-link-sub { font-size: 10px; font-family: var(--mono); color: var(--muted); margin-top: 2px; }
+.adv-link-label { font-size: 15px; font-weight: 500; color: var(--text); text-align: left; font-family: var(--font-body); }
+.adv-link-sub { font-size: 12px; font-family: var(--font-body); color: var(--muted); margin-top: 2px; }
 .adv-link svg { width: 16px; height: 16px; flex-shrink: 0; stroke: var(--muted); }
 
 /* Advanced panel */
@@ -3194,7 +3196,7 @@ function renderGantt(){
     lblHtml+='<div data-label-row="'+ri+'" style="min-height:'+ROW_H+'px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:'+bg+'">'
       +rowIconHtml(row)
       +'<div style="min-width:0;overflow:hidden">'
-      +'<div class="gantt-row-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.name)+'</div>'
+      +'<div class="gantt-row-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-body);font-size:14px">'+esc(row.name)+'</div>'
       +(row.sub?'<div class="gantt-row-sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.sub)+'</div>':'')+
       '</div></div>';
   });
