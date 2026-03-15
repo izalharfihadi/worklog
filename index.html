@@ -1069,8 +1069,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
             <div id="ganttLabelRows" style="overflow:hidden;flex:1;background:var(--bg-deep)"></div>
           </div>
-          <!-- Timeline - pan handled via JS touch events -->
-          <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:pan-y;user-select:none;-webkit-user-select:none">
+          <!-- Timeline -->
+          <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:none;user-select:none;-webkit-user-select:none">
             <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
           </div>
         </div>
@@ -3069,76 +3069,67 @@ function renderGantt(){
 }
 
 
-// ── Pan + Pinch zoom ──
+// ── Pan + Pinch — document-level, filter by ganttWrap target ──
 let _ganttPinchReady = false;
 function initGanttPinch(){
   if(_ganttPinchReady) return;
-  const wrap = document.getElementById('ganttWrap');
-  if(!wrap) return;
+  if(!document.getElementById('ganttWrap')) return;
   _ganttPinchReady = true;
 
   let mode = null;
   let panStartX = 0, panStartAnchor = 0, currentDx = 0;
-  let pinchStartDist = 0, pinchStartMsPerPx = 0, pinchOriginMs = 0;
-  let lastPinchMsPerPx = 0;
+  let pinchStartDist = 0, pinchStartMsPerPx = 0, pinchOriginMs = 0, pinchStartAnchor = 0;
+  let _raf = null;
 
+  function isGanttTarget(e){
+    return e.target.closest('#ganttWrap') !== null;
+  }
   function getInner(){ return document.getElementById('ganttInner'); }
 
-  wrap.addEventListener('touchstart', e=>{
+  document.addEventListener('touchstart', function(e){
+    if(!isGanttTarget(e)) return;
     if(e.touches.length === 1){
       mode = 'pan';
-      panStartX = e.touches[0].clientX;
+      panStartX    = e.touches[0].clientX;
       panStartAnchor = ganttAnchorMs;
       currentDx = 0;
     } else if(e.touches.length === 2){
       mode = 'pinch';
-      lastPinchMsPerPx = ganttMsPerPx;
-      pinchStartDist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
+      const wrap = document.getElementById('ganttWrap');
+      pinchStartDist    = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
       pinchStartMsPerPx = ganttMsPerPx;
-      panStartAnchor = ganttAnchorMs; // save anchor at pinch start
+      pinchStartAnchor  = ganttAnchorMs;
       const rect = wrap.getBoundingClientRect();
-      const midX = (e.touches[0].clientX + e.touches[1].clientX)/2 - rect.left;
+      const midX = (e.touches[0].clientX+e.touches[1].clientX)/2 - rect.left;
       pinchOriginMs = ganttAnchorMs + midX * ganttMsPerPx;
     }
   }, {passive:true});
 
-  wrap.addEventListener('touchmove', e=>{
+  document.addEventListener('touchmove', function(e){
+    if(!isGanttTarget(e)) return;
     if(mode === 'pan' && e.touches.length === 1){
+      e.preventDefault();
       currentDx = e.touches[0].clientX - panStartX;
       const inner = getInner();
       if(inner) inner.style.transform = 'translateX('+currentDx+'px)';
 
     } else if(mode === 'pinch' && e.touches.length === 2){
-      const dist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const scale = dist / pinchStartDist; // >1 = zoom in, <1 = zoom out
-      const vw = ganttViewportW();
-      const newMsPerPx = Math.max(
-        GANTT_MS_MIN / vw,
-        Math.min(GANTT_MS_MAX / vw, pinchStartMsPerPx / scale)
-      );
-      lastPinchMsPerPx = newMsPerPx;
+      e.preventDefault();
+      const dist  = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      const scale = dist / pinchStartDist;
+      const vw    = ganttViewportW();
+      const newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/scale));
       ganttMsPerPx  = newMsPerPx;
-      ganttAnchorMs = pinchOriginMs - (pinchOriginMs - panStartAnchor) * (newMsPerPx / pinchStartMsPerPx);
-      if(!wrap._raf){
-        wrap._raf = requestAnimationFrame(()=>{
-          renderGantt();
-          wrap._raf = null;
-        });
-      }
+      ganttAnchorMs = pinchOriginMs - (pinchOriginMs - pinchStartAnchor) * (newMsPerPx/pinchStartMsPerPx);
+      if(!_raf) _raf = requestAnimationFrame(function(){ renderGantt(); _raf=null; });
     }
-  }, {passive:true});
+  }, {passive:false});
 
-  wrap.addEventListener('touchend', ()=>{
-    if(wrap._raf){ cancelAnimationFrame(wrap._raf); wrap._raf=null; }
+  document.addEventListener('touchend', function(e){
+    if(mode === null) return;
+    if(_raf){ cancelAnimationFrame(_raf); _raf=null; }
     const inner = getInner();
     if(inner){ inner.style.transform=''; inner.style.transformOrigin=''; }
-
     if(mode === 'pan'){
       ganttAnchorMs = clampGanttAnchor(panStartAnchor - currentDx * ganttMsPerPx);
     }
