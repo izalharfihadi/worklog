@@ -2939,21 +2939,34 @@ function ganttPeriodLabel(anchorMs, endMs){
 }
 
 // ── Main render ──
-let _ganttRenderedAnchorMs = 0, _ganttRenderedMsPerPx = 0;
+// BUFFER: render 5x viewport width (2vw left + 1vw visible + 2vw right)
+// translateX shifts ganttInner so the visible portion is always in view
+// Re-render only when pan exceeds buffer boundary
+var GANTT_BUFFER = 2; // buffer multiplier each side
+var _ganttRenderedAnchorMs = 0, _ganttRenderedMsPerPx = 0;
 
 function renderGantt(){
   ganttInitIfNeeded();
-  var vw       = ganttViewportW();
-  var anchorMs = ganttAnchorMs;
-  var endMs    = anchorMs + ganttMsPerPx * vw;
-  var visibleMs = endMs - anchorMs;
+  var vw        = ganttViewportW();
+  var anchorMs  = ganttAnchorMs;
+  var visibleMs = ganttMsPerPx * vw;
+  var endMs     = anchorMs + visibleMs;
+
+  // Buffer: render from (anchor - 2vw) to (anchor + 3vw)
+  var bufW      = vw * (1 + GANTT_BUFFER * 2);       // total render width = 5vw
+  var bufAnchor = anchorMs - GANTT_BUFFER * visibleMs; // leftmost rendered ms
 
   document.getElementById('ganttPeriodLbl').textContent = ganttPeriodLabel(anchorMs, endMs);
   var wrap        = document.getElementById('ganttContent');
   var labelRowsEl = document.getElementById('ganttLabelRows');
-  var px = function(ms){ return Math.round((ms - anchorMs) / ganttMsPerPx); };
+
+  // px: convert ms to px relative to bufAnchor (left edge of 5vw render)
+  var px = function(ms){ return Math.round((ms - bufAnchor) / ganttMsPerPx); };
+
+  // For segment filter: use buffered window
+  var bufEndMs    = bufAnchor + ganttMsPerPx * bufW;
   var intervalMs  = getTickIntervalMs(visibleMs);
-  var ticks       = generateTicksInfinite(anchorMs, endMs, intervalMs);
+  var ticks       = generateTicksInfinite(bufAnchor, bufEndMs, intervalMs);
 
   var allSorted = events.slice().sort(function(a,b){ return new Date(a.ts)-new Date(b.ts); });
   var rowMap = new Map();
@@ -2974,12 +2987,11 @@ function renderGantt(){
       if(ev.type==='START'||ev.type==='RESUME') ss=new Date(ev.tsStart||ev.ts).getTime();
       else if((ev.type==='STOP'||ev.type==='PAUSE'||ev.type==='DONE')&&ss!=null){
         var eMs=new Date(ev.ts).getTime();
-        // Include if segment OVERLAPS window (started before anchor is fine)
-        if(eMs>anchorMs&&ss<endMs) row.segments.push({sMs:ss,eMs:eMs,cat:t.cat});
+        if(eMs>bufAnchor&&ss<bufEndMs) row.segments.push({sMs:ss,eMs:eMs,cat:t.cat});
         ss=null;
       }
     });
-    if(ss!=null&&activeId===tid){ var eMs=Date.now(); if(eMs>anchorMs&&ss<endMs) row.segments.push({sMs:ss,eMs:eMs,cat:t.cat}); }
+    if(ss!=null&&activeId===tid){ var eMs=Date.now(); if(eMs>bufAnchor&&ss<bufEndMs) row.segments.push({sMs:ss,eMs:eMs,cat:t.cat}); }
   });
 
   // INT/HOME rows
@@ -2991,7 +3003,7 @@ function renderGantt(){
     var evIdx=allSorted.findIndex(function(x){ return x.id===ev.id; });
     var nextEv=allSorted[evIdx+1];
     var eMs=nextEv?new Date(nextEv.ts).getTime():((currentStatus===key||(currentStatus==='home'&&ev.type==='HOME'))?Date.now():sMs+5*60000);
-    if(eMs>anchorMs&&sMs<endMs) row.segments.push({sMs:sMs,eMs:eMs,type:ev.type==='INT'?'int':'home',intType:ev.intType});
+    if(eMs>bufAnchor&&sMs<bufEndMs) row.segments.push({sMs:sMs,eMs:eMs,type:ev.type==='INT'?'int':'home',intType:ev.intType});
   });
 
   var allRows=[...rowMap.values()], allKeys=[...rowMap.keys()];
@@ -3001,13 +3013,7 @@ function renderGantt(){
       rows.push(r); keys.push(allKeys[i]);
     }
   });
-
-  // If no rows have segments in window, show all known rows (empty bars)
-  // so user knows which activities exist — just not in this time range
-  if(!rows.length && allRows.length>0){
-    rows = allRows.slice(); keys = allKeys.slice();
-  }
-
+  if(!rows.length && allRows.length>0){ rows=allRows.slice(); keys=allKeys.slice(); }
   if(!rows.length){
     wrap.innerHTML='<div class="gantt-empty">Belum ada aktivitas.</div>';
     labelRowsEl.innerHTML=''; return;
@@ -3021,55 +3027,57 @@ function renderGantt(){
     return '';
   }
 
-  var nowMs=Date.now(), nowInWin=(nowMs>=anchorMs&&nowMs<=endMs);
+  var nowMs=Date.now(), nowInWin=(nowMs>=bufAnchor&&nowMs<=bufEndMs);
   var ROW_H=40;
 
-  // Build tick header HTML
+  // Tick header — only ticks within visible+buffer area
   var tickHdrHtml='';
   ticks.forEach(function(tk){
     var x=px(tk.ms);
-    if(x>=-60&&x<=vw+60) tickHdrHtml+='<span class="gantt-tick-lbl" style="left:'+x+'px;transform:translateX(-50%)">'+tk.label+'</span>';
+    if(x>=-60&&x<=bufW+60) tickHdrHtml+='<span class="gantt-tick-lbl" style="left:'+x+'px;transform:translateX(-50%)">'+tk.label+'</span>';
   });
 
-  // Build tick grid lines HTML (shared across all rows)
+  // Grid lines
   var tickLinesHtml='';
   ticks.forEach(function(tk){
     tickLinesHtml+='<div style="position:absolute;top:0;bottom:0;left:'+px(tk.ms)+'px;width:1px;background:var(--border);pointer-events:none"></div>';
   });
 
-  // Now-line HTML
+  // Now-line
   var nowLineHtml = nowInWin ? '<div style="position:absolute;top:0;bottom:0;left:'+px(nowMs)+'px;width:2px;background:var(--magenta);opacity:.8;pointer-events:none;z-index:3"></div>' : '';
 
-  // Build rows HTML
+  // Rows
   var rowsHtml='';
   rows.forEach(function(row,ri){
-    var bg = ri%2===0 ? 'var(--bg-deep)' : 'rgba(139,92,246,.04)';
+    var bg=ri%2===0?'var(--bg-deep)':' rgba(139,92,246,.04)';
     var barsHtml='';
     row.segments.forEach(function(seg){
-      var lx=Math.max(-2,px(seg.sMs)), rx=Math.min(vw+2,px(seg.eMs)), w=Math.max(3,rx-lx);
+      var lx=Math.max(-2,px(seg.sMs)), rx=Math.min(bufW+2,px(seg.eMs)), w=Math.max(3,rx-lx);
       var cls=seg.type==='home'?'gb-home':seg.type==='int'?'gb-int':'gb-'+(seg.cat||'ops');
       barsHtml+='<div class="gantt-bar '+cls+'" style="left:'+lx+'px;width:'+w+'px;position:absolute;top:50%;transform:translateY(-50%)"></div>';
     });
-    rowsHtml+='<div data-gantt-row="'+ri+'" style="min-height:'+ROW_H+'px;position:relative;background:'+bg+';border-bottom:1px solid var(--border);overflow:hidden;width:'+vw+'px">'+tickLinesHtml+nowLineHtml+barsHtml+'</div>';
+    rowsHtml+='<div data-gantt-row="'+ri+'" style="min-height:'+ROW_H+'px;position:relative;background:'+bg+';border-bottom:1px solid var(--border);overflow:hidden;width:'+bufW+'px">'+tickLinesHtml+nowLineHtml+barsHtml+'</div>';
   });
 
-  wrap.innerHTML='<div id="ganttInner" style="position:relative;width:'+vw+'px">'
-    +'<div style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px;overflow:hidden;width:'+vw+'px">'+tickHdrHtml+'</div>'
+  // ganttInner: shifted left by 2vw so visible area shows correctly
+  var offsetX = -(GANTT_BUFFER * vw);
+  wrap.innerHTML='<div id="ganttInner" style="position:relative;width:'+bufW+'px;transform:translateX('+offsetX+'px);will-change:transform">' 
+    +'<div id="ganttTickHdr" style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px;overflow:hidden;width:'+bufW+'px">'+tickHdrHtml+'</div>'
     +rowsHtml
     +'</div>';
 
-  // Build label column HTML
+  // Label column
   var lblHtml='';
   rows.forEach(function(row,ri){
-    var bg = ri%2===0 ? 'var(--bg-deep)' : 'rgba(139,92,246,.04)';
+    var bg=ri%2===0?'var(--bg-deep)':' rgba(139,92,246,.04)';
     lblHtml+='<div data-label-row="'+ri+'" style="min-height:'+ROW_H+'px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:'+bg+'">'
       +rowIconHtml(row)
       +'<div style="min-width:0;overflow:hidden">'
       +'<div class="gantt-row-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.name)+'</div>'
-      +(row.sub?'<div class="gantt-row-sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.sub)+'</div>':'')
-      +'</div></div>';
+      +(row.sub?'<div class="gantt-row-sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.sub)+'</div>':'')+
+      '</div></div>';
   });
-  labelRowsEl.innerHTML = lblHtml;
+  labelRowsEl.innerHTML=lblHtml;
 
   _ganttRenderedAnchorMs = anchorMs;
   _ganttRenderedMsPerPx  = ganttMsPerPx;
@@ -3081,6 +3089,7 @@ function renderGantt(){
   });
   initGanttPinch();
 }
+
 
 
 // ── Pan + Pinch — Hammer.js ──
@@ -3105,20 +3114,31 @@ function initGanttPinch(){
   });
   _ganttHammer = mc;
 
-  // ── Pan — GPU accelerated visual shift, render on end ──
+  // ── Pan — translateX within 5vw buffer, re-render at boundary ──
   var panStartAnchor = 0;
+  var _panRaf = null;
   mc.on('panstart', function(){
     panStartAnchor = ganttAnchorMs;
-    var inner = document.getElementById('ganttInner');
-    if(inner) inner.style.transition = 'none';
   });
   mc.on('panmove', function(e){
+    var newAnchor = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
+    ganttAnchorMs = newAnchor;
+    // Shift ganttInner: base offset is -2vw, adjust by pan delta
+    var vw = ganttViewportW();
+    var baseOffset = -(GANTT_BUFFER * vw);
+    var panOffset  = e.deltaX;
     var inner = document.getElementById('ganttInner');
-    if(inner) inner.style.transform = 'translateX('+e.deltaX+'px)';
+    if(inner) inner.style.transform = 'translateX('+(baseOffset + panOffset)+'px)';
+    // Re-render if pan exceeds buffer (more than 2vw from render anchor)
+    var driftPx = Math.abs(e.deltaX);
+    if(driftPx > GANTT_BUFFER * vw * 0.5){
+      if(!_panRaf) _panRaf = requestAnimationFrame(function(){
+        renderGantt(); _panRaf=null;
+      });
+    }
   });
   mc.on('panend pancancel', function(e){
-    var inner = document.getElementById('ganttInner');
-    if(inner){ inner.style.transform=''; inner.style.transition=''; }
+    if(_panRaf){ cancelAnimationFrame(_panRaf); _panRaf=null; }
     ganttAnchorMs = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
     renderGantt();
   });
