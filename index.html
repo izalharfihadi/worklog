@@ -1075,7 +1075,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
             <!-- Edge glow — menyala saat mencapai batas Big Bang -->
             <div id="ganttEdgeGlow" style="
-              position:absolute;top:0;left:0;bottom:0;width:60px;
+              position:absolute;top:0;left:0;width:60px;
               background:linear-gradient(to right, rgba(255,45,120,0.9), transparent);
               pointer-events:none;z-index:20;opacity:0;
               transition:opacity 0.2s ease-out;
@@ -3008,6 +3008,9 @@ function updateEdgeGlow(overshootPx){
   var glow = document.getElementById('ganttEdgeGlow');
   if(!glow) return;
   if(overshootPx === undefined) overshootPx = 0;
+  // Sync height to ganttContent (rows only, not empty space below)
+  var content = document.getElementById('ganttContent');
+  if(content) glow.style.height = content.offsetHeight + 'px';
   // Max intensity at 80px overshoot, cap at 0.38
   var intensity = Math.max(0, Math.min(0.38, overshootPx / 80 * 0.38));
   glow.style.opacity = intensity.toFixed(3);
