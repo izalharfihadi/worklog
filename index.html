@@ -1236,6 +1236,14 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
           <div class="reset-card-desc">Pilih data yang ingin dihapus dari PWA dan Sheets. Data yang tidak dipilih tetap utuh.</div>
           <button class="btn-reset-trigger" onclick="openResetModal()">Pilih dan reset →</button>
         </div>
+
+        <div class="reset-card" style="border-color:rgba(255,45,120,.5);margin-top:16px">
+          <div class="reset-card-title" style="color:var(--magenta)">
+            <i data-lucide="refresh-ccw"></i> Kembalikan ke Setelan Awal
+          </div>
+          <div class="reset-card-desc">Hapus seluruh data — tasks, events, dan karyawan. PWA kembali seperti pertama kali diinstall. Product tour akan muncul kembali.</div>
+          <button class="btn-reset-trigger" onclick="confirmFactoryReset()">Factory reset →</button>
+        </div>
       </div>
 
     </div>
@@ -2644,10 +2652,10 @@ function hideAdvanced(){ showSettingsSub('main'); }
 const resetChecks = { tasks:false, events:false, employees:false };
 
 function openResetModal(){
-  // Reset checkbox state
+  // Default: semua checked — user uncheck yang ingin dipertahankan
   Object.keys(resetChecks).forEach(k=>{
-    resetChecks[k]=false;
-    document.getElementById('rc-'+k)?.classList.remove('checked');
+    resetChecks[k]=true;
+    document.getElementById('rc-'+k)?.classList.add('checked');
   });
   document.getElementById('resetModal').classList.add('open');
 }
@@ -2665,6 +2673,70 @@ function closeResetModal(){
     });
   });
 });
+
+async function confirmFactoryReset(){
+  const ok = await showConfirm({
+    icon:'⚠️',
+    title:'Kembalikan ke Setelan Awal',
+    body:'Semua data akan dihapus permanen — tasks, events, dan master karyawan. PWA akan kembali seperti pertama kali diinstall.',
+    okLabel:'Factory Reset',
+    okColor:'var(--magenta)'
+  });
+  if(!ok) return;
+  setSyncStatus('syncing');
+  try {
+    // Hapus semua localStorage
+    ['wl6_tasks','wl6_events','wl6_employees','wl6_active','wl6_activeStart',
+     'wl6_status','wl6_homeStart','wl6_onboarded','wl6_bigbang_id'].forEach(function(k){
+      localStorage.removeItem(k);
+    });
+    // Reset in-memory state
+    tasks=[]; events=[]; employees=[];
+    activeId=null; activeStart=null;
+    currentStatus='home'; homeStart=new Date();
+    // Hapus di Sheets
+    await gasPost('resetSheet',{sheet:'tasks'});
+    await gasPost('resetSheet',{sheet:'events'});
+    await gasPost('resetSheet',{sheet:'employees'});
+    setSyncStatus('ok');
+    toast('✓ Reset selesai — silakan reload PWA');
+    // Reload setelah 1.5 detik agar toast terbaca
+    setTimeout(function(){ location.reload(); }, 1500);
+  } catch(err){
+    setSyncStatus('error');
+    console.error('factoryReset:', err);
+  }
+}
+
+async function confirmFactoryReset(){
+  const ok = await showConfirm({
+    icon:'⚠️',
+    title:'Kembalikan ke Setelan Awal',
+    body:'Semua data akan dihapus permanen — tasks, events, dan master karyawan. PWA akan kembali seperti pertama kali diinstall.',
+    okLabel:'Factory Reset',
+    okColor:'var(--magenta)'
+  });
+  if(!ok) return;
+  setSyncStatus('syncing');
+  try {
+    ['wl6_tasks','wl6_events','wl6_employees','wl6_active','wl6_activeStart',
+     'wl6_status','wl6_homeStart','wl6_onboarded','wl6_bigbang_id'].forEach(function(k){
+      localStorage.removeItem(k);
+    });
+    tasks=[]; events=[]; employees=[];
+    activeId=null; activeStart=null;
+    currentStatus='home'; homeStart=new Date();
+    await gasPost('resetSheet',{sheet:'tasks'});
+    await gasPost('resetSheet',{sheet:'events'});
+    await gasPost('resetSheet',{sheet:'employees'});
+    setSyncStatus('ok');
+    toast('✓ Reset selesai — silakan reload PWA');
+    setTimeout(function(){ location.reload(); }, 1500);
+  } catch(err){
+    setSyncStatus('error');
+    console.error('factoryReset:', err);
+  }
+}
 
 async function execResetModal(){
   const { tasks:doTasks, events:doEvents, employees:doEmp } = resetChecks;
@@ -2697,30 +2769,20 @@ async function execResetModal(){
       await gasPost('resetSheet',{sheet:'tasks'});
     }
     if(doEvents){
-      // Big Bang protection — event HOME pertama tidak boleh dihapus
-      // kecuali Reset Semua (doTasks + doEvents + doEmp semua true)
-      var isResetAll = doTasks && doEvents && doEmp;
-      var bigbangId  = localStorage.getItem('wl6_bigbang_id');
-      var bigbang    = bigbangId ? events.find(function(e){ return e.id===bigbangId; }) : null;
+      // Big Bang selalu dilindungi — execResetModal tidak pernah menghapusnya
+      // Factory Reset (confirmFactoryReset) yang bertugas menghapus Big Bang
+      var bigbangId = localStorage.getItem('wl6_bigbang_id');
+      var bigbang   = bigbangId ? events.find(function(e){ return e.id===bigbangId; }) : null;
       if(!bigbang) bigbang = events.find(function(e){ return e.type==='HOME'; }); // fallback
 
-      if(isResetAll || !bigbang){
-        // Reset Semua atau tidak ada Big Bang — hapus semua
-        events=[]; save('wl6_events',[]); updateBadge();
-        if(isResetAll){
-          // Reset Semua = kembali ke kondisi install — hapus semua flag
-          localStorage.removeItem('wl6_bigbang_id');
-          localStorage.removeItem('wl6_onboarded');
-          localStorage.removeItem('wl6_homeStart');
-          localStorage.removeItem('wl6_status');
-          save('wl6_active', null);
-        }
-        await gasPost('resetSheet',{sheet:'events'});
-      } else {
-        // Reset Events biasa — pertahankan Big Bang
+      if(bigbang){
+        // Pertahankan Big Bang, hapus sisanya
         events=[bigbang]; save('wl6_events',[bigbang]); updateBadge();
-        // Di Sheets: hapus semua kecuali baris Big Bang
         await gasPost('resetSheet',{sheet:'events', keepId: bigbang.id});
+      } else {
+        // Tidak ada Big Bang sama sekali — hapus semua
+        events=[]; save('wl6_events',[]); updateBadge();
+        await gasPost('resetSheet',{sheet:'events'});
       }
     }
     if(doEmp){
