@@ -3030,17 +3030,17 @@ function renderGantt(){
   var nowMs=Date.now(), nowInWin=(nowMs>=bufAnchor&&nowMs<=bufEndMs);
   var ROW_H=40;
 
-  // Tick header — only ticks within visible+buffer area
+  // Tick header — with data-ms for pinch update
   var tickHdrHtml='';
   ticks.forEach(function(tk){
     var x=px(tk.ms);
-    if(x>=-60&&x<=bufW+60) tickHdrHtml+='<span class="gantt-tick-lbl" style="left:'+x+'px;transform:translateX(-50%)">'+tk.label+'</span>';
+    if(x>=-60&&x<=bufW+60) tickHdrHtml+='<span class="gantt-tick-lbl" data-ms="'+tk.ms+'" style="left:'+x+'px;transform:translateX(-50%)">'+tk.label+'</span>';
   });
 
-  // Grid lines
+  // Grid lines — with data-ms for pinch update
   var tickLinesHtml='';
   ticks.forEach(function(tk){
-    tickLinesHtml+='<div style="position:absolute;top:0;bottom:0;left:'+px(tk.ms)+'px;width:1px;background:var(--border);pointer-events:none"></div>';
+    tickLinesHtml+='<div class="gantt-grid-line" data-ms="'+tk.ms+'" style="position:absolute;top:0;bottom:0;left:'+px(tk.ms)+'px;width:1px;background:var(--border);pointer-events:none"></div>';
   });
 
   // Now-line
@@ -3203,39 +3203,78 @@ function initGanttPinch(){
     if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
     _pinchRaf = requestAnimationFrame(function(){
       var vw = ganttViewportW();
-      // Compute new zoom
+
+      // 1. Compute new zoom + anchor
       var newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/e.scale));
       ganttMsPerPx  = newMsPerPx;
       ganttAnchorMs = clampGanttAnchor(pinchOriginMs - (pinchMidX + GANTT_BUFFER * vw) * newMsPerPx);
 
-      // Partial render: recalculate only bar left+width from stored data-sms/data-ems
-      // This is vector-like: coordinates recalculated, no CSS distortion
-      var bufAnchorNow = ganttAnchorMs - GANTT_BUFFER * visibleMs;
-      // visibleMs may have changed — recalculate
-      var visNow = newMsPerPx * vw;
+      var visNow    = newMsPerPx * vw;
       var bufAncNow = ganttAnchorMs - GANTT_BUFFER * visNow;
       var bufWNow   = vw * (1 + GANTT_BUFFER * 2);
+      var pxNow     = function(ms){ return Math.round((ms - bufAncNow) / newMsPerPx); };
 
       var wrap2 = document.getElementById('ganttContent');
-      if(!wrap2) return;
+      if(!wrap2){ _pinchRaf=null; return; }
+
+      // 2. Update bars — vector-like recalculate from data-sms/data-ems
       wrap2.querySelectorAll('.gantt-bar').forEach(function(el){
         var sMs = parseFloat(el.dataset.sms);
         var eMs = parseFloat(el.dataset.ems);
-        var lx  = Math.max(-2, Math.round((sMs - bufAncNow) / newMsPerPx));
-        var rx  = Math.min(bufWNow+2, Math.round((eMs - bufAncNow) / newMsPerPx));
-        var w   = Math.max(3, rx - lx);
+        var lx  = Math.max(-2, pxNow(sMs));
+        var rx  = Math.min(bufWNow+2, pxNow(eMs));
         el.style.left  = lx + 'px';
-        el.style.width = w  + 'px';
+        el.style.width = Math.max(3, rx-lx) + 'px';
       });
 
-      // Also update now-line position
+      // 3. Update grid lines — recalculate from data-ms
+      wrap2.querySelectorAll('.gantt-grid-line').forEach(function(el){
+        el.style.left = pxNow(parseFloat(el.dataset.ms)) + 'px';
+      });
+
+      // 4. Update tick labels — recalculate from data-ms
+      var tickHdr = document.getElementById('ganttTickHdr');
+      if(tickHdr){
+        tickHdr.querySelectorAll('.gantt-tick-lbl').forEach(function(el){
+          el.style.left = pxNow(parseFloat(el.dataset.ms)) + 'px';
+        });
+      }
+
+      // 5. Update now-line
       var nowMs = Date.now();
       var nowEl = wrap2.querySelector('.gantt-now-line');
-      if(nowEl) nowEl.style.left = Math.round((nowMs - bufAncNow) / newMsPerPx) + 'px';
+      if(nowEl) nowEl.style.left = pxNow(nowMs) + 'px';
 
-      // Update period label
-      var endMsNow = ganttAnchorMs + visNow;
-      document.getElementById('ganttPeriodLbl').textContent = ganttPeriodLabel(ganttAnchorMs, endMsNow);
+      // 6. Check if tick interval needs to change (new ticks needed)
+      var newIntervalMs = getTickIntervalMs(visNow);
+      var oldIntervalMs = getTickIntervalMs(visNow / e.scale); // approximate old
+      if(newIntervalMs !== oldIntervalMs){
+        // Interval changed — rebuild ticks only (not full DOM)
+        var newTicks = generateTicksInfinite(bufAncNow, bufAncNow + newMsPerPx * bufWNow, newIntervalMs);
+        // Rebuild tick header
+        if(tickHdr){
+          var newHdrHtml = '';
+          newTicks.forEach(function(tk){
+            var x = pxNow(tk.ms);
+            if(x>=-60&&x<=bufWNow+60)
+              newHdrHtml += '<span class="gantt-tick-lbl" data-ms="'+tk.ms+'" style="left:'+x+'px;transform:translateX(-50%)">'+tk.label+'</span>';
+          });
+          tickHdr.innerHTML = newHdrHtml;
+        }
+        // Rebuild grid lines in each row
+        var newGridHtml = '';
+        newTicks.forEach(function(tk){
+          newGridHtml += '<div class="gantt-grid-line" data-ms="'+tk.ms+'" style="position:absolute;top:0;bottom:0;left:'+pxNow(tk.ms)+'px;width:1px;background:var(--border);pointer-events:none"></div>';
+        });
+        wrap2.querySelectorAll('[data-gantt-row]').forEach(function(rowEl){
+          // Remove old grid lines, keep bars and now-line
+          rowEl.querySelectorAll('.gantt-grid-line').forEach(function(gl){ gl.remove(); });
+          rowEl.insertAdjacentHTML('afterbegin', newGridHtml);
+        });
+      }
+
+      // 7. Update period label
+      document.getElementById('ganttPeriodLbl').textContent = ganttPeriodLabel(ganttAnchorMs, ganttAnchorMs + visNow);
 
       _pinchRaf = null;
     });
