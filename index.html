@@ -3205,7 +3205,9 @@ function initGanttPinch(){
       var vw = ganttViewportW();
 
       // 1. Compute new zoom + anchor
-      var newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/e.scale));
+      // Dampen scale — reduces zoom sensitivity (0.4 = 40% of raw scale change)
+      var dampedScale = 1 + (e.scale - 1) * 0.4;
+      var newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/dampedScale));
       ganttMsPerPx  = newMsPerPx;
       ganttAnchorMs = clampGanttAnchor(pinchOriginMs - (pinchMidX + GANTT_BUFFER * vw) * newMsPerPx);
 
