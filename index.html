@@ -1139,15 +1139,12 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
     <!-- EDIT LOG -->
     <div class="panel" id="panel-editlog">
       <div class="panel-inner">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div>
-            <div style="font-size:17px;font-weight:700;margin-bottom:2px">Edit Log</div>
-            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="editSub">Semua aktivitas hari ini</div>
-          </div>
-          <button class="btn-ghost" style="font-size:10px;font-family:var(--mono)" onclick="clearLog()">Hapus</button>
+        <div style="margin-bottom:14px">
+          <div style="font-size:17px;font-weight:700;margin-bottom:2px">Edit Log</div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="editSub">Belum ada interrupt hari ini</div>
         </div>
         <div class="event-list" id="eventList">
-          <div class="task-empty">Belum ada event.</div>
+          <div class="task-empty">Belum ada MS Teams, WhatsApp, Orang, atau Rokok hari ini.</div>
         </div>
       </div>
     </div>
@@ -1974,13 +1971,11 @@ function setStatus(newStatus, opts={}) {
     const intType = newStatus.replace('int-','');
     const labels = {teams:'MS Teams',whatsapp:'WhatsApp',tamu:'Orang',toilet:'Toilet',rokok:'Rokok'};
     const label = labels[intType] || intType;
-    // Toilet tidak perlu dilengkapi — langsung complete
-    const isComplete = intType === 'toilet';
+    // Semua INT langsung done — tidak ada incomplete
     events.push({id:'EV'+Date.now(), ts:now.toISOString(), tsStart:now.toISOString(), tsEnd:'',
       taskId:'', title:label, pic:'—', dept:'—', cat:'—',
-      type:'INT', intType, incomplete:!isComplete, notes:''});
+      type:'INT', intType, incomplete:false, notes:''});
     save('wl6_events', events);
-    updateBadge();
     appendEventToSheets(events[events.length-1]);
   }
 
@@ -2071,19 +2066,23 @@ function pushEvent(data){
   updateBadge();
   appendEventToSheets(ev);
 }
-function updateBadge(){const n=events.filter(e=>e.incomplete).length;const b=document.getElementById('editBadge');b.textContent=n;b.classList.toggle('hidden',n===0);}
+function updateBadge(){
+  // Badge dihapus — tidak ada konsep incomplete
+  const b=document.getElementById('editBadge');
+  if(b) b.classList.add('hidden');
+}
 
 // ══════════════════════════════════════════════
 //  MODAL EDIT
 // ══════════════════════════════════════════════
 function openEditModal(evId){
   const ev=events.find(e=>e.id===evId);if(!ev)return;
-  // Toilet tidak perlu edit — aktivitas pribadi tanpa PIC
-  if(ev.intType==='toilet'){toast('Toilet tidak perlu dilengkapi');return;}
   document.getElementById('mEvId').value=evId;
   document.getElementById('mIcon').textContent=
     ev.intType==='rokok'?'🚬':ev.intType==='whatsapp'?'💬':ev.intType==='teams'?'💻':ev.intType==='tamu'?'👤':'📝';
-  document.getElementById('mTitle').textContent='Lengkapi: '+(ev.title||'Event');
+  document.getElementById('mTitle').textContent='Edit: '+(
+    {teams:'MS Teams',whatsapp:'WhatsApp',tamu:'Orang',rokok:'Rokok'}[ev.intType]||ev.title||'Event'
+  );
   document.getElementById('m-pic').value=ev.pic!=='—'?ev.pic:'';
   document.getElementById('m-notes').value=ev.notes||'';
   mSelectedDept=ev.dept&&ev.dept!=='—'?ev.dept:'';
@@ -2091,16 +2090,23 @@ function openEditModal(evId){
   document.getElementById('editModal').classList.add('open');
 }
 function closeModal(e){if(e&&e.target!==document.getElementById('editModal'))return;document.getElementById('editModal').classList.remove('open');}
-function saveEdit(){
+async function saveEdit(){
   const evId=document.getElementById('mEvId').value;
   const ev=events.find(e=>e.id===evId);if(!ev)return;
   const pic=v('m-pic');
   const dept=mSelectedDept||lookupDept(pic)||'';
-  ev.pic=pic||'—';ev.dept=dept;ev.notes=v('m-notes');ev.incomplete=false;
-  save('wl6_events',events);updateBadge();renderAll();
+  // Update localStorage
+  ev.pic=pic||'—'; ev.dept=dept; ev.notes=v('m-notes');
+  save('wl6_events',events);
+  renderEvents();
   document.getElementById('editModal').classList.remove('open');
-  toast('✓ Event diperbarui');
-  appendEventToSheets(ev);
+  toast('✓ Info disimpan');
+  // Push update to Sheets by event ID
+  setSyncStatus('syncing');
+  try {
+    await gasPost('editEvent',{id:evId, fields:{pic:ev.pic, dept:ev.dept, notes:ev.notes}});
+    setSyncStatus('ok');
+  } catch(err){ setSyncStatus('error'); console.error('saveEdit:',err); }
 }
 
 // ══════════════════════════════════════════════
@@ -2542,37 +2548,48 @@ function renderTasks(){
 
 function renderEvents(){
   const el=document.getElementById('eventList');
-  const inc=events.filter(e=>e.incomplete).length;
-  document.getElementById('editSub').textContent=inc?`${inc} event belum dilengkapi`:'Semua aktivitas hari ini';
-  if(!events.length){el.innerHTML='<div class="task-empty">Belum ada event.</div>';return;}
-  el.innerHTML=[...events].reverse().map(ev=>{
-    const ts=fmtTs(ev.tsStart||ev.ts),tsE=ev.tsEnd?fmtTs(ev.tsEnd):'';
-    const sub=[ts+(tsE?' – '+tsE:''),ev.pic&&ev.pic!=='—'?'→ '+ev.pic:'',ev.dept&&ev.dept!=='—'?ev.dept:''].filter(Boolean).join(' · ');
-    const badgeLabel = ev.type==='INT' ? (ev.intType||'INT').toUpperCase().slice(0,5) : ev.type;
-    const titleIcon = ev.type==='HOME' ? '🏠 ' : ev.type==='INT' ? '' : '';
-    return`<div class="ev-item${ev.incomplete?' incomplete':''}">
+  // Edit Log hanya menampilkan 4 interrupt yang bisa diedit
+  const EDITABLE_INT = ['teams','whatsapp','tamu','rokok'];
+  const editableEvs = [...events].reverse().filter(ev=>
+    ev.type==='INT' && EDITABLE_INT.includes(ev.intType)
+  );
+  const total = editableEvs.length;
+  document.getElementById('editSub').textContent =
+    total ? `${total} aktivitas interrupt` : 'Belum ada interrupt hari ini';
+  if(!total){
+    el.innerHTML='<div class="task-empty">Belum ada MS Teams, WhatsApp, Orang, atau Rokok hari ini.</div>';
+    return;
+  }
+  const intLabels = {teams:'MS Teams',whatsapp:'WhatsApp',tamu:'Orang',rokok:'Rokok'};
+  const intIcons  = {teams:'💻',whatsapp:'💬',tamu:'👤',rokok:'🚬'};
+  el.innerHTML = editableEvs.map(ev=>{
+    const ts = fmtTs(ev.tsStart||ev.ts);
+    const hasInfo = (ev.pic && ev.pic!=='—') || ev.notes;
+    const picInfo = ev.pic&&ev.pic!=='—' ? `→ ${esc(ev.pic)}` : '';
+    const deptInfo = ev.dept&&ev.dept!=='—' ? ` · ${esc(ev.dept)}` : '';
+    return`<div class="ev-item">
       <div class="ev-type-col">
-        <span class="ev-badge ev-${ev.type}">${badgeLabel}</span>
+        <span class="ev-badge ev-INT">${(ev.intType||'').toUpperCase().slice(0,5)}</span>
         <span class="ev-ts">${ts}</span>
       </div>
       <div class="ev-body">
-        <div class="ev-title">${titleIcon}${esc(ev.title||'—')}</div>
-        <div class="ev-sub">${sub}</div>
-        ${ev.notes?`<div class="ev-sub">${esc(ev.notes)}</div>`:''}
-        ${ev.incomplete?'<div class="ev-incomplete-lbl">! perlu dilengkapi</div>':''}
+        <div class="ev-title">${intIcons[ev.intType]||''} ${esc(intLabels[ev.intType]||ev.title||'—')}</div>
+        ${hasInfo?`<div class="ev-sub">${picInfo}${deptInfo}${ev.notes?` · ${esc(ev.notes)}`:''}` +
+          `</div>`:''}
       </div>
-      ${ev.incomplete?`<div class="ev-actions"><button class="btn-edit-ev" onclick="openEditModal('${ev.id}')">Isi →</button></div>`:''}
-    </div>`;}).join('');
+      <div class="ev-actions">
+        <button class="btn-edit-ev" onclick="openEditModal('${ev.id}')">Edit</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-async function clearLog(){
-  const ok = await showConfirm({
-    icon:'🗑️', title:'Hapus Log?',
-    body:'Semua event hari ini akan dihapus dari PWA. Tidak dapat dibatalkan.',
-    okLabel:'Hapus', okColor:'var(--magenta)'
-  });
-  if(!ok) return;
-  events=[]; save('wl6_events',events); updateBadge(); renderEvents();
+function clearLog(){
+  // Edit Log hanya window tampilan — hapus tampilan saja, bukan data events
+  // Events tetap ada untuk Gantt chart
+  document.getElementById('eventList').innerHTML =
+    '<div class="task-empty">Belum ada MS Teams, WhatsApp, Orang, atau Rokok hari ini.</div>';
+  document.getElementById('editSub').textContent = 'Belum ada interrupt hari ini';
 }
 
 // ══════════════════════════════════════════════
@@ -2985,9 +3002,9 @@ function renderGantt(){
 
   wrap.innerHTML=`
   <div id="ganttInner" style="position:relative;background:var(--bg-deep)">
-    <!-- Timeline header — must match label header height exactly -->
-    <div style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border)">
-      <div style="width:${trackW}px;position:relative;height:28px">
+    <!-- Timeline header — sticky, must always have explicit background -->
+    <div style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border);min-width:100%">
+      <div style="width:${trackW}px;position:relative;height:28px;background:var(--bg-mid)">
         ${ticks.map(tk=>`<span class="gantt-tick-lbl" style="left:${pct(tk.ts)}%">${tk.label}</span>`).join('')}
       </div>
     </div>
