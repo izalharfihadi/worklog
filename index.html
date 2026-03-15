@@ -1071,8 +1071,15 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <div id="ganttLabelRows" style="overflow:hidden;flex:1;background:var(--bg-deep)"></div>
           </div>
           <!-- Timeline -->
-          <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:none;user-select:none;-webkit-user-select:none">
+          <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:none;user-select:none;-webkit-user-select:none;position:relative">
             <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
+            <!-- Edge glow — menyala saat mencapai batas Big Bang -->
+            <div id="ganttEdgeGlow" style="
+              position:absolute;top:0;left:0;bottom:0;width:48px;
+              background:linear-gradient(to right, rgba(255,45,120,0.0), transparent);
+              pointer-events:none;z-index:20;opacity:0;
+              transition:opacity 0.15s ease-out;
+            "></div>
           </div>
         </div>
       </div>
@@ -2979,12 +2986,36 @@ function ganttNav(dir){
   renderGantt();
 }
 
+function getBigBangMs(){
+  // Big Bang = timestamp event BIGBANG00000000
+  var bb = events.find(function(e){ return e.id==='BIGBANG00000000'; });
+  if(bb) return new Date(bb.ts).getTime();
+  // Fallback: first event
+  if(events.length) return Math.min.apply(null, events.map(function(e){ return new Date(e.ts).getTime(); }));
+  return null;
+}
+
 function clampGanttAnchor(anchor){
-  if(!events.length) return anchor;
-  // Left soft boundary: 1 hour before first event
-  var firstMs = Math.min.apply(null, events.map(function(e){ return new Date(e.ts).getTime(); }));
-  var leftBound = firstMs - 3600000;
-  return Math.max(leftBound, anchor);
+  var bbMs = getBigBangMs();
+  if(bbMs === null) return anchor;
+  // Hard boundary: cannot scroll before Big Bang (no buffer — Big Bang is absolute zero)
+  return Math.max(bbMs, anchor);
+}
+
+// Show/hide edge glow based on how close anchor is to Big Bang
+function updateEdgeGlow(){
+  var glow = document.getElementById('ganttEdgeGlow');
+  if(!glow) return;
+  var bbMs = getBigBangMs();
+  if(bbMs === null){ glow.style.opacity = '0'; return; }
+  var vw = ganttViewportW();
+  var visibleMs = ganttMsPerPx * vw;
+  // Distance from anchor to Big Bang in pixels
+  var distPx = (ganttAnchorMs - bbMs) / ganttMsPerPx;
+  // Glow intensifies as distPx approaches 0 (at boundary)
+  // Full glow when distPx <= 0 (clamped), fade starts at 120px away
+  var intensity = Math.max(0, Math.min(1, 1 - distPx / 120));
+  glow.style.opacity = intensity.toFixed(3);
 }
 
 // ── Tick generation ──
@@ -3178,6 +3209,7 @@ function renderGantt(){
     var tr=wrap.querySelectorAll('[data-gantt-row]'), lr=labelRowsEl.querySelectorAll('[data-label-row]');
     for(var i=0;i<tr.length;i++){ if(lr[i]){ var h=tr[i].offsetHeight; lr[i].style.minHeight=h+'px'; lr[i].style.height=h+'px'; }}
     lucide.createIcons();
+    updateEdgeGlow();
   });
   initGanttPinch();
 }
@@ -3227,6 +3259,7 @@ function initGanttPinch(){
     var baseOffset = -(GANTT_BUFFER * vw);
     var inner = document.getElementById('ganttInner');
     if(inner) inner.style.transform = 'translateX('+(baseOffset + e.deltaX)+'px)';
+    updateEdgeGlow();
     var driftPx = Math.abs(e.deltaX);
     if(driftPx > GANTT_BUFFER * vw * 0.5){
       if(!_panRaf) _panRaf = requestAnimationFrame(function(){
@@ -3240,6 +3273,7 @@ function initGanttPinch(){
     // Commit final position
     ganttAnchorMs = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
     renderGantt();
+    updateEdgeGlow();
 
     // ── Momentum / inertia ──
     // Hammer velocityX: px/ms, positive = right swipe (pan left = negative anchor shift)
@@ -3271,7 +3305,7 @@ function initGanttPinch(){
       if(Math.abs(driftPx) > GANTT_BUFFER * vw * 0.5){
         renderGantt();
       }
-
+      updateEdgeGlow();
       _momentumRaf = requestAnimationFrame(momentumStep);
     }
     _momentumRaf = requestAnimationFrame(momentumStep);
