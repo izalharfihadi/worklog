@@ -3044,7 +3044,7 @@ function renderGantt(){
   });
 
   // Now-line
-  var nowLineHtml = nowInWin ? '<div style="position:absolute;top:0;bottom:0;left:'+px(nowMs)+'px;width:2px;background:var(--magenta);opacity:.8;pointer-events:none;z-index:3"></div>' : '';
+  var nowLineHtml = nowInWin ? '<div class="gantt-now-line" style="position:absolute;top:0;bottom:0;left:'+px(nowMs)+'px;width:2px;background:var(--magenta);opacity:.8;pointer-events:none;z-index:3"></div>' : '';
 
   // Rows
   var rowsHtml='';
@@ -3054,7 +3054,7 @@ function renderGantt(){
     row.segments.forEach(function(seg){
       var lx=Math.max(-2,px(seg.sMs)), rx=Math.min(bufW+2,px(seg.eMs)), w=Math.max(3,rx-lx);
       var cls=seg.type==='home'?'gb-home':seg.type==='int'?'gb-int':'gb-'+(seg.cat||'ops');
-      barsHtml+='<div class="gantt-bar '+cls+'" style="left:'+lx+'px;width:'+w+'px;position:absolute;top:50%;transform:translateY(-50%)"></div>';
+      barsHtml+='<div class="gantt-bar '+cls+'" data-sms="'+seg.sMs+'" data-ems="'+seg.eMs+'" style="left:'+lx+'px;width:'+w+'px;position:absolute;top:50%;transform:translateY(-50%)"></div>';
     });
     rowsHtml+='<div data-gantt-row="'+ri+'" style="min-height:'+ROW_H+'px;position:relative;background:'+bg+';border-bottom:1px solid var(--border);overflow:hidden;width:'+bufW+'px">'+tickLinesHtml+nowLineHtml+barsHtml+'</div>';
   });
@@ -3185,34 +3185,65 @@ function initGanttPinch(){
     _momentumRaf = requestAnimationFrame(momentumStep);
   });
 
-  // ── Pinch — GPU accelerated scale, render on end ──
+  // ── Pinch — partial render (bars only) during gesture, full rebuild on end ──
   var pinchStartMsPerPx = 0, pinchStartAnchor = 0, pinchOriginMs = 0;
   var pinchMidX = 0;
+  var _pinchRaf = null;
+
   mc.on('pinchstart', function(e){
+    stopMomentum();
     pinchStartMsPerPx = ganttMsPerPx;
     pinchStartAnchor  = ganttAnchorMs;
     var rect = wrap.getBoundingClientRect();
-    pinchMidX = e.center.x - rect.left;
-    pinchOriginMs = ganttAnchorMs + pinchMidX * ganttMsPerPx;
-    
-    var inner = document.getElementById('ganttInner');
-    if(inner) {
-      inner.style.transformOrigin = pinchMidX + 'px 0';
-      inner.style.transition = 'none';
-    }
+    pinchMidX     = e.center.x - rect.left;
+    pinchOriginMs = ganttAnchorMs + (pinchMidX + GANTT_BUFFER * ganttViewportW()) * ganttMsPerPx;
   });
-  var _pinchRaf = null;
+
   mc.on('pinchmove', function(e){
-    // Update state directly — no scaleX (avoids image-stretch distortion)
-    var vw = ganttViewportW();
-    var newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/e.scale));
-    ganttMsPerPx  = newMsPerPx;
-    ganttAnchorMs = clampGanttAnchor(pinchOriginMs - (pinchMidX * newMsPerPx));
-    if(!_pinchRaf) _pinchRaf = requestAnimationFrame(function(){ renderGantt(); _pinchRaf=null; });
+    if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
+    _pinchRaf = requestAnimationFrame(function(){
+      var vw = ganttViewportW();
+      // Compute new zoom
+      var newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/e.scale));
+      ganttMsPerPx  = newMsPerPx;
+      ganttAnchorMs = clampGanttAnchor(pinchOriginMs - (pinchMidX + GANTT_BUFFER * vw) * newMsPerPx);
+
+      // Partial render: recalculate only bar left+width from stored data-sms/data-ems
+      // This is vector-like: coordinates recalculated, no CSS distortion
+      var bufAnchorNow = ganttAnchorMs - GANTT_BUFFER * visibleMs;
+      // visibleMs may have changed — recalculate
+      var visNow = newMsPerPx * vw;
+      var bufAncNow = ganttAnchorMs - GANTT_BUFFER * visNow;
+      var bufWNow   = vw * (1 + GANTT_BUFFER * 2);
+
+      var wrap2 = document.getElementById('ganttContent');
+      if(!wrap2) return;
+      wrap2.querySelectorAll('.gantt-bar').forEach(function(el){
+        var sMs = parseFloat(el.dataset.sms);
+        var eMs = parseFloat(el.dataset.ems);
+        var lx  = Math.max(-2, Math.round((sMs - bufAncNow) / newMsPerPx));
+        var rx  = Math.min(bufWNow+2, Math.round((eMs - bufAncNow) / newMsPerPx));
+        var w   = Math.max(3, rx - lx);
+        el.style.left  = lx + 'px';
+        el.style.width = w  + 'px';
+      });
+
+      // Also update now-line position
+      var nowMs = Date.now();
+      var nowEl = wrap2.querySelector('.gantt-now-line');
+      if(nowEl) nowEl.style.left = Math.round((nowMs - bufAncNow) / newMsPerPx) + 'px';
+
+      // Update period label
+      var endMsNow = ganttAnchorMs + visNow;
+      document.getElementById('ganttPeriodLbl').textContent = ganttPeriodLabel(ganttAnchorMs, endMsNow);
+
+      _pinchRaf = null;
+    });
   });
+
   mc.on('pinchend pinchcancel', function(){
     if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
-    // State already committed in pinchmove — just do final clean render
+    // Full rebuild with correct coordinates
     renderGantt();
   });
 }
