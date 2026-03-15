@@ -883,14 +883,21 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 
 /* ══ GANTT ══ */
 .gantt-controls {
-  display: flex; align-items: center; gap: 6px;
-  padding: 10px 14px; border-bottom: 1px solid var(--border);
-  background: var(--bg-mid); flex-shrink: 0;
+  flex-shrink: 0; border-bottom: 1px solid var(--border);
+  background: var(--bg-mid);
+}
+.gantt-controls-row1 {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px 6px;
+}
+.gantt-controls-row2 {
+  display: flex; padding: 0 14px 8px; gap: 8px;
 }
 .gantt-zoom-btn {
-  font-family: var(--mono); font-size: 10px; padding: 5px 12px; border-radius: 20px;
-  border: 1px solid var(--border-md); background: var(--bg-card);
-  cursor: pointer; color: var(--text2); transition: all var(--t);
+  flex: 1; font-family: var(--mono); font-size: 11px; padding: 8px 0;
+  border-radius: 20px; border: 1px solid var(--border-md);
+  background: var(--bg-card); cursor: pointer; color: var(--text2);
+  transition: all var(--t); text-align: center;
 }
 .gantt-zoom-btn.active {
   background: linear-gradient(135deg,#8b5cf6,#00e5ff);
@@ -1042,14 +1049,18 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
     <div class="panel" id="panel-dashboard">
       <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
         <div class="gantt-controls" style="flex-shrink:0">
-          <button class="gantt-zoom-btn active" id="zoom-day"   onclick="setZoom('day')">Hari</button>
-          <button class="gantt-zoom-btn"        id="zoom-week"  onclick="setZoom('week')">Minggu</button>
-          <button class="gantt-zoom-btn"        id="zoom-month" onclick="setZoom('month')">Bulan</button>
-          <button class="btn-gantt-now" onclick="ganttGoNow()">Now</button>
-          <div class="gantt-nav">
-            <button class="gantt-nav-btn" onclick="ganttNav(-1)">‹</button>
-            <span class="gantt-period-lbl" id="ganttPeriodLbl"></span>
-            <button class="gantt-nav-btn" onclick="ganttNav(1)">›</button>
+          <div class="gantt-controls-row1">
+            <button class="btn-gantt-now" onclick="ganttGoNow()">Now</button>
+            <div class="gantt-nav" style="margin-left:auto">
+              <button class="gantt-nav-btn" onclick="ganttNav(-1)">‹</button>
+              <span class="gantt-period-lbl" id="ganttPeriodLbl"></span>
+              <button class="gantt-nav-btn" onclick="ganttNav(1)">›</button>
+            </div>
+          </div>
+          <div class="gantt-controls-row2">
+            <button class="gantt-zoom-btn active" id="zoom-day"   onclick="setZoom('day')">Hari</button>
+            <button class="gantt-zoom-btn"        id="zoom-week"  onclick="setZoom('week')">Minggu</button>
+            <button class="gantt-zoom-btn"        id="zoom-month" onclick="setZoom('month')">Bulan</button>
           </div>
         </div>
         <div style="flex:1;display:flex;overflow:hidden;position:relative;background:var(--bg-deep)">
@@ -1070,8 +1081,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
     <div class="panel" id="panel-submit">
       <div class="panel-inner">
         <div style="margin-bottom:18px">
-          <div style="font-size:17px;font-weight:700;letter-spacing:.3px;margin-bottom:3px">Tambah Tugas</div>
-          <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">nama · PIC — ringkas, cepat</div>
+          <div style="font-size:17px;font-weight:700;letter-spacing:.3px">Tambah Tugas</div>
         </div>
         <div class="field">
           <label>Nama Tugas</label>
@@ -1087,7 +1097,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
           </div>
         </div>
         <div class="form-footer">
-          <button class="btn-ghost" onclick="clearForm()">Bersihkan</button>
+          <button class="btn-ghost" onclick="clearForm()" title="Bersihkan form" style="display:flex;align-items:center;gap:4px;color:var(--muted)"><i data-lucide="eraser" style="width:16px;height:16px;stroke:currentColor"></i></button>
           <button class="btn-primary" onclick="submitTask()">+ Tambah</button>
         </div>
       </div>
@@ -1095,9 +1105,8 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 
     <!-- RUNNING -->
     <div class="panel active" id="panel-running">
-      <!-- interrupt row -->
-      <div class="int-row">
-        <span class="int-row-lbl">Int.</span>
+      <!-- interrupt row — full width, no label -->
+      <div class="int-row" style="justify-content:space-around;padding:10px 10px">
         <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams')"><i data-lucide="message-square-text"></i></button>
         <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp')"><i data-lucide="message-circle"></i></button>
         <button class="int-btn" data-itype="tamu"     onclick="triggerInt('tamu')"><i data-lucide="user-round"></i></button>
@@ -1107,11 +1116,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
         <button class="btn-pulang" data-itype="home" onclick="goHome()"><i data-lucide="house"></i></button>
       </div>
       <div class="panel-inner">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="sec-label">Tugas Aktif</div>
-          <button class="btn-ghost" style="font-size:10px;font-family:var(--mono)" onclick="exportCSV()">↓ CSV</button>
-        </div>
-        <div class="sort-bar">
+        <div class="sort-bar" style="margin-bottom:10px">
           <span>Sort:</span>
           <button class="sort-btn active" id="sort-manual" onclick="setTaskSort('manual')">Manual</button>
           <button class="sort-btn" id="sort-date"   onclick="setTaskSort('date')">Tanggal</button>
@@ -1152,12 +1157,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
       <!-- Main settings view -->
       <div id="settings-main" class="panel-inner">
         <div class="settings-title">Master Karyawan</div>
-        <div class="settings-sub">Autocomplete PIC + departemen otomatis</div>
 
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <button class="btn-ghost" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:5px 12px;color:var(--cyan)" onclick="loadFromSheets()">↓ Tarik dari Sheets</button>
-          <button class="btn-ghost" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:5px 12px;color:var(--green)" onclick="pushToSheets()">↑ Kirim ke Sheets</button>
-        </div>
         <div class="emp-add-row">
           <div style="flex:1;position:relative">
             <input type="text" id="emp-name" placeholder="Nama..." autocomplete="off"
@@ -1189,6 +1189,15 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <tbody id="empTbody"></tbody>
           </table>
         </div>
+
+        <!-- Export CSV -->
+        <button class="adv-link" onclick="exportCSV()" style="border-top:1px solid var(--border);margin-top:20px">
+          <div>
+            <div class="adv-link-label">Export CSV</div>
+            <div class="adv-link-sub">Download semua events sebagai file CSV</div>
+          </div>
+          <i data-lucide="download"></i>
+        </button>
 
         <!-- Advanced link -->
         <button class="adv-link" onclick="showAdvanced()">
