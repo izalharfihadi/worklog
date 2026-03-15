@@ -370,8 +370,10 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
 .tc-body { flex: 1; padding: 10px 12px; min-width: 0; }
 .tc-title {
   font-size: 15px; font-weight: 600; letter-spacing: .1px; font-family: var(--font-body);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden;
   color: var(--text);
+  -webkit-mask-image: linear-gradient(to right, black 70%, transparent 100%);
+  mask-image: linear-gradient(to right, black 70%, transparent 100%);
 }
 .tc-meta { display: flex; align-items: center; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
 .tc-pic { font-size: 11px; color: var(--muted); font-family: var(--mono); }
@@ -3102,7 +3104,7 @@ function renderGantt(){
   });
   taskIds.forEach(function(tid){
     var t=tasks.find(function(x){ return x.id===tid; }); if(!t) return;
-    if(!rowMap.has(tid)) rowMap.set(tid,{name:t.title,sub:t.dept||t.pic||'',segments:[],evType:'TASK'});
+    if(!rowMap.has(tid)) rowMap.set(tid,{name:t.title,sub:t.pic||t.dept||'',segments:[],evType:'TASK'});
     var row=rowMap.get(tid);
     var tevs=allSorted.filter(function(e){ return e.taskId===tid; }).sort(function(a,b){ return new Date(a.ts)-new Date(b.ts); });
     var ss=null;
@@ -3193,12 +3195,15 @@ function renderGantt(){
   var lblHtml='';
   rows.forEach(function(row,ri){
     var bg=ri%2===0?'var(--bg-deep)':' rgba(139,92,246,.04)';
+    // Fade gradient: transparent → row background color
+    var fadeGrad='linear-gradient(to right, transparent 60%, '+bg+' 100%)';
     lblHtml+='<div data-label-row="'+ri+'" style="min-height:'+ROW_H+'px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:'+bg+'">'
       +rowIconHtml(row)
-      +'<div style="min-width:0;overflow:hidden">'
-      +'<div class="gantt-row-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-body);font-size:14px">'+esc(row.name)+'</div>'
-      +(row.sub?'<div class="gantt-row-sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.sub)+'</div>':'')+
-      '</div></div>';
+      +'<div style="min-width:0;overflow:hidden;position:relative;flex:1">'
+      +'<div style="white-space:nowrap;font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--text)">'+esc(row.name)+'</div>'
+      +(row.sub?'<div style="white-space:nowrap;font-family:var(--font-body);font-size:11px;color:var(--muted);margin-top:1px">'+esc(row.sub)+'</div>':'')
+      +'<div style="position:absolute;top:0;right:0;bottom:0;width:28px;background:'+fadeGrad+';pointer-events:none"></div>'
+      +'</div></div>';
   });
   labelRowsEl.innerHTML=lblHtml;
 
