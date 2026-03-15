@@ -20,9 +20,9 @@
   --bg-mid:     #12102a;
   --bg-card:    #1a1733;
   --bg-card2:   #201d3d;
-  --border:     rgba(139,92,246,.18);
-  --border-md:  rgba(139,92,246,.35);
-  --border-bright: rgba(139,92,246,.6);
+  --border:     rgba(139,92,246,.28);
+  --border-md:  rgba(139,92,246,.45);
+  --border-bright: rgba(139,92,246,.7);
 
   /* ── Text ── */
   --text:       #f0eeff;
@@ -932,12 +932,12 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
         </div>
         <div style="flex:1;display:flex;overflow:hidden;position:relative">
           <!-- Fixed label column -->
-          <div id="ganttLabels" style="width:120px;flex-shrink:0;overflow:hidden;border-right:1px solid var(--border);background:var(--bg-deep);z-index:5;display:flex;flex-direction:column">
+          <div id="ganttLabels" style="width:120px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-mid);border-right:1px solid var(--border);z-index:10">
             <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
-            <div id="ganttLabelRows" style="overflow:hidden;flex:1"></div>
+            <div id="ganttLabelRows" style="overflow:hidden;flex:1;background:var(--bg-deep)"></div>
           </div>
           <!-- Scrollable timeline -->
-          <div id="ganttWrap" style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;" onscroll="syncGanttScroll(this)">
+          <div id="ganttWrap" style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg-deep)" onscroll="syncGanttScroll(this)">
             <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
           </div>
         </div>
@@ -2492,18 +2492,19 @@ function renderGantt(){
   });
 
   wrap.innerHTML=`
-  <div id="ganttInner" style="position:relative">
-    <!-- Timeline header (scrolls horizontally with content) -->
+  <div id="ganttInner" style="position:relative;background:var(--bg-deep)">
+    <!-- Timeline header — must match label header height exactly -->
     <div style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border)">
-      <div style="width:${trackW}px;position:relative;height:28px;margin-left:0">
+      <div style="width:${trackW}px;position:relative;height:28px">
         ${ticks.map(tk=>`<span class="gantt-tick-lbl" style="left:${pct(tk.ts)}%">${tk.label}</span>`).join('')}
       </div>
     </div>
-    <!-- Data rows — timeline bars only, no labels -->
+    <!-- Data rows — alternating subtle bg for readability -->
     ${rows.map((row,ri)=>{
       const key=[...rowMap.keys()][ri];
       const ev=rowEvMap.get(key);
-      return`<div data-gantt-row="${ri}" style="border-bottom:1px solid var(--border);min-height:40px;position:relative">
+      const rowBg = ri%2===0 ? 'var(--bg-deep)' : 'rgba(139,92,246,.03)';
+      return`<div data-gantt-row="${ri}" style="border-bottom:1px solid var(--border);min-height:40px;position:relative;background:${rowBg}">
         <div style="width:${trackW}px;min-height:40px;position:relative">
           ${ticks.map(tk=>`<div class="gantt-vline" style="left:${pct(tk.ts)}%"></div>`).join('')}
           ${now>=vs&&now<=ve?`<div class="gantt-vline now-line" style="left:${pct(now)}%"></div>`:''}
@@ -2517,13 +2518,14 @@ function renderGantt(){
     }).join('')}
   </div>`;
 
-  // Build label column separately (no scroll, fixed)
+  // Build label column separately (fixed, no horizontal scroll)
   const labelRows = document.getElementById('ganttLabelRows');
   labelRows.innerHTML = rows.map((row,ri)=>{
     const key=[...rowMap.keys()][ri];
     const ev=rowEvMap.get(key);
     const iconHtml=rowIconHtml(row,ev);
-    return`<div style="min-height:40px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:var(--bg-deep)">
+    const rowBg = ri%2===0 ? 'var(--bg-deep)' : 'rgba(139,92,246,.03)';
+    return`<div data-label-row="${ri}" style="min-height:40px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:${rowBg}">
       ${iconHtml}
       <div style="min-width:0;overflow:hidden">
         <div class="gantt-row-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.name)}</div>
@@ -2535,10 +2537,13 @@ function renderGantt(){
   // Sync label rows height with timeline rows after render
   requestAnimationFrame(()=>{
     const timeRows = wrap.querySelectorAll('[data-gantt-row]');
-    const labelRowEls = labelRows.querySelectorAll('div[style]');
+    const labelRowEls = labelRows.querySelectorAll('[data-label-row]');
     timeRows.forEach((tr,i)=>{
       const h = tr.offsetHeight;
-      if(labelRowEls[i]) labelRowEls[i].style.minHeight = h+'px';
+      if(labelRowEls[i]) {
+        labelRowEls[i].style.minHeight = h+'px';
+        labelRowEls[i].style.height = h+'px';
+      }
     });
     lucide.createIcons();
   });
