@@ -3114,22 +3114,27 @@ function initGanttPinch(){
   });
   _ganttHammer = mc;
 
-  // ── Pan — translateX within 5vw buffer, re-render at boundary ──
+  // ── Pan — translateX within 5vw buffer, momentum on release ──
   var panStartAnchor = 0;
   var _panRaf = null;
+  var _momentumRaf = null;
+
+  function stopMomentum(){
+    if(_momentumRaf){ cancelAnimationFrame(_momentumRaf); _momentumRaf=null; }
+  }
+
   mc.on('panstart', function(){
+    stopMomentum();
     panStartAnchor = ganttAnchorMs;
   });
+
   mc.on('panmove', function(e){
     var newAnchor = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
     ganttAnchorMs = newAnchor;
-    // Shift ganttInner: base offset is -2vw, adjust by pan delta
     var vw = ganttViewportW();
     var baseOffset = -(GANTT_BUFFER * vw);
-    var panOffset  = e.deltaX;
     var inner = document.getElementById('ganttInner');
-    if(inner) inner.style.transform = 'translateX('+(baseOffset + panOffset)+'px)';
-    // Re-render if pan exceeds buffer (more than 2vw from render anchor)
+    if(inner) inner.style.transform = 'translateX('+(baseOffset + e.deltaX)+'px)';
     var driftPx = Math.abs(e.deltaX);
     if(driftPx > GANTT_BUFFER * vw * 0.5){
       if(!_panRaf) _panRaf = requestAnimationFrame(function(){
@@ -3137,10 +3142,47 @@ function initGanttPinch(){
       });
     }
   });
+
   mc.on('panend pancancel', function(e){
     if(_panRaf){ cancelAnimationFrame(_panRaf); _panRaf=null; }
+    // Commit final position
     ganttAnchorMs = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
     renderGantt();
+
+    // ── Momentum / inertia ──
+    // Hammer velocityX: px/ms, positive = right swipe (pan left = negative anchor shift)
+    var velocity = -e.velocityX; // px/ms, direction: positive = moving forward in time
+    var FRICTION  = 0.97;        // deceleration per frame (Apple-like feel)
+    var MIN_VEL   = 0.01;        // stop threshold px/ms
+
+    if(Math.abs(velocity) < MIN_VEL) return; // too slow, skip momentum
+
+    function momentumStep(){
+      velocity *= FRICTION;
+      if(Math.abs(velocity) < MIN_VEL){
+        renderGantt(); // final render at rest
+        return;
+      }
+      // Move anchor by velocity * 16ms (one frame)
+      ganttAnchorMs = clampGanttAnchor(ganttAnchorMs + velocity * 16 * ganttMsPerPx);
+
+      // Update translateX visually
+      var vw = ganttViewportW();
+      var renderedAnchor = ganttAnchorMs;
+      var driftMs = ganttAnchorMs - _ganttRenderedAnchorMs;
+      var driftPx = driftMs / ganttMsPerPx;
+      var baseOffset = -(GANTT_BUFFER * vw);
+      var inner = document.getElementById('ganttInner');
+      if(inner) inner.style.transform = 'translateX('+(baseOffset - driftPx)+'px)';
+
+      // Re-render if drifted more than 50% of buffer
+      if(Math.abs(driftPx) > GANTT_BUFFER * vw * 0.5){
+        renderGantt();
+      }
+
+      _momentumRaf = requestAnimationFrame(momentumStep);
+    }
+    _momentumRaf = requestAnimationFrame(momentumStep);
   });
 
   // ── Pinch — GPU accelerated scale, render on end ──
