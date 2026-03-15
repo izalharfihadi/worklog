@@ -66,7 +66,7 @@
 
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; background: var(--bg-deep); }
-body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-font-smoothing: antialiased; }
+body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webkit-font-smoothing: antialiased; }
 
 /* ══ SHELL ══ */
 .shell {
@@ -392,7 +392,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 .btn-tc {
   font-size: 11px; padding: 5px 9px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--bg-card2);
-  cursor: pointer; color: var(--muted); font-family: var(--font);
+  cursor: pointer; color: var(--muted); font-family: var(--font-body);
   font-weight: 600; letter-spacing: .3px; transition: all var(--t);
   display: flex; align-items: center; justify-content: center;
 }
@@ -454,7 +454,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
   font-family: var(--mono);
 }
 .field input {
-  width: 100%; font-family: var(--font); font-size: 15px; font-weight: 500;
+  width: 100%; font-family: var(--font-body); font-size: 15px; font-weight: 500;
   color: var(--text); background: var(--bg-card);
   border: 1px solid var(--border); border-radius: var(--r-sm);
   padding: 11px 13px; outline: none;
@@ -505,7 +505,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
   padding-top: 14px; border-top: 1px solid var(--border); margin-top: 4px;
 }
 .btn-primary {
-  font-family: var(--font); font-size: 14px; font-weight: 700;
+  font-family: var(--font-body); font-size: 14px; font-weight: 700;
   padding: 11px 24px; border-radius: 24px; border: none;
   background: linear-gradient(135deg, #8b5cf6, #00e5ff);
   color: #fff; cursor: pointer; letter-spacing: .5px;
@@ -514,7 +514,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 }
 .btn-primary:active { transform: scale(.96); opacity: .9; }
 .btn-ghost {
-  font-family: var(--font); font-size: 12px; color: var(--muted);
+  font-family: var(--font-body); font-size: 12px; color: var(--muted);
   background: none; border: none; cursor: pointer; padding: 4px;
   transition: color var(--t);
 }
@@ -559,7 +559,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
   font-size: 11px; padding: 5px 9px; border-radius: 6px;
   border: 1px solid rgba(255,183,0,.4); background: var(--amber-dim);
   cursor: pointer; color: var(--amber); font-weight: 700;
-  font-family: var(--font); transition: all var(--t);
+  font-family: var(--font-body); transition: all var(--t);
 }
 .btn-edit-ev:active { transform: scale(.94); }
 
@@ -568,7 +568,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 .settings-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 18px; }
 .emp-add-row { display: flex; gap: 7px; margin-bottom: 16px; }
 .emp-add-row input {
-  flex: 1; font-family: var(--font); font-size: 13px; font-weight: 500;
+  flex: 1; font-family: var(--font-body); font-size: 13px; font-weight: 500;
   color: var(--text); background: var(--bg-card);
   border: 1px solid var(--border); border-radius: var(--r-sm);
   padding: 9px 11px; outline: none; -webkit-appearance: none;
@@ -577,7 +577,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 .emp-add-row input:focus { border-color: var(--border-bright); }
 .emp-add-row input::placeholder { color: var(--muted); }
 .btn-add-emp {
-  font-family: var(--font); font-size: 13px; font-weight: 700;
+  font-family: var(--font-body); font-size: 13px; font-weight: 700;
   padding: 9px 14px; background: linear-gradient(135deg,#8b5cf6,#00e5ff);
   color: #fff; border: none; border-radius: var(--r-sm); cursor: pointer;
   white-space: nowrap; letter-spacing: .3px;
@@ -606,7 +606,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
   overflow: hidden; text-overflow: ellipsis;
 }
 .emp-edit-input {
-  width: 100%; font-family: var(--font); font-size: 13px; font-weight: 500;
+  width: 100%; font-family: var(--font-body); font-size: 13px; font-weight: 500;
   color: var(--text); background: var(--bg-card2);
   border: 1px solid var(--border-bright); border-radius: 5px;
   padding: 4px 8px; outline: none; -webkit-appearance: none;
@@ -614,20 +614,20 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 .btn-del-emp {
   font-size: 10px; padding: 3px 8px; border-radius: 5px;
   border: 1px solid var(--border); background: none;
-  cursor: pointer; color: var(--muted); transition: all var(--t); font-family: var(--font);
+  cursor: pointer; color: var(--muted); transition: all var(--t); font-family: var(--font-body);
 }
 .btn-del-emp:active { background: var(--magenta-dim); border-color: var(--magenta); color: var(--magenta); }
 .btn-edit-emp {
   font-size: 10px; padding: 3px 8px; border-radius: 5px;
   border: 1px solid var(--border); background: none;
-  cursor: pointer; color: var(--muted); transition: all var(--t); font-family: var(--font);
+  cursor: pointer; color: var(--muted); transition: all var(--t); font-family: var(--font-body);
   margin-right: 3px;
 }
 .btn-edit-emp:active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
 .btn-save-emp {
   font-size: 10px; padding: 3px 8px; border-radius: 5px;
   border: 1px solid rgba(0,230,118,.4); background: var(--green-dim);
-  cursor: pointer; color: var(--green); font-family: var(--font); font-weight: 600;
+  cursor: pointer; color: var(--green); font-family: var(--font-body); font-weight: 600;
   margin-right: 3px;
 }
 .emp-empty {
@@ -699,7 +699,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
   padding: 14px 0; border-top: 1px solid var(--border); margin-top: 20px;
   cursor: pointer; color: var(--muted); transition: color var(--t);
   background: none; border-left: none; border-right: none; border-bottom: none;
-  width: 100%; font-family: var(--font); text-align: left;
+  width: 100%; font-family: var(--font-body); text-align: left;
 }
 .adv-link:active { color: var(--text); }
 .adv-link-label { font-size: 15px; font-weight: 500; color: var(--text); text-align: left; font-family: var(--font-body); }
@@ -710,7 +710,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 .adv-back {
   display: flex; align-items: center; gap: 8px; margin-bottom: 22px;
   background: none; border: none; cursor: pointer; color: var(--text2);
-  font-family: var(--font); font-size: 13px; font-weight: 600; padding: 0;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 0;
 }
 .adv-back svg { width: 18px; height: 18px; stroke: currentColor; }
 .adv-back:active { color: var(--cyan); }
@@ -743,14 +743,14 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 .reset-input:focus { border-color: var(--magenta); }
 .reset-input::placeholder { letter-spacing: 0; text-transform: none; color: var(--muted); }
 .btn-reset-trigger {
-  font-family: var(--font); font-size: 12px; font-weight: 700;
+  font-family: var(--font-body); font-size: 12px; font-weight: 700;
   padding: 8px 14px; border-radius: var(--r-sm); cursor: pointer;
   border: 1px solid var(--border-md); background: var(--bg-card2);
   color: var(--muted); transition: all var(--t); white-space: nowrap;
 }
 .btn-reset-trigger:active { background: var(--red-bg); border-color: var(--magenta); color: var(--magenta); }
 .btn-reset-exec {
-  font-family: var(--font); font-size: 12px; font-weight: 700;
+  font-family: var(--font-body); font-size: 12px; font-weight: 700;
   padding: 8px 14px; border-radius: var(--r-sm); cursor: pointer;
   border: 1px solid rgba(255,45,120,.4); background: var(--magenta-dim);
   color: var(--magenta); transition: all var(--t); white-space: nowrap;
@@ -818,14 +818,14 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 }
 .btn-confirm-cancel {
   flex: 1; padding: 14px; border: none; background: none;
-  font-family: var(--font); font-size: 14px; font-weight: 500;
+  font-family: var(--font-body); font-size: 14px; font-weight: 500;
   color: var(--muted); cursor: pointer; border-right: 1px solid var(--border);
   transition: background var(--t);
 }
 .btn-confirm-cancel:active { background: var(--bg-card); }
 .btn-confirm-ok {
   flex: 1; padding: 14px; border: none; background: none;
-  font-family: var(--font); font-size: 14px; font-weight: 700;
+  font-family: var(--font-body); font-size: 14px; font-weight: 700;
   color: var(--magenta); cursor: pointer;
   transition: background var(--t);
 }
@@ -876,7 +876,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 }
 .tour-footer { display: flex; justify-content: flex-end; }
 .btn-tour-next {
-  font-family: var(--font); font-size: 13px; font-weight: 700;
+  font-family: var(--font-body); font-size: 13px; font-weight: 700;
   padding: 10px 24px; border-radius: 20px;
   background: linear-gradient(135deg,#8b5cf6,#00e5ff);
   color: #fff; border: none; cursor: pointer;
@@ -993,7 +993,7 @@ body { font-family: var(--font); color: var(--text); font-size: 15px; -webkit-fo
 .modal-body { padding: 16px 18px; }
 .modal-footer { padding: 10px 18px 16px; display: flex; justify-content: flex-end; gap: 8px; }
 .btn-secondary {
-  font-family: var(--font); font-size: 13px; font-weight: 600;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
   padding: 9px 18px; border: 1px solid var(--border-md); border-radius: 20px;
   background: none; cursor: pointer; color: var(--text2);
 }
