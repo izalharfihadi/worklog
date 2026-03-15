@@ -2888,8 +2888,11 @@ function ganttNav(dir){
 }
 
 function clampGanttAnchor(anchor){
-  // Infinite timeline — no left/right boundary restriction
-  return anchor;
+  if(!events.length) return anchor;
+  // Left soft boundary: 1 hour before first event
+  var firstMs = Math.min.apply(null, events.map(function(e){ return new Date(e.ts).getTime(); }));
+  var leftBound = firstMs - 3600000;
+  return Math.max(leftBound, anchor);
 }
 
 // ── Tick generation ──
@@ -2926,10 +2929,13 @@ function generateTicksInfinite(anchorMs, endMs, intervalMs){
 
 // ── Period label (shown in row 1) ──
 function ganttPeriodLabel(anchorMs, endMs){
-  const s = new Date(anchorMs), e = new Date(endMs);
+  // Use midpoint of visible window so label doesn't flicker when
+  // a day boundary crosses the edge of the timeline area
+  var midMs = (anchorMs + endMs) / 2;
+  const s = new Date(anchorMs), e = new Date(endMs), mid = new Date(midMs);
   const sameDay = s.toDateString() === e.toDateString();
   if(sameDay){
-    return s.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'});
+    return mid.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'});
   }
   const sameMonth = s.getMonth()===e.getMonth() && s.getFullYear()===e.getFullYear();
   if(sameMonth){
@@ -2975,6 +2981,7 @@ function renderGantt(){
       if(ev.type==='START'||ev.type==='RESUME') ss=new Date(ev.tsStart||ev.ts).getTime();
       else if((ev.type==='STOP'||ev.type==='PAUSE'||ev.type==='DONE')&&ss!=null){
         var eMs=new Date(ev.ts).getTime();
+        // Include if segment OVERLAPS window (started before anchor is fine)
         if(eMs>anchorMs&&ss<endMs) row.segments.push({sMs:ss,eMs:eMs,cat:t.cat});
         ss=null;
       }
@@ -3002,8 +3009,14 @@ function renderGantt(){
     }
   });
 
+  // If no rows have segments in window, show all known rows (empty bars)
+  // so user knows which activities exist — just not in this time range
+  if(!rows.length && allRows.length>0){
+    rows = allRows.slice(); keys = allKeys.slice();
+  }
+
   if(!rows.length){
-    wrap.innerHTML='<div class="gantt-empty">Tidak ada aktivitas di periode ini.</div>';
+    wrap.innerHTML='<div class="gantt-empty">Belum ada aktivitas.</div>';
     labelRowsEl.innerHTML=''; return;
   }
 
@@ -3133,22 +3146,18 @@ function initGanttPinch(){
       inner.style.transition = 'none';
     }
   });
+  var _pinchRaf = null;
   mc.on('pinchmove', function(e){
-    var inner = document.getElementById('ganttInner');
-    if(inner) inner.style.transform = 'translateX('+e.deltaX+'px) scaleX('+e.scale+')';
-  });
-  mc.on('pinchend pinchcancel', function(e){
-    var inner = document.getElementById('ganttInner');
-    if(inner) { inner.style.transform=''; inner.style.transformOrigin=''; inner.style.transition=''; }
-    
+    // Update state directly — no scaleX (avoids image-stretch distortion)
     var vw = ganttViewportW();
     var newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/e.scale));
     ganttMsPerPx  = newMsPerPx;
-    
-    // Account for pan during pinch + scale difference
-    var shiftedOriginMs = pinchOriginMs - (e.deltaX * pinchStartMsPerPx);
-    ganttAnchorMs = clampGanttAnchor(shiftedOriginMs - (pinchMidX * newMsPerPx));
-    
+    ganttAnchorMs = clampGanttAnchor(pinchOriginMs - (pinchMidX * newMsPerPx));
+    if(!_pinchRaf) _pinchRaf = requestAnimationFrame(function(){ renderGantt(); _pinchRaf=null; });
+  });
+  mc.on('pinchend pinchcancel', function(){
+    if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
+    // State already committed in pinchmove — just do final clean render
     renderGantt();
   });
 }
