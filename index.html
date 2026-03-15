@@ -1650,16 +1650,11 @@ function switchTab(name) {
   });
   if (name==='editlog')   renderEvents();
   if (name==='dashboard') {
-    // Only reset anchor if gantt hasn't been initialized yet
-    // Don't override if user explicitly set zoom via setZoom()
+    // Only init if gantt hasn't been initialized yet
+    // Preserve user's zoom/pan state across tab switches
     setTimeout(()=>{
       if(ganttMsPerPx === 0) ganttInitIfNeeded();
-      else {
-        // Re-anchor to now in case time has passed, keep current zoom
-        const vw = ganttViewportW();
-        const visibleMs = ganttMsPerPx * vw;
-        ganttAnchorMs = Date.now() - visibleMs * 0.7;
-      }
+      // Don't re-anchor — preserve user's scroll position
       renderGantt();
       initGanttPinch();
     }, 50);
@@ -2847,8 +2842,9 @@ function ganttAnchorEnd(){
   return ganttAnchorMs + ganttTotalMs();
 }
 
-// ── Init — always anchor to "now" so data is always visible ──
+// ── Init — only runs on first render (ganttMsPerPx === 0) ──
 function ganttInitIfNeeded(){
+  if(ganttMsPerPx !== 0) return; // Already initialized — don't override user's zoom
   const vw = ganttViewportW();
   const visibleMs = GANTT_PRESET.day; // 10 jam default
   ganttMsPerPx = visibleMs / vw;
@@ -2892,11 +2888,8 @@ function ganttNav(dir){
 }
 
 function clampGanttAnchor(anchor){
-  // Left boundary: first event or 07:00 today, whichever is earlier
-  const today7 = new Date(); today7.setHours(7,0,0,0);
-  const firstEvent = events.length ? Math.min(...events.map(e=>new Date(e.ts).getTime())) : today7.getTime();
-  const leftBound = Math.min(firstEvent, today7.getTime()) - 30*60000; // 30 min buffer
-  return Math.max(leftBound, anchor);
+  // Infinite timeline — no left/right boundary restriction
+  return anchor;
 }
 
 // ── Tick generation ──
@@ -3106,18 +3099,18 @@ function initGanttPinch(){
   });
   _ganttHammer = mc;
 
-  // ── Pan ──
+  // ── Pan — real-time re-render (not visual-only translateX) ──
   var panStartAnchor = 0;
+  var _panRaf = null;
   mc.on('panstart', function(){
     panStartAnchor = ganttAnchorMs;
   });
   mc.on('panmove', function(e){
-    var inner = document.getElementById('ganttInner');
-    if(inner) inner.style.transform = 'translateX('+e.deltaX+'px)';
+    ganttAnchorMs = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
+    if(!_panRaf) _panRaf = requestAnimationFrame(function(){ renderGantt(); _panRaf=null; });
   });
   mc.on('panend pancancel', function(e){
-    var inner = document.getElementById('ganttInner');
-    if(inner){ inner.style.transform=''; inner.style.transformOrigin=''; }
+    if(_panRaf){ cancelAnimationFrame(_panRaf); _panRaf=null; }
     ganttAnchorMs = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
     renderGantt();
   });
