@@ -391,12 +391,47 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   border: 1px solid var(--border); background: var(--bg-card2);
   cursor: pointer; color: var(--muted); font-family: var(--font);
   font-weight: 600; letter-spacing: .3px; transition: all var(--t);
+  display: flex; align-items: center; justify-content: center;
 }
+.btn-tc svg { width: 14px; height: 14px; stroke: currentColor; }
 .btn-tc:active { transform: scale(.92); }
 .btn-tc.done:active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-.btn-tc.del:active  { background: var(--magenta-dim); border-color: var(--magenta); color: var(--magenta); }
 .btn-tc.resub { color: var(--cyan); border-color: rgba(0,229,255,.3); }
 .btn-tc.resub:active { background: var(--cyan-dim); }
+
+/* ══ SWIPE TO REVEAL ══ */
+.swipe-wrap {
+  position: relative; overflow: hidden; border-radius: var(--r);
+  margin-bottom: 0;
+}
+.swipe-actions {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  display: flex; align-items: stretch;
+  transform: translateX(100%);
+  transition: transform 250ms cubic-bezier(.4,0,.2,1);
+  border-radius: 0 var(--r) var(--r) 0; overflow: hidden;
+}
+.swipe-wrap.open .swipe-actions { transform: translateX(0); }
+.swipe-wrap .tc {
+  transform: translateX(0);
+  transition: transform 250ms cubic-bezier(.4,0,.2,1);
+  border-radius: var(--r); position: relative; z-index: 1;
+}
+.swipe-wrap.open .tc { transform: translateX(-128px); border-radius: var(--r) 0 0 var(--r); }
+.swipe-btn {
+  width: 64px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  border: none; cursor: pointer; transition: opacity var(--t);
+  font-family: var(--mono); font-size: 9px; letter-spacing: .5px;
+  font-weight: 600; color: #fff;
+}
+.swipe-btn svg { width: 20px; height: 20px; stroke: #fff; stroke-width: 2; }
+.swipe-btn:active { opacity: .75; }
+.swipe-btn.edit  { background: #16a34a; }
+.swipe-btn.del   { background: #dc2626; }
+.swipe-btn.disabled { background: #374151; cursor: default; }
+.swipe-btn.disabled svg { stroke: #6b7280; }
+.swipe-btn.disabled span { color: #6b7280; }
 
 /* completed divider */
 .completed-divider {
@@ -598,6 +633,63 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   font-family: var(--mono); line-height: 1.8;
 }
 
+/* ══ EMP ROW SWIPE ══ */
+.emp-swipe-wrap {
+  position: relative; overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+.emp-swipe-wrap:last-child { border-bottom: none; }
+.emp-row-inner {
+  display: flex; align-items: center; padding: 10px;
+  background: var(--bg-card); gap: 10px;
+  transform: translateX(0);
+  transition: transform 250ms cubic-bezier(.4,0,.2,1);
+}
+.emp-swipe-wrap.open .emp-row-inner { transform: translateX(-128px); }
+.emp-swipe-actions {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 128px;
+  display: flex; align-items: stretch;
+  transform: translateX(100%);
+  transition: transform 250ms cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+.emp-swipe-wrap.open .emp-swipe-actions { transform: translateX(0); }
+.emp-row-num { font-family:var(--mono); font-size:10px; color:var(--muted); width:20px; flex-shrink:0; }
+.emp-row-name { font-size:13px; font-weight:600; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ══ EDIT TASK/EMP MODAL ══ */
+.edit-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 300; opacity: 0; pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.edit-modal-overlay.open { opacity: 1; pointer-events: all; }
+.edit-modal {
+  background: var(--bg-card2); border: 1px solid var(--border-md);
+  border-radius: 20px 20px 0 0; width: var(--w); max-width: 100vw;
+  box-shadow: 0 -20px 60px rgba(0,0,0,.5);
+  transform: translateY(100%);
+  transition: transform 250ms cubic-bezier(.33,1,.68,1);
+  padding-bottom: env(safe-area-inset-bottom);
+  max-height: 80vh; overflow-y: auto;
+}
+.edit-modal-overlay.open .edit-modal { transform: translateY(0); }
+.edit-modal-handle { width:36px; height:4px; border-radius:2px; background:var(--border-md); margin:12px auto 0; }
+.edit-modal-header { padding:14px 18px 0; display:flex; align-items:center; justify-content:space-between; }
+.edit-modal-title { font-size:15px; font-weight:700; color:var(--text); }
+.edit-modal-body { padding:16px 18px; }
+.edit-modal-footer { padding:10px 18px 16px; display:flex; justify-content:flex-end; gap:8px; }
+
+/* Delete task confirmation */
+.delete-task-preview {
+  background: var(--bg-deep); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 14px; margin-bottom: 14px;
+}
+.delete-task-preview-title { font-size:14px; font-weight:700; color:var(--text); margin-bottom:8px; }
+.delete-task-preview-row { font-size:11px; color:var(--text2); font-family:var(--mono); margin-bottom:4px; }
+.delete-task-preview-row span { color:var(--cyan); }
+
 /* ══ ADVANCED SETTINGS ══ */
 .adv-link {
   display: flex; align-items: center; justify-content: space-between;
@@ -661,6 +753,35 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   color: var(--magenta); transition: all var(--t); white-space: nowrap;
 }
 .btn-reset-exec:active { opacity: .7; }
+
+/* ══ RESET CHECKBOX MODAL ══ */
+.reset-check-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+}
+.reset-check-row:last-child { border-bottom: none; }
+.reset-check-box {
+  width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+  border: 2px solid var(--border-md); background: var(--bg-deep);
+  margin-top: 1px; transition: all var(--t);
+  display: flex; align-items: center; justify-content: center;
+}
+.reset-check-row.checked .reset-check-box {
+  background: var(--magenta); border-color: var(--magenta);
+}
+.reset-check-row.checked .reset-check-box::after {
+  content: ''; display: block;
+  width: 5px; height: 9px;
+  border: 2px solid #fff; border-top: none; border-left: none;
+  transform: rotate(45deg) translateY(-1px);
+}
+.reset-check-label {
+  font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px;
+}
+.reset-check-sub {
+  font-size: 10px; color: var(--muted); font-family: var(--mono);
+}
 
 /* ══ CUSTOM CONFIRM MODAL ══ */
 .confirm-overlay {
@@ -793,6 +914,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
 .gantt-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; position: relative; }
 .gantt-header-row { display: flex; position: sticky; top: 0; z-index: 10; background: var(--bg-mid); border-bottom: 1px solid var(--border); }
 .gantt-row { display: flex; border-bottom: 1px solid var(--border); min-height: 40px; overflow: visible; }
+#ganttInner { transform-origin: 0 0; will-change: transform; }
 .gantt-label-col {
   width: 120px; flex-shrink: 0; border-right: 1px solid var(--border);
   font-family: var(--mono); font-size: 8px; color: var(--muted);
@@ -930,9 +1052,9 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <button class="gantt-nav-btn" onclick="ganttNav(1)">›</button>
           </div>
         </div>
-        <div style="flex:1;display:flex;overflow:hidden;position:relative">
+        <div style="flex:1;display:flex;overflow:hidden;position:relative;background:var(--bg-deep)">
           <!-- Fixed label column -->
-          <div id="ganttLabels" style="width:120px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-mid);border-right:1px solid var(--border);z-index:10">
+          <div id="ganttLabels" style="width:120px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-deep);border-right:1px solid var(--border);z-index:10">
             <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
             <div id="ganttLabelRows" style="overflow:hidden;flex:1;background:var(--bg-deep)"></div>
           </div>
@@ -1084,39 +1206,18 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
           <i data-lucide="arrow-left"></i> Advanced
         </button>
 
-        <!-- Reset Tasks -->
-        <div class="reset-card">
-          <div class="reset-card-title" style="color:var(--amber)">
-            <i data-lucide="flask-conical"></i> Reset Tasks
-          </div>
-          <div class="reset-card-desc">Hapus semua task dari PWA dan Sheets.<br>Events dan master karyawan tetap.<br>Gunakan untuk membersihkan data testing.</div>
-          <button class="btn-reset-trigger" onclick="showResetConfirm('tasks')">Hapus semua task →</button>
-          <div class="reset-confirm-row" id="confirm-tasks">
-            <input class="reset-input" id="input-tasks" placeholder="ketik RESET" maxlength="5"/>
-            <button class="btn-reset-exec" onclick="execReset('tasks')">Eksekusi</button>
-          </div>
+        <div style="margin-bottom:20px">
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px">Advanced</div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Operasi data sensitif</div>
         </div>
 
-        <!-- Reset Done Tasks -->
-        <div class="reset-card">
-          <div class="reset-card-title" style="color:var(--cyan)">
-            <i data-lucide="check-circle"></i> Reset Done Tasks
-          </div>
-          <div class="reset-card-desc">Hapus semua task berstatus selesai.<br>Task aktif dan pending tetap.<br>Direkomendasikan secara berkala untuk menjaga performa.</div>
-          <button class="btn-reset-trigger" onclick="execReset('done')">Hapus done tasks →</button>
-        </div>
-
-        <!-- Reset Semua -->
+        <!-- Single Reset card -->
         <div class="reset-card" style="border-color:rgba(255,45,120,.3)">
           <div class="reset-card-title" style="color:var(--magenta)">
-            <i data-lucide="rotate-ccw"></i> Reset Semua
+            <i data-lucide="trash-2"></i> Reset Data
           </div>
-          <div class="reset-card-desc">Menghapus seluruh data lokal dan Sheets.<br>App kembali seperti install baru.<br><strong style="color:var(--magenta)">Tidak dapat dibatalkan.</strong></div>
-          <button class="btn-reset-trigger" onclick="showResetConfirm('all')">Factory reset →</button>
-          <div class="reset-confirm-row" id="confirm-all">
-            <input class="reset-input" id="input-all" placeholder="ketik RESET" maxlength="5"/>
-            <button class="btn-reset-exec" onclick="execReset('all')">Eksekusi</button>
-          </div>
+          <div class="reset-card-desc">Pilih data yang ingin dihapus dari PWA dan Sheets. Data yang tidak dipilih tetap utuh.</div>
+          <button class="btn-reset-trigger" onclick="openResetModal()">Pilih dan reset →</button>
         </div>
       </div>
     </div>
@@ -1159,6 +1260,116 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
     <div class="confirm-box-actions">
       <button class="btn-confirm-cancel" id="confirmCancel" onclick="resolveConfirm(false)">Batal</button>
       <button class="btn-confirm-ok" id="confirmOk" onclick="resolveConfirm(true)">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESET MODAL ══ -->
+<div class="confirm-overlay" id="resetModal">
+  <div class="confirm-box" style="width:320px">
+    <div class="confirm-box-icon">🗑️</div>
+    <div class="confirm-box-title">Reset Data</div>
+    <div class="confirm-box-body">Pilih data yang ingin dihapus dari PWA dan Sheets.</div>
+
+    <!-- Checkboxes -->
+    <div style="padding:0 20px 16px;text-align:left">
+      <label class="reset-check-row" id="rc-tasks">
+        <div class="reset-check-box" id="rcb-tasks"></div>
+        <div>
+          <div class="reset-check-label">Tasks</div>
+          <div class="reset-check-sub">Semua task cards (aktif & done)</div>
+        </div>
+      </label>
+      <label class="reset-check-row" id="rc-events">
+        <div class="reset-check-box" id="rcb-events"></div>
+        <div>
+          <div class="reset-check-label">Events</div>
+          <div class="reset-check-sub">Semua log aktivitas</div>
+        </div>
+      </label>
+      <label class="reset-check-row" id="rc-employees">
+        <div class="reset-check-box" id="rcb-employees"></div>
+        <div>
+          <div class="reset-check-label">Master Karyawan</div>
+          <div class="reset-check-sub">Nama dan departemen</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="confirm-box-actions">
+      <button class="btn-confirm-cancel" onclick="closeResetModal()">Batal</button>
+      <button class="btn-confirm-ok" id="resetExecBtn" onclick="execResetModal()" style="color:var(--magenta)">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDIT TASK MODAL ══ -->
+<div class="edit-modal-overlay" id="editTaskModal">
+  <div class="edit-modal">
+    <div class="edit-modal-handle"></div>
+    <div class="edit-modal-header">
+      <div class="edit-modal-title">Edit Task</div>
+      <button class="btn-modal-close" onclick="closeEditTaskModal()">×</button>
+    </div>
+    <div class="edit-modal-body">
+      <input type="hidden" id="editTaskId"/>
+      <div class="field"><label>Nama Tugas</label><input type="text" id="et-title" placeholder="Nama tugas..."/></div>
+      <div class="field" style="position:relative">
+        <label>PIC</label>
+        <input type="text" id="et-pic" placeholder="ketik nama..." autocomplete="off"
+          oninput="onETPicInput()" onblur="setTimeout(closeETPicAc,200)"/>
+        <div class="ac-dropdown" id="etPicDropdown"></div>
+        <div class="dept-display" id="etDeptDisplay">
+          <div class="dept-tag">🏢 <span id="etDeptName">—</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="btn-secondary" onclick="closeEditTaskModal()">Batal</button>
+      <button class="btn-primary" onclick="saveEditTask()" style="padding:9px 20px;font-size:13px">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DELETE TASK MODAL ══ -->
+<div class="edit-modal-overlay" id="deleteTaskModal">
+  <div class="edit-modal">
+    <div class="edit-modal-handle"></div>
+    <div class="edit-modal-header">
+      <div class="edit-modal-title" style="color:var(--magenta)">Hapus Task</div>
+      <button class="btn-modal-close" onclick="closeDeleteTaskModal()">×</button>
+    </div>
+    <div class="edit-modal-body">
+      <input type="hidden" id="deleteTaskId"/>
+      <div class="delete-task-preview" id="deleteTaskPreview"></div>
+      <div class="field">
+        <label>Ketik HAPUS untuk konfirmasi</label>
+        <input class="reset-input" id="deleteTaskInput" placeholder="ketik HAPUS" maxlength="5" style="width:100%"/>
+      </div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="btn-secondary" onclick="closeDeleteTaskModal()">Kembali</button>
+      <button class="btn-primary" onclick="execDeleteTask()" style="background:linear-gradient(135deg,#b91c1c,#ff2d78);padding:9px 20px;font-size:13px">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDIT EMPLOYEE MODAL ══ -->
+<div class="edit-modal-overlay" id="editEmpModal">
+  <div class="edit-modal">
+    <div class="edit-modal-handle"></div>
+    <div class="edit-modal-header">
+      <div class="edit-modal-title">Edit Karyawan</div>
+      <button class="btn-modal-close" onclick="closeEditEmpModal()">×</button>
+    </div>
+    <div class="edit-modal-body">
+      <input type="hidden" id="editEmpId"/>
+      <div class="field"><label>Nama</label><input type="text" id="ee-name" placeholder="Nama karyawan..."/></div>
+      <div class="field"><label>Departemen</label><input type="text" id="ee-dept" placeholder="Departemen..."/></div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="btn-secondary" onclick="closeEditEmpModal()">Batal</button>
+      <button class="btn-primary" onclick="saveEditEmp()" style="padding:9px 20px;font-size:13px">Simpan</button>
     </div>
   </div>
 </div>
@@ -1381,35 +1592,27 @@ async function loadFromSheets() {
   }
 }
 
-// Push semua data ke Sheets (full sync)
+// Push events ke Sheets (events masih full sync karena append-only di sisi kita)
 async function pushToSheets() {
   if (syncPending) return;
   syncPending = true;
   setSyncStatus('syncing');
   try {
-    await gasPost('syncEvents', {
-      rows: events.map(e => ({...e, incomplete: e.incomplete ? 'YES' : 'NO'}))
-    });
-    await gasPost('syncTasks', {
-      rows: tasks.map(t => ({...t, totalMin: Math.round((t.totalMs||0)/60000), unplanned: t.unplanned ? 'YES' : 'NO'}))
-    });
-    await gasPost('syncEmployees', {
-      rows: employees
-    });
+    // Events: still append-based, no full sync needed here
+    // Tasks and employees: managed individually via submitTask/deleteTask/editTask
+    // Only push if there are pending unsynced events (best effort)
     setSyncStatus('ok');
-    // silent
   } catch(err) {
     setSyncStatus('error');
-    toast('⚠ Gagal sync ke Sheets');
     console.error('pushToSheets:', err);
   } finally {
     syncPending = false;
   }
 }
 
-// Auto-sync periodik
+// Auto-sync periodik — hapus doBreak yang sudah tidak ada
 function autoSync() {
-  if (document.visibilityState === 'visible') pushToSheets();
+  // No-op for now — individual actions handle their own sync
 }
 
 // Push single event langsung (realtime append)
@@ -1458,7 +1661,9 @@ function addEmployee() {
   document.getElementById('emp-name').focus();
   renderEmployees();
   toast('✓ '+name+' ditambahkan');
-  pushToSheets();
+  // Submit to Sheets with value=1
+  const newEmp = employees[employees.length-1];
+  gasPost('submitEmployee',{row:newEmp}).catch(()=>{});
 }
 function deleteEmployee(id) {
   employees = employees.filter(e=>e.id!==id);
@@ -1503,7 +1708,6 @@ function renderEmployees(editId=null) {
   const empty = document.getElementById('empEmpty');
   const table = document.getElementById('empTable');
   const tbody = document.getElementById('empTbody');
-  // update sort indicators
   ['name','dept'].forEach(col => {
     const th = document.getElementById('th-'+col);
     if (!th) return;
@@ -1524,21 +1728,27 @@ function renderEmployees(editId=null) {
         </td>
       </tr>`;
     return `
-      <tr>
+      <tr class="emp-swipe-row" data-emp-id="${e.id}" style="position:relative;overflow:hidden">
         <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
         <td>${esc(e.name)}</td>
         <td><span class="emp-dept-badge">${esc(e.dept)}</span></td>
-        <td style="text-align:right;white-space:nowrap">
-          <button class="btn-edit-emp" onclick="editEmployee('${e.id}')">✏</button>
-          <button class="btn-del-emp"  onclick="deleteEmployee('${e.id}')">✕</button>
+        <td style="text-align:right;white-space:nowrap;width:80px">
+          <div style="display:flex;gap:4px;justify-content:flex-end">
+            <button style="width:32px;height:32px;border-radius:8px;border:none;background:#16a34a;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="openEditEmpModal('${e.id}')">
+              <i data-lucide="pencil" style="width:14px;height:14px;stroke:#fff"></i>
+            </button>
+            <button style="width:32px;height:32px;border-radius:8px;border:none;background:#dc2626;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="softDeleteEmployee('${e.id}')">
+              <i data-lucide="trash-2" style="width:14px;height:14px;stroke:#fff"></i>
+            </button>
+          </div>
         </td>
       </tr>`;
   }).join('');
-  // focus first input if editing
   if (editId) {
     const inp = document.getElementById('edit-name-'+editId);
     if (inp) { inp.focus(); inp.select(); }
   }
+  lucide.createIcons();
 }
 function lookupDept(name) {
   const e = employees.find(x=>x.name.toLowerCase()===name.toLowerCase());
@@ -1682,8 +1892,10 @@ function submitTask() {
   const isUnplanned=events.some(e=>e.type==='START');
   tasks.push({id:'T'+Date.now(),title,pic,dept,cat:'ops',createdAt:new Date().toISOString(),unplanned:isUnplanned,totalMs:0,status:'todo'});
   save('wl6_tasks',tasks); clearForm(); renderAll();
-  toast('✓ Tugas ditambahkan'+(isUnplanned?' · mendadak':''));
-  pushToSheets();
+  toast('✓ Tugas ditambahkan');
+  // Submit to Sheets with value=1
+  const newTask = tasks[tasks.length-1];
+  gasPost('submitTask',{row:{...newTask,totalMin:0,unplanned:newTask.unplanned?'YES':'NO'}}).catch(()=>{});
   switchTab('running');
 }
 function clearForm(){['f-title','f-pic'].forEach(i=>document.getElementById(i).value='');selectedDept='';showDept('deptDisplay','deptName','');closeAc();}
@@ -1934,6 +2146,223 @@ function renderIntState(){
 }
 
 // ══════════════════════════════════════════════
+//  SWIPE TO REVEAL
+// ══════════════════════════════════════════════
+let activeSwipe = null;
+
+function initSwipe(selector) {
+  document.querySelectorAll(selector).forEach(wrap => {
+    if (wrap._swipeInited) return;
+    wrap._swipeInited = true;
+    let startX=0, startY=0, dx=0, isSwiping=false;
+
+    wrap.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      dx = 0; isSwiping = false;
+    }, {passive:true});
+
+    wrap.addEventListener('touchmove', e => {
+      if (e.touches.length !== 1) return;
+      const cx = e.touches[0].clientX;
+      const cy = e.touches[0].clientY;
+      const adx = Math.abs(cx - startX);
+      const ady = Math.abs(cy - startY);
+      if (!isSwiping && ady > adx) return; // vertical scroll
+      isSwiping = true;
+      dx = cx - startX;
+      // Only allow left swipe (reveal) or right swipe (close)
+      if (dx < -10 && !wrap.classList.contains('open')) {
+        if (activeSwipe && activeSwipe !== wrap) {
+          activeSwipe.classList.remove('open');
+        }
+        wrap.classList.add('open');
+        activeSwipe = wrap;
+      } else if (dx > 10 && wrap.classList.contains('open')) {
+        wrap.classList.remove('open');
+        if (activeSwipe === wrap) activeSwipe = null;
+      }
+    }, {passive:true});
+
+    wrap.addEventListener('touchend', () => { isSwiping=false; });
+  });
+
+  // Close open swipe on tap outside
+  document.addEventListener('touchstart', e => {
+    if (activeSwipe && !activeSwipe.contains(e.target)) {
+      activeSwipe.classList.remove('open');
+      activeSwipe = null;
+    }
+  }, {passive:true});
+}
+
+// ══════════════════════════════════════════════
+//  EDIT TASK MODAL
+// ══════════════════════════════════════════════
+let etSelectedDept = '';
+
+function openEditTaskModal(id) {
+  // Close any open swipe
+  if (activeSwipe) { activeSwipe.classList.remove('open'); activeSwipe=null; }
+  // Check if task is active
+  if (activeId === id) {
+    toast('⚠ Akhiri task ini terlebih dahulu sebelum mengedit'); return;
+  }
+  const t = tasks.find(x=>x.id===id); if(!t) return;
+  document.getElementById('editTaskId').value = id;
+  document.getElementById('et-title').value = t.title||'';
+  document.getElementById('et-pic').value = t.pic||'';
+  etSelectedDept = t.dept||'';
+  showDept('etDeptDisplay','etDeptName',etSelectedDept);
+  document.getElementById('editTaskModal').classList.add('open');
+  lucide.createIcons();
+}
+function closeEditTaskModal(){
+  document.getElementById('editTaskModal').classList.remove('open');
+}
+function onETPicInput(){
+  const q=(document.getElementById('et-pic').value||'').trim().toLowerCase();
+  etSelectedDept=''; showDept('etDeptDisplay','etDeptName','');
+  if(!q){closeETPicAc();return;}
+  const m=employees.filter(e=>e.name.toLowerCase().includes(q)).slice(0,6);
+  renderAc('etPicDropdown',m,emp=>{
+    document.getElementById('et-pic').value=emp.name;
+    etSelectedDept=emp.dept; showDept('etDeptDisplay','etDeptName',emp.dept);
+    closeETPicAc();
+  });
+}
+function closeETPicAc(){
+  const dd=document.getElementById('etPicDropdown');
+  dd.classList.remove('open'); dd.innerHTML='';
+  const q=(document.getElementById('et-pic').value||'').trim();
+  if(!etSelectedDept&&q){const d=lookupDept(q);if(d){etSelectedDept=d;showDept('etDeptDisplay','etDeptName',d);}}
+}
+async function saveEditTask(){
+  const id = document.getElementById('editTaskId').value;
+  const title = v('et-title'), pic = v('et-pic');
+  if(!title){toast('⚠ Nama tugas wajib');return;}
+  const dept = etSelectedDept||lookupDept(pic)||'';
+  const t = tasks.find(x=>x.id===id); if(!t) return;
+  t.title=title; t.pic=pic; t.dept=dept;
+  save('wl6_tasks',tasks);
+  closeEditTaskModal();
+  renderAll();
+  toast('✓ Task diperbarui');
+  // Edit by ID — replace in Sheets
+  setSyncStatus('syncing');
+  try {
+    await gasPost('editTask',{id, fields:{title,pic,dept}});
+    setSyncStatus('ok');
+  } catch(err){ setSyncStatus('error'); }
+}
+
+// ══════════════════════════════════════════════
+//  DELETE TASK MODAL (soft delete)
+// ══════════════════════════════════════════════
+function openDeleteTaskModal(id){
+  if (activeSwipe) { activeSwipe.classList.remove('open'); activeSwipe=null; }
+  if (activeId === id) {
+    toast('⚠ Akhiri task ini terlebih dahulu. Gunakan task lain, INT, atau HOME'); return;
+  }
+  const t = tasks.find(x=>x.id===id); if(!t) return;
+  document.getElementById('deleteTaskId').value = id;
+  document.getElementById('deleteTaskInput').value = '';
+  // Build preview
+  const elapsed = t.totalMs ? Math.round(t.totalMs/60000)+' mnt' : '0 mnt';
+  document.getElementById('deleteTaskPreview').innerHTML = `
+    <div class="delete-task-preview-title">${esc(t.title)}</div>
+    <div class="delete-task-preview-row">PIC: <span>${esc(t.pic||'—')}</span></div>
+    <div class="delete-task-preview-row">Dept: <span>${esc(t.dept||'—')}</span></div>
+    <div class="delete-task-preview-row">Dibuat: <span>${fmtDateShort(t.createdAt)}</span></div>
+    <div class="delete-task-preview-row">Total waktu: <span>${elapsed}</span></div>
+    <div class="delete-task-preview-row">Status: <span>${t.status}</span></div>`;
+  document.getElementById('deleteTaskModal').classList.add('open');
+}
+function closeDeleteTaskModal(){
+  document.getElementById('deleteTaskModal').classList.remove('open');
+}
+async function execDeleteTask(){
+  const val = (document.getElementById('deleteTaskInput').value||'').trim().toUpperCase();
+  if(val!=='HAPUS'){toast('⚠ Ketik HAPUS untuk konfirmasi');return;}
+  const id = document.getElementById('deleteTaskId').value;
+  const t = tasks.find(x=>x.id===id); if(!t) return;
+  // Remove from localStorage
+  tasks = tasks.filter(x=>x.id!==id);
+  save('wl6_tasks',tasks);
+  closeDeleteTaskModal();
+  renderAll();
+  toast('✓ Task dihapus');
+  // Soft delete — append value=-1 to Sheets
+  setSyncStatus('syncing');
+  try {
+    await gasPost('deleteTask',{
+      id, title:t.title, pic:t.pic, dept:t.dept,
+      cat:t.cat, createdAt:t.createdAt
+    });
+    setSyncStatus('ok');
+  } catch(err){ setSyncStatus('error'); }
+}
+
+// ══════════════════════════════════════════════
+//  EDIT EMPLOYEE MODAL
+// ══════════════════════════════════════════════
+function openEditEmpModal(id){
+  const emp = employees.find(e=>e.id===id); if(!emp) return;
+  document.getElementById('editEmpId').value = id;
+  document.getElementById('ee-name').value = emp.name;
+  document.getElementById('ee-dept').value = emp.dept;
+  document.getElementById('editEmpModal').classList.add('open');
+}
+function closeEditEmpModal(){
+  document.getElementById('editEmpModal').classList.remove('open');
+}
+async function saveEditEmp(){
+  const id = document.getElementById('editEmpId').value;
+  const name=(document.getElementById('ee-name').value||'').trim();
+  const dept=(document.getElementById('ee-dept').value||'').trim();
+  if(!name||!dept){toast('⚠ Nama dan dept wajib');return;}
+  const dup = employees.find(e=>e.name.toLowerCase()===name.toLowerCase()&&e.id!==id);
+  if(dup){toast('⚠ Nama sudah ada');return;}
+  const emp = employees.find(e=>e.id===id); if(!emp) return;
+  emp.name=name; emp.dept=dept;
+  save('wl6_employees',employees);
+  closeEditEmpModal();
+  renderEmployees();
+  toast('✓ Karyawan diperbarui');
+  // Edit by ID — replace in Sheets
+  setSyncStatus('syncing');
+  try {
+    await gasPost('editEmployee',{id, fields:{name,dept}});
+    setSyncStatus('ok');
+  } catch(err){ setSyncStatus('error'); }
+}
+
+// ══════════════════════════════════════════════
+//  SOFT DELETE EMPLOYEE
+// ══════════════════════════════════════════════
+async function softDeleteEmployee(id){
+  const emp = employees.find(e=>e.id===id); if(!emp) return;
+  const ok = await showConfirm({
+    icon:'🗑️', title:'Hapus Karyawan?',
+    body:`${emp.name} — ${emp.dept}\n\nData tetap tersimpan di Sheets dengan nilai -1.`,
+    okLabel:'Hapus', okColor:'var(--magenta)'
+  });
+  if(!ok) return;
+  // Remove from localStorage
+  employees = employees.filter(e=>e.id!==id);
+  save('wl6_employees',employees);
+  renderEmployees();
+  toast('✓ '+emp.name+' dihapus');
+  // Soft delete — append value=-1 to Sheets
+  setSyncStatus('syncing');
+  try {
+    await gasPost('deleteEmployee',{id, name:emp.name, dept:emp.dept});
+    setSyncStatus('ok');
+  } catch(err){ setSyncStatus('error'); }
+}
+
+// ══════════════════════════════════════════════
 //  TASK SORT & DRAG-DROP
 // ══════════════════════════════════════════════
 let taskSort = 'manual';
@@ -2037,39 +2466,65 @@ function renderTasks(){
   if (!active.length) { ac.innerHTML = ''; ac.appendChild(ae); }
   else {
     try { ae.remove(); } catch(e) {}
-    ac.innerHTML = active.map(t => { const isAct = activeId === t.id; return `<div class="tc${isAct?' is-active':''}" draggable="true" data-id="${t.id}">
-      <div class="tc-drag"><div class="tc-drag-dots"><span></span><span></span><span></span><span></span></div></div>
-      <div class="tc-start" onclick="startTask('${t.id}')"><i data-lucide="${isAct?'circle-pause':'play'}"></i></div>
-      <div class="tc-body">
-        <div class="tc-title">${esc(t.title)}</div>
-        <div class="tc-meta">
-          ${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}
-          ${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}
-          <span class="tc-elapsed" id="el-${t.id}">${calcElapsed(t.id)}</span>
-          <span class="tc-date">${fmtDateShort(t.createdAt)}</span>
+    ac.innerHTML = active.map(t => {
+      const isAct = activeId === t.id;
+      const disabledCls = isAct ? 'disabled' : '';
+      return `<div class="swipe-wrap" data-swipe-id="${t.id}">
+        <div class="tc${isAct?' is-active':''}" draggable="true" data-id="${t.id}">
+          <div class="tc-drag"><div class="tc-drag-dots"><span></span><span></span><span></span><span></span></div></div>
+          <div class="tc-start" onclick="startTask('${t.id}')"><i data-lucide="${isAct?'circle-pause':'play'}"></i></div>
+          <div class="tc-body">
+            <div class="tc-title">${esc(t.title)}</div>
+            <div class="tc-meta">
+              ${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}
+              ${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}
+              <span class="tc-elapsed" id="el-${t.id}">${calcElapsed(t.id)}</span>
+              <span class="tc-date">${fmtDateShort(t.createdAt)}</span>
+            </div>
+          </div>
+          <div class="tc-actions">
+            <button class="btn-tc done" onclick="markDone('${t.id}')"><i data-lucide="check"></i></button>
+          </div>
         </div>
-      </div>
-      <div class="tc-actions">
-        <button class="btn-tc done" onclick="markDone('${t.id}')"><i data-lucide="check"></i></button>
-      </div>
-    </div>`; }).join('');
+        <div class="swipe-actions">
+          <button class="swipe-btn edit ${disabledCls}" onclick="openEditTaskModal('${t.id}')">
+            <i data-lucide="pencil"></i><span>Edit</span>
+          </button>
+          <button class="swipe-btn del ${disabledCls}" onclick="openDeleteTaskModal('${t.id}')">
+            <i data-lucide="trash-2"></i><span>Hapus</span>
+          </button>
+        </div>
+      </div>`;
+    }).join('');
     initDragDrop();
+    initSwipe('.swipe-wrap');
     lucide.createIcons();
   }
 
   const cs = document.getElementById('completedSection'), dc = document.getElementById('doneTasks');
   if (!done.length) { cs.style.display='none'; return; }
   cs.style.display = '';
-  dc.innerHTML = done.map(t => `<div class="tc is-done">
-    <div class="tc-start" style="cursor:default"><i data-lucide="check-circle"></i></div>
-    <div class="tc-body">
-      <div class="tc-title">${esc(t.title)}</div>
-      <div class="tc-meta">${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}<span class="tc-elapsed">${calcElapsed(t.id)}</span><span class="tc-date">${fmtDateShort(t.createdAt)}</span></div>
+  dc.innerHTML = done.map(t => `<div class="swipe-wrap" data-swipe-id="${t.id}">
+    <div class="tc is-done">
+      <div class="tc-start" style="cursor:default"><i data-lucide="check-circle"></i></div>
+      <div class="tc-body">
+        <div class="tc-title">${esc(t.title)}</div>
+        <div class="tc-meta">${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}<span class="tc-elapsed">${calcElapsed(t.id)}</span><span class="tc-date">${fmtDateShort(t.createdAt)}</span></div>
+      </div>
+      <div class="tc-actions">
+        <button class="btn-tc resub" onclick="resubmitTask('${t.id}')"><i data-lucide="rotate-ccw"></i></button>
+      </div>
     </div>
-    <div class="tc-actions">
-      <button class="btn-tc resub" onclick="resubmitTask('${t.id}')"><i data-lucide="rotate-ccw"></i></button>
+    <div class="swipe-actions">
+      <button class="swipe-btn edit" onclick="openEditTaskModal('${t.id}')">
+        <i data-lucide="pencil"></i><span>Edit</span>
+      </button>
+      <button class="swipe-btn del" onclick="openDeleteTaskModal('${t.id}')">
+        <i data-lucide="trash-2"></i><span>Hapus</span>
+      </button>
     </div>
   </div>`).join('');
+  initSwipe('.swipe-wrap');
   lucide.createIcons();
 }
 
@@ -2144,40 +2599,52 @@ function hideAdvanced(){
   lucide.createIcons();
 }
 
-function showResetConfirm(type){
-  // Hide all confirm rows first
-  ['tasks','all'].forEach(t=>{
-    const el=document.getElementById('confirm-'+t);
-    if(el){el.classList.remove('visible');const inp=document.getElementById('input-'+t);if(inp)inp.value='';}
+// ── Reset Modal (checkbox) ──
+const resetChecks = { tasks:false, events:false, employees:false };
+
+function openResetModal(){
+  // Reset checkbox state
+  Object.keys(resetChecks).forEach(k=>{
+    resetChecks[k]=false;
+    document.getElementById('rc-'+k)?.classList.remove('checked');
   });
-  const row=document.getElementById('confirm-'+type);
-  if(row){row.classList.add('visible');setTimeout(()=>document.getElementById('input-'+type)?.focus(),100);}
+  document.getElementById('resetModal').classList.add('open');
+}
+function closeResetModal(){
+  document.getElementById('resetModal').classList.remove('open');
 }
 
-async function execReset(type){
-  // Validate RESET keyword for destructive ops
-  if(type==='tasks'||type==='all'){
-    const val=(document.getElementById('input-'+type)?.value||'').trim().toUpperCase();
-    if(val!=='RESET'){toast('⚠ Ketik RESET untuk konfirmasi');return;}
-  }
-
-  // Custom confirm for done tasks
-  if(type==='done'){
-    const ok = await showConfirm({
-      icon:'🗑️',
-      title:'Hapus Done Tasks?',
-      body:'Semua task selesai akan dihapus dari PWA dan Sheets. Task aktif dan pending tetap.',
-      okLabel:'Hapus', okColor:'var(--magenta)'
+// Wire checkbox taps
+['tasks','events','employees'].forEach(k=>{
+  document.addEventListener('DOMContentLoaded',()=>{
+    const row = document.getElementById('rc-'+k);
+    if(row) row.addEventListener('click',()=>{
+      resetChecks[k] = !resetChecks[k];
+      row.classList.toggle('checked', resetChecks[k]);
     });
-    if(!ok) return;
-  }
+  });
+});
 
-  // Force-clear syncPending to avoid deadlock from previous reset
+async function execResetModal(){
+  const { tasks:doTasks, events:doEvents, employees:doEmp } = resetChecks;
+  if(!doTasks && !doEvents && !doEmp){
+    toast('⚠ Pilih minimal satu data'); return;
+  }
+  closeResetModal();
+  const items = [];
+  if(doTasks) items.push('Tasks');
+  if(doEvents) items.push('Events');
+  if(doEmp) items.push('Master Karyawan');
+  const ok = await showConfirm({
+    icon:'🗑️', title:'Konfirmasi Reset',
+    body:`Data berikut akan dihapus permanen dari PWA dan Sheets:\n${items.join(', ')}`,
+    okLabel:'Reset', okColor:'var(--magenta)'
+  });
+  if(!ok) return;
   syncPending = false;
   setSyncStatus('syncing');
-
   try {
-    if(type==='tasks'){
+    if(doTasks){
       tasks=[]; activeId=null; activeStart=null;
       localStorage.removeItem('wl6_activeStart'); save('wl6_active',null);
       save('wl6_tasks',[]);
@@ -2186,48 +2653,23 @@ async function execReset(type){
         save('wl6_status','home');
         localStorage.setItem('wl6_homeStart',homeStart.toISOString());
       }
-      await gasPost('syncTasks',{rows:[]});
-      toast('✓ Semua task dihapus');
+      await gasPost('resetSheet',{sheet:'tasks'});
     }
-    else if(type==='done'){
-      tasks=tasks.filter(t=>t.status!=='done');
-      save('wl6_tasks',tasks);
-      // Sync remaining tasks (may be empty — that's fine)
-      const rows=tasks.map(t=>({...t,totalMin:Math.round((t.totalMs||0)/60000),unplanned:t.unplanned?'YES':'NO'}));
-      await gasPost('syncTasks',{rows});
-      toast('✓ Done tasks dihapus');
+    if(doEvents){
+      events=[]; save('wl6_events',[]); updateBadge();
+      await gasPost('resetSheet',{sheet:'events'});
     }
-    else if(type==='all'){
-      const ok = await showConfirm({
-        icon:'💥',
-        title:'Factory Reset?',
-        body:'Seluruh data lokal dan Sheets akan dihapus permanen. App kembali seperti install baru.',
-        okLabel:'Reset Semua', okColor:'var(--magenta)'
-      });
-      if(!ok){ setSyncStatus('idle'); return; }
-      const keys=['wl6_tasks','wl6_events','wl6_employees','wl6_active','wl6_status',
-        'wl6_homeStart','wl6_activeStart','wl6_onboarded'];
-      keys.forEach(k=>localStorage.removeItem(k));
-      await gasPost('syncTasks',{rows:[]});
-      await gasPost('syncEvents',{rows:[]});
-      await gasPost('syncEmployees',{rows:[]});
-      toast('✓ Reset selesai — reload app');
-      setTimeout(()=>location.reload(),1500);
-      return;
+    if(doEmp){
+      employees=[]; save('wl6_employees',[]);
+      await gasPost('resetSheet',{sheet:'employees'});
     }
     setSyncStatus('ok');
-    hideAdvanced();
-    renderAll();
-    ['tasks','all'].forEach(t=>{
-      const el=document.getElementById('confirm-'+t);
-      if(el){ el.classList.remove('visible'); const inp=document.getElementById('input-'+t); if(inp)inp.value=''; }
-    });
+    toast(`✓ ${items.join(' + ')} berhasil di-reset`);
+    hideAdvanced(); renderAll();
   } catch(err){
     setSyncStatus('error');
-    console.error('execReset:',err);
-  } finally {
-    syncPending = false;
-  }
+    console.error('execResetModal:',err);
+  } finally { syncPending = false; }
 }
 
 // ══════════════════════════════════════════════
@@ -2392,29 +2834,66 @@ function generateTicks(vs, ve, intervalMs) {
 
 function initGanttPinch() {
   const wrap = document.getElementById('ganttWrap');
-  if (!wrap) return;
+  if (!wrap || wrap._pinchInited) return;
+  wrap._pinchInited = true;
+
   let lastDist = null;
+  let pinchScale = 1;        // visual scale during active pinch
+  let pinchOriginX = 0;      // pinch center x relative to ganttInner
+  let baseScrollLeft = 0;
+
   wrap.addEventListener('touchstart', e => {
-    if (e.touches.length === 2) {
-      lastDist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-    }
+    if (e.touches.length !== 2) return;
+    lastDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    pinchScale = 1;
+    baseScrollLeft = wrap.scrollLeft;
+    // Pinch origin = midpoint of two fingers relative to ganttInner left
+    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const wrapRect = wrap.getBoundingClientRect();
+    pinchOriginX = midX - wrapRect.left + wrap.scrollLeft;
   }, {passive:true});
+
   wrap.addEventListener('touchmove', e => {
     if (e.touches.length !== 2 || !lastDist) return;
     const dist = Math.hypot(
       e.touches[0].clientX - e.touches[1].clientX,
       e.touches[0].clientY - e.touches[1].clientY
     );
-    const delta = dist / lastDist;
-    lastDist = dist;
-    const prevScale = ganttScale;
-    ganttScale = Math.max(GANTT_MIN_SCALE, Math.min(GANTT_MAX_SCALE, ganttScale * delta));
-    if (Math.abs(ganttScale - prevScale) > 0.01) renderGantt();
+    pinchScale = dist / lastDist;
+
+    // Apply CSS transform for smooth visual feedback
+    const inner = document.getElementById('ganttInner');
+    if (inner) {
+      inner.style.transformOrigin = `${pinchOriginX}px 0`;
+      inner.style.transform = `scaleX(${pinchScale})`;
+    }
+    // Also scale label rows visually (height stays, no horizontal scale needed)
   }, {passive:true});
-  wrap.addEventListener('touchend', () => { lastDist = null; });
+
+  wrap.addEventListener('touchend', e => {
+    if (lastDist === null) return;
+    // Clamp and apply new scale to ganttScale
+    const newScale = Math.max(GANTT_MIN_SCALE, Math.min(GANTT_MAX_SCALE, ganttScale * pinchScale));
+
+    // Reset CSS transform before rebuild
+    const inner = document.getElementById('ganttInner');
+    if (inner) { inner.style.transform = ''; inner.style.transformOrigin = ''; }
+
+    if (Math.abs(newScale - ganttScale) > 0.02) {
+      // Preserve scroll position relative to pinch origin
+      const prevScrollLeft = wrap.scrollLeft;
+      ganttScale = newScale;
+      renderGantt();
+      // After rebuild, scroll to keep pinch origin in view
+      requestAnimationFrame(() => {
+        wrap.scrollLeft = pinchOriginX * newScale / ganttScale - (pinchOriginX - prevScrollLeft);
+      });
+    }
+    lastDist = null; pinchScale = 1;
+  }, {passive:true});
 }
 
 function renderGantt(){
@@ -2449,7 +2928,7 @@ function renderGantt(){
     });
     if(ss&&activeId===tid) row.segments.push({s:ss,e:new Date(),cat:t.cat});
   });
-  evInWin.filter(e=>e.type==='INT'||e.type==='BREAK'||e.type==='EOD'||e.type==='HOME').forEach(ev=>{
+  evInWin.filter(e=>e.type==='INT'||e.type==='EOD'||e.type==='HOME').forEach(ev=>{
     const key = ev.type==='INT' ? 'int-'+(ev.intType||'x') : ev.type;
     if(!rowMap.has(key)) rowMap.set(key,{icon:'',name:ev.title||'Rumah',sub:'',segments:[],evType:ev.type,intType:ev.intType});
     const row=rowMap.get(key);
@@ -2472,7 +2951,7 @@ function renderGantt(){
     teams:'message-square-text', whatsapp:'message-circle',
     tamu:'user-round', toilet:'toilet', rokok:'cigarette'
   };
-  const evTypeIconMap = { HOME:'house', BREAK:'coffee', EOD:'door-open' };
+  const evTypeIconMap = { HOME:'house', EOD:'door-open' };
   function rowIconHtml(row, ev) {
     if (ev && ev.intType && intIconMap[ev.intType])
       return `<i data-lucide="${intIconMap[ev.intType]}" style="width:16px;height:16px;flex-shrink:0;stroke:var(--text2)"></i>`;
@@ -2487,7 +2966,7 @@ function renderGantt(){
     const key='int-'+(ev.intType||'x');
     if(!rowEvMap.has(key)) rowEvMap.set(key, ev);
   });
-  evInWin.filter(e=>['HOME','BREAK','EOD'].includes(e.type)).forEach(ev=>{
+  evInWin.filter(e=>['HOME','EOD'].includes(e.type)).forEach(ev=>{
     if(!rowEvMap.has(ev.type)) rowEvMap.set(ev.type, ev);
   });
 
