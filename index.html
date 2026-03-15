@@ -697,10 +697,10 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
   padding: 14px 0; border-top: 1px solid var(--border); margin-top: 20px;
   cursor: pointer; color: var(--muted); transition: color var(--t);
   background: none; border-left: none; border-right: none; border-bottom: none;
-  width: 100%; font-family: var(--font);
+  width: 100%; font-family: var(--font); text-align: left;
 }
 .adv-link:active { color: var(--text); }
-.adv-link-label { font-size: 13px; font-weight: 600; letter-spacing: .3px; }
+.adv-link-label { font-size: 13px; font-weight: 600; letter-spacing: .3px; color: var(--text); text-align: left; }
 .adv-link-sub { font-size: 10px; font-family: var(--mono); color: var(--muted); margin-top: 2px; }
 .adv-link svg { width: 16px; height: 16px; flex-shrink: 0; stroke: var(--muted); }
 
@@ -2697,8 +2697,31 @@ async function execResetModal(){
       await gasPost('resetSheet',{sheet:'tasks'});
     }
     if(doEvents){
-      events=[]; save('wl6_events',[]); updateBadge();
-      await gasPost('resetSheet',{sheet:'events'});
+      // Big Bang protection — event HOME pertama tidak boleh dihapus
+      // kecuali Reset Semua (doTasks + doEvents + doEmp semua true)
+      var isResetAll = doTasks && doEvents && doEmp;
+      var bigbangId  = localStorage.getItem('wl6_bigbang_id');
+      var bigbang    = bigbangId ? events.find(function(e){ return e.id===bigbangId; }) : null;
+      if(!bigbang) bigbang = events.find(function(e){ return e.type==='HOME'; }); // fallback
+
+      if(isResetAll || !bigbang){
+        // Reset Semua atau tidak ada Big Bang — hapus semua
+        events=[]; save('wl6_events',[]); updateBadge();
+        if(isResetAll){
+          // Reset Semua = kembali ke kondisi install — hapus semua flag
+          localStorage.removeItem('wl6_bigbang_id');
+          localStorage.removeItem('wl6_onboarded');
+          localStorage.removeItem('wl6_homeStart');
+          localStorage.removeItem('wl6_status');
+          save('wl6_active', null);
+        }
+        await gasPost('resetSheet',{sheet:'events'});
+      } else {
+        // Reset Events biasa — pertahankan Big Bang
+        events=[bigbang]; save('wl6_events',[bigbang]); updateBadge();
+        // Di Sheets: hapus semua kecuali baris Big Bang
+        await gasPost('resetSheet',{sheet:'events', keepId: bigbang.id});
+      }
     }
     if(doEmp){
       employees=[]; save('wl6_employees',[]);
@@ -2790,20 +2813,23 @@ function tourNext(e){
 }
 
 function endTour(){
-  // Set flag FIRST before removing overlay — prevents click-through to home button
   localStorage.setItem('wl6_onboarded','1');
   const overlay = document.getElementById('tourOverlay');
   overlay.style.pointerEvents = 'none';
   setTimeout(()=>{
     overlay.classList.remove('active');
     overlay.style.pointerEvents = '';
-    // Klik mengerti = klik Home — mulai pencatatan HOME event
+    // Klik mengerti = Big Bang — push HOME event pertama (immutable)
     if(currentStatus !== 'home') setStatus('home');
     else {
-      // Sudah home tapi belum ada event — push satu HOME event
       if(!events.find(e=>e.type==='HOME')){
         pushEvent({taskId:'',title:'Rumah',type:'HOME',pic:'—',dept:'—',cat:'—'});
       }
+    }
+    // Simpan ID Big Bang ke localStorage (sekali seumur hidup PWA)
+    var bigbang = events.find(function(e){ return e.type==='HOME'; });
+    if(bigbang && !localStorage.getItem('wl6_bigbang_id')){
+      localStorage.setItem('wl6_bigbang_id', bigbang.id);
     }
     renderAll();
   }, 50);
@@ -3190,6 +3216,9 @@ function initGanttPinch(){
   var pinchMidX = 0;
   var _pinchRaf = null;
 
+  var _smoothScale = 1;   // low-pass filtered scale
+  var _smoothMidX  = 0;   // low-pass filtered center X
+
   mc.on('pinchstart', function(e){
     stopMomentum();
     pinchStartMsPerPx = ganttMsPerPx;
@@ -3197,26 +3226,30 @@ function initGanttPinch(){
     var rect = wrap.getBoundingClientRect();
     pinchMidX     = e.center.x - rect.left;
     pinchOriginMs = ganttAnchorMs + (pinchMidX + GANTT_BUFFER * ganttViewportW()) * ganttMsPerPx;
+    // Reset smoothing to current values
+    _smoothScale = 1;
+    _smoothMidX  = pinchMidX;
   });
 
   mc.on('pinchmove', function(e){
     if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
     _pinchRaf = requestAnimationFrame(function(){
       var vw = ganttViewportW();
+      var rect = wrap.getBoundingClientRect();
+
+      // Low-pass filter — smooth out micro-jitter from touch sensor
+      // 0.7 old + 0.3 new: dampens small tremors, preserves intentional movement
+      _smoothScale = _smoothScale * 0.7 + e.scale * 0.3;
+      _smoothMidX  = _smoothMidX  * 0.7 + (e.center.x - rect.left) * 0.3;
 
       // 1. Compute new zoom + anchor
-      // Live pinch center — follows midpoint of two fingers in real-time
-      // Use pinchStartAnchor as stable base to avoid feedback loop tremor
-      var rect = wrap.getBoundingClientRect();
-      var liveMidX     = e.center.x - rect.left;
-      var liveOriginMs = pinchStartAnchor + (liveMidX + GANTT_BUFFER * vw) * pinchStartMsPerPx;
+      var liveOriginMs = pinchStartAnchor + (_smoothMidX + GANTT_BUFFER * vw) * pinchStartMsPerPx;
 
       // Dampen scale — 0.3 = 30% of raw scale change (controlled zoom)
-      var dampedScale = 1 + (e.scale - 1) * 0.3;
+      var dampedScale = 1 + (_smoothScale - 1) * 0.3;
       var newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/dampedScale));
       ganttMsPerPx  = newMsPerPx;
-      // Anchor so live finger midpoint stays at same time coordinate
-      ganttAnchorMs = clampGanttAnchor(liveOriginMs - (liveMidX + GANTT_BUFFER * vw) * newMsPerPx);
+      ganttAnchorMs = clampGanttAnchor(liveOriginMs - (_smoothMidX + GANTT_BUFFER * vw) * newMsPerPx);
 
       var visNow    = newMsPerPx * vw;
       var bufAncNow = ganttAnchorMs - GANTT_BUFFER * visNow;
