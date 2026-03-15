@@ -13,6 +13,7 @@
 <title>WorkLog</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="hammer.min.js"></script>
 <style>
 :root {
   /* ── Dark Space Purple Palette ── */
@@ -1649,8 +1650,19 @@ function switchTab(name) {
   });
   if (name==='editlog')   renderEvents();
   if (name==='dashboard') {
-    // Small delay ensures panel is visible and has correct dimensions
-    setTimeout(()=>{ ganttReset(); renderGantt(); initGanttPinch(); }, 30);
+    // Only reset anchor if gantt hasn't been initialized yet
+    // Don't override if user explicitly set zoom via setZoom()
+    setTimeout(()=>{
+      if(ganttMsPerPx === 0) ganttInitIfNeeded();
+      else {
+        // Re-anchor to now in case time has passed, keep current zoom
+        const vw = ganttViewportW();
+        const visibleMs = ganttMsPerPx * vw;
+        ganttAnchorMs = Date.now() - visibleMs * 0.7;
+      }
+      renderGantt();
+      initGanttPinch();
+    }, 50);
   }
   if (name==='settings')  { showSettingsSub('main'); }
   lucide.createIcons();
@@ -2855,11 +2867,14 @@ function setZoom(z){
   ganttZoom = z;
   ['day','week','month'].forEach(x =>
     document.getElementById('zoom-'+x).classList.toggle('active', x===z));
-  const vw = ganttViewportW();
-  const visibleMs = GANTT_PRESET[z] || GANTT_PRESET.day;
-  ganttMsPerPx = visibleMs / vw;
-  ganttAnchorMs = Date.now() - visibleMs * 0.7;
-  renderGantt();
+  // Use setTimeout to ensure ganttWrap has correct dimensions
+  setTimeout(function(){
+    var vw = ganttViewportW();
+    var visibleMs = GANTT_PRESET[z] || GANTT_PRESET.day;
+    ganttMsPerPx = visibleMs / vw;
+    ganttAnchorMs = Date.now() - visibleMs * 0.7;
+    renderGantt();
+  }, 10);
 }
 
 function ganttGoNow(){
@@ -3069,75 +3084,60 @@ function renderGantt(){
 }
 
 
-// ── Pan + Pinch — document-level, filter by ganttWrap target ──
+// ── Pan + Pinch — Hammer.js ──
 let _ganttPinchReady = false;
 function initGanttPinch(){
   if(_ganttPinchReady) return;
-  if(!document.getElementById('ganttWrap')) return;
+  var wrap = document.getElementById('ganttWrap');
+  if(!wrap || typeof Hammer === 'undefined') return;
   _ganttPinchReady = true;
 
-  let mode = null;
-  let panStartX = 0, panStartAnchor = 0, currentDx = 0;
-  let pinchStartDist = 0, pinchStartMsPerPx = 0, pinchOriginMs = 0, pinchStartAnchor = 0;
-  let _raf = null;
+  var mc = new Hammer.Manager(wrap, {
+    recognizers: [
+      [Hammer.Pan,   {direction: Hammer.DIRECTION_HORIZONTAL, threshold: 5}],
+      [Hammer.Pinch, {enable: true}]
+    ],
+    touchAction: 'none'
+  });
 
-  function isGanttTarget(e){
-    return e.target.closest('#ganttWrap') !== null;
-  }
-  function getInner(){ return document.getElementById('ganttInner'); }
-
-  document.addEventListener('touchstart', function(e){
-    if(!isGanttTarget(e)) return;
-    if(e.touches.length === 1){
-      mode = 'pan';
-      panStartX    = e.touches[0].clientX;
-      panStartAnchor = ganttAnchorMs;
-      currentDx = 0;
-    } else if(e.touches.length === 2){
-      mode = 'pinch';
-      const wrap = document.getElementById('ganttWrap');
-      pinchStartDist    = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-      pinchStartMsPerPx = ganttMsPerPx;
-      pinchStartAnchor  = ganttAnchorMs;
-      const rect = wrap.getBoundingClientRect();
-      const midX = (e.touches[0].clientX+e.touches[1].clientX)/2 - rect.left;
-      pinchOriginMs = ganttAnchorMs + midX * ganttMsPerPx;
-    }
-  }, {passive:true});
-
-  document.addEventListener('touchmove', function(e){
-    if(!isGanttTarget(e)) return;
-    if(mode === 'pan' && e.touches.length === 1){
-      e.preventDefault();
-      currentDx = e.touches[0].clientX - panStartX;
-      const inner = getInner();
-      if(inner) inner.style.transform = 'translateX('+currentDx+'px)';
-
-    } else if(mode === 'pinch' && e.touches.length === 2){
-      e.preventDefault();
-      const dist  = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-      const scale = dist / pinchStartDist;
-      const vw    = ganttViewportW();
-      const newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/scale));
-      ganttMsPerPx  = newMsPerPx;
-      ganttAnchorMs = pinchOriginMs - (pinchOriginMs - pinchStartAnchor) * (newMsPerPx/pinchStartMsPerPx);
-      if(!_raf) _raf = requestAnimationFrame(function(){ renderGantt(); _raf=null; });
-    }
-  }, {passive:false});
-
-  document.addEventListener('touchend', function(e){
-    if(mode === null) return;
-    if(_raf){ cancelAnimationFrame(_raf); _raf=null; }
-    const inner = getInner();
+  // ── Pan ──
+  var panStartAnchor = 0;
+  mc.on('panstart', function(){
+    panStartAnchor = ganttAnchorMs;
+  });
+  mc.on('panmove', function(e){
+    var inner = document.getElementById('ganttInner');
+    if(inner) inner.style.transform = 'translateX('+e.deltaX+'px)';
+  });
+  mc.on('panend', function(e){
+    var inner = document.getElementById('ganttInner');
     if(inner){ inner.style.transform=''; inner.style.transformOrigin=''; }
-    if(mode === 'pan'){
-      ganttAnchorMs = clampGanttAnchor(panStartAnchor - currentDx * ganttMsPerPx);
-    }
-    mode = null; currentDx = 0;
+    ganttAnchorMs = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
     renderGantt();
-  }, {passive:true});
-}
+  });
 
+  // ── Pinch ──
+  var pinchStartMsPerPx = 0, pinchStartAnchor = 0, pinchOriginMs = 0;
+  var _raf = null;
+  mc.on('pinchstart', function(e){
+    pinchStartMsPerPx = ganttMsPerPx;
+    pinchStartAnchor  = ganttAnchorMs;
+    var rect = wrap.getBoundingClientRect();
+    var midX = e.center.x - rect.left;
+    pinchOriginMs = ganttAnchorMs + midX * ganttMsPerPx;
+  });
+  mc.on('pinchmove', function(e){
+    var vw = ganttViewportW();
+    var newMsPerPx = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/e.scale));
+    ganttMsPerPx  = newMsPerPx;
+    ganttAnchorMs = pinchOriginMs - (pinchOriginMs - pinchStartAnchor) * (newMsPerPx/pinchStartMsPerPx);
+    if(!_raf) _raf = requestAnimationFrame(function(){ renderGantt(); _raf=null; });
+  });
+  mc.on('pinchend', function(){
+    if(_raf){ cancelAnimationFrame(_raf); _raf=null; }
+    renderGantt();
+  });
+}
 // ── Scroll pan (horizontal scroll → move anchor) ──
 function syncGanttScroll(el){
   // Vertical sync for label rows
