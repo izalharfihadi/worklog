@@ -2929,20 +2929,13 @@ function generateTicksInfinite(anchorMs, endMs, intervalMs){
 
 // ── Period label (shown in row 1) ──
 function ganttPeriodLabel(anchorMs, endMs){
-  // Use midpoint of visible window so label doesn't flicker when
-  // a day boundary crosses the edge of the timeline area
+  // Tampilkan tanggal hari yang paling mendominasi layar.
+  // Caranya: cek tanggal di midpoint window.
+  // Midpoint bergeser ke hari baru hanya ketika lebih dari 50% layar
+  // sudah ada di hari baru — yaitu ketika 00:00 sudah keluar dari tepi kiri.
   var midMs = (anchorMs + endMs) / 2;
-  const s = new Date(anchorMs), e = new Date(endMs), mid = new Date(midMs);
-  const sameDay = s.toDateString() === e.toDateString();
-  if(sameDay){
-    return mid.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'});
-  }
-  const sameMonth = s.getMonth()===e.getMonth() && s.getFullYear()===e.getFullYear();
-  if(sameMonth){
-    return s.getDate()+' – '+e.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
-  }
-  return s.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' – '+
-         e.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+  var mid = new Date(midMs);
+  return mid.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 }
 
 // ── Main render ──
