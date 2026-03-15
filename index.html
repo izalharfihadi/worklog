@@ -3206,9 +3206,10 @@ function initGanttPinch(){
 
       // 1. Compute new zoom + anchor
       // Live pinch center — follows midpoint of two fingers in real-time
+      // Use pinchStartAnchor as stable base to avoid feedback loop tremor
       var rect = wrap.getBoundingClientRect();
       var liveMidX     = e.center.x - rect.left;
-      var liveOriginMs = _ganttRenderedAnchorMs + (liveMidX + GANTT_BUFFER * vw) * ganttMsPerPx;
+      var liveOriginMs = pinchStartAnchor + (liveMidX + GANTT_BUFFER * vw) * pinchStartMsPerPx;
 
       // Dampen scale — 0.3 = 30% of raw scale change (controlled zoom)
       var dampedScale = 1 + (e.scale - 1) * 0.3;
