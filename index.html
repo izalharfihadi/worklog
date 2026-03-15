@@ -2919,178 +2919,142 @@ function ganttPeriodLabel(anchorMs, endMs){
 }
 
 // ── Main render ──
+let _ganttRenderedAnchorMs = 0, _ganttRenderedMsPerPx = 0;
+
 function renderGantt(){
   ganttInitIfNeeded();
+  var vw       = ganttViewportW();
+  var anchorMs = ganttAnchorMs;
+  var endMs    = anchorMs + ganttMsPerPx * vw;
+  var visibleMs = endMs - anchorMs;
 
-  const vw      = ganttViewportW();
-  const anchorMs = ganttAnchorMs;
-  const endMs    = anchorMs + ganttMsPerPx * vw;
-  const visibleMs = endMs - anchorMs;
-
-  // Update period label
   document.getElementById('ganttPeriodLbl').textContent = ganttPeriodLabel(anchorMs, endMs);
+  var wrap        = document.getElementById('ganttContent');
+  var labelRowsEl = document.getElementById('ganttLabelRows');
+  var px = function(ms){ return Math.round((ms - anchorMs) / ganttMsPerPx); };
+  var intervalMs  = getTickIntervalMs(visibleMs);
+  var ticks       = generateTicksInfinite(anchorMs, endMs, intervalMs);
 
-  const wrap = document.getElementById('ganttContent');
-  const labelRowsEl = document.getElementById('ganttLabelRows');
+  var allSorted = events.slice().sort(function(a,b){ return new Date(a.ts)-new Date(b.ts); });
+  var rowMap = new Map();
 
-  // pct: convert timestamp to % position within current window
-  const pct = ms => ((ms - anchorMs) / visibleMs) * 100;
-  // px: convert timestamp to px
-  const px  = ms => Math.round((ms - anchorMs) / ganttMsPerPx);
-
-  const intervalMs = getTickIntervalMs(visibleMs);
-  const ticks      = generateTicksInfinite(anchorMs, endMs, intervalMs);
-
-  // ── Build row data (same logic as before, but using ms window) ──
-  const vs = new Date(anchorMs), ve = new Date(endMs);
-  // Include events that overlap the window (start OR end inside, or spanning)
-  const allSorted = [...events].sort((a,b)=>new Date(a.ts)-new Date(b.ts));
-  const evInWin = allSorted.filter(e=>{
-    const t = new Date(e.tsStart||e.ts).getTime();
-    return t >= anchorMs - 24*3600000 && t <= endMs + 24*3600000;
+  // Task rows
+  var taskIds = [];
+  allSorted.forEach(function(e){
+    if(e.taskId && ['START','RESUME','STOP','PAUSE','DONE'].includes(e.type) && !taskIds.includes(e.taskId))
+      taskIds.push(e.taskId);
   });
-
-  const rowMap = new Map();
-
-  // Task rows — include all segments that overlap window
-  const taskIds = [...new Set(
-    allSorted.filter(e=>e.taskId&&['START','RESUME','STOP','PAUSE','DONE'].includes(e.type))
-             .map(e=>e.taskId)
-  )];
-  taskIds.forEach(tid=>{
-    const t = tasks.find(x=>x.id===tid); if(!t) return;
+  taskIds.forEach(function(tid){
+    var t=tasks.find(function(x){ return x.id===tid; }); if(!t) return;
     if(!rowMap.has(tid)) rowMap.set(tid,{name:t.title,sub:t.dept||t.pic||'',segments:[],evType:'TASK'});
-    const row = rowMap.get(tid);
-    const tevs = allSorted.filter(e=>e.taskId===tid).sort((a,b)=>new Date(a.ts)-new Date(b.ts));
-    let ss = null;
-    tevs.forEach(ev=>{
-      if(ev.type==='START'||ev.type==='RESUME') ss = new Date(ev.tsStart||ev.ts).getTime();
+    var row=rowMap.get(tid);
+    var tevs=allSorted.filter(function(e){ return e.taskId===tid; }).sort(function(a,b){ return new Date(a.ts)-new Date(b.ts); });
+    var ss=null;
+    tevs.forEach(function(ev){
+      if(ev.type==='START'||ev.type==='RESUME') ss=new Date(ev.tsStart||ev.ts).getTime();
       else if((ev.type==='STOP'||ev.type==='PAUSE'||ev.type==='DONE')&&ss!=null){
-        const eMs = new Date(ev.ts).getTime();
-        // Include if overlaps window
-        if(eMs > anchorMs && ss < endMs)
-          row.segments.push({sMs:ss, eMs, cat:t.cat});
-        ss = null;
+        var eMs=new Date(ev.ts).getTime();
+        if(eMs>anchorMs&&ss<endMs) row.segments.push({sMs:ss,eMs:eMs,cat:t.cat});
+        ss=null;
       }
     });
-    if(ss!=null && activeId===tid){
-      const eMs = Date.now();
-      if(eMs > anchorMs && ss < endMs)
-        row.segments.push({sMs:ss, eMs, cat:t.cat});
-    }
+    if(ss!=null&&activeId===tid){ var eMs=Date.now(); if(eMs>anchorMs&&ss<endMs) row.segments.push({sMs:ss,eMs:eMs,cat:t.cat}); }
   });
 
-  // INT / HOME rows — segment overlap: clip to window, never skip
-  allSorted.filter(e=>e.type==='INT'||e.type==='HOME').forEach(ev=>{
-    const key = ev.type==='INT' ? 'int-'+(ev.intType||'x') : 'HOME';
+  // INT/HOME rows
+  allSorted.filter(function(e){ return e.type==='INT'||e.type==='HOME'; }).forEach(function(ev){
+    var key=ev.type==='INT'?'int-'+(ev.intType||'x'):'HOME';
     if(!rowMap.has(key)) rowMap.set(key,{name:ev.title||'Rumah',sub:'',segments:[],evType:ev.type,intType:ev.intType});
-    const row = rowMap.get(key);
-    const sMs = new Date(ev.ts).getTime();
-    const evIdx = allSorted.findIndex(x=>x.id===ev.id);
-    const nextEv = allSorted[evIdx+1];
-    const eMs = nextEv
-      ? new Date(nextEv.ts).getTime()
-      : ((currentStatus===key||(currentStatus==='home'&&ev.type==='HOME')) ? Date.now() : sMs+5*60000);
-    // Include segment if it overlaps window AT ALL (even if it started before window)
-    if(eMs > anchorMs && sMs < endMs){
-      const segType = ev.type==='INT' ? 'int' : 'home';
-      // Clip segment to window boundaries for px calculation
-      row.segments.push({sMs, eMs, type:segType, intType:ev.intType});
+    var row=rowMap.get(key);
+    var sMs=new Date(ev.ts).getTime();
+    var evIdx=allSorted.findIndex(function(x){ return x.id===ev.id; });
+    var nextEv=allSorted[evIdx+1];
+    var eMs=nextEv?new Date(nextEv.ts).getTime():((currentStatus===key||(currentStatus==='home'&&ev.type==='HOME'))?Date.now():sMs+5*60000);
+    if(eMs>anchorMs&&sMs<endMs) row.segments.push({sMs:sMs,eMs:eMs,type:ev.type==='INT'?'int':'home',intType:ev.intType});
+  });
+
+  var allRows=[...rowMap.values()], allKeys=[...rowMap.keys()];
+  var rows=[], keys=[];
+  allRows.forEach(function(r,i){
+    if(r.segments.length>0||(r.evType==='TASK'&&allKeys[i]===activeId)){
+      rows.push(r); keys.push(allKeys[i]);
     }
   });
 
-  if(!rowMap.size){
+  if(!rows.length){
     wrap.innerHTML='<div class="gantt-empty">Tidak ada aktivitas di periode ini.</div>';
-    labelRowsEl.innerHTML='';
-    return;
+    labelRowsEl.innerHTML=''; return;
   }
 
-  // Filter: hanya tampilkan rows yang punya segmen dalam window
-  // (rows tanpa segmen tetap ada di rowMap untuk icon lookup tapi jangan dirender)
-  const allRows = [...rowMap.values()];
-  const allKeys = [...rowMap.keys()];
-  // Tampilkan semua rows yang punya minimal satu segmen ATAU yang sedang aktif
-  const visibleIndices = allRows.map((r,i)=>i).filter(i=>{
-    const r=allRows[i];
-    if(r.segments.length>0) return true;
-    // Task yang sedang aktif — tampilkan meski belum ada segmen di window
-    if(r.evType==='TASK' && allKeys[i]===activeId) return true;
-    return false;
-  });
-  const rows = visibleIndices.map(i=>allRows[i]);
-  const keys = visibleIndices.map(i=>allKeys[i]);
-
-  // Icon map
-  const intIconMap = {
-    teams:'message-square-text', whatsapp:'message-circle',
-    tamu:'user-round', toilet:'toilet', rokok:'cigarette'
-  };
+  var intIconMap={teams:'message-square-text',whatsapp:'message-circle',tamu:'user-round',toilet:'toilet',rokok:'cigarette'};
   function rowIconHtml(row){
-    if(row.evType==='INT' && row.intType && intIconMap[row.intType])
-      return `<i data-lucide="${intIconMap[row.intType]}" style="width:16px;height:16px;flex-shrink:0;stroke:var(--text2)"></i>`;
-    if(row.evType==='HOME')
-      return `<i data-lucide="house" style="width:16px;height:16px;flex-shrink:0;stroke:var(--muted)"></i>`;
+    if(row.evType==='INT'&&row.intType&&intIconMap[row.intType])
+      return '<i data-lucide="'+intIconMap[row.intType]+'" style="width:16px;height:16px;flex-shrink:0;stroke:var(--text2)"></i>';
+    if(row.evType==='HOME') return '<i data-lucide="house" style="width:16px;height:16px;flex-shrink:0;stroke:var(--muted)"></i>';
     return '';
   }
 
-  const nowMs = Date.now();
-  const nowInWindow = nowMs >= anchorMs && nowMs <= endMs;
+  var nowMs=Date.now(), nowInWin=(nowMs>=anchorMs&&nowMs<=endMs);
+  var ROW_H=40;
 
-  // ── Render timeline (bars + grid) ──
-  wrap.innerHTML=`<div id="ganttInner" style="position:relative;background:var(--bg-deep)">
-    <div id="ganttTickHeader" style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px;width:${vw}px;overflow:hidden">
-      ${ticks.map(tk=>{
-        const x = px(tk.ms);
-        if(x < -40 || x > vw+40) return '';
-        return `<span class="gantt-tick-lbl" style="left:${x}px;transform:translateX(-50%)">${tk.label}</span>`;
-      }).join('')}
-    </div>
-    ${rows.map((row,ri)=>{
-      const rowBg = ri%2===0?'var(--bg-deep)':'rgba(139,92,246,.04)';
-      return`<div data-gantt-row="${ri}" style="border-bottom:1px solid var(--border);min-height:40px;position:relative;background:${rowBg};width:${vw}px;overflow:hidden">
-        ${ticks.map(tk=>{
-          const x=px(tk.ms);
-          return `<div style="position:absolute;top:0;bottom:0;left:${x}px;width:1px;background:var(--border);pointer-events:none"></div>`;
-        }).join('')}
-        ${nowInWindow?`<div style="position:absolute;top:0;bottom:0;left:${px(nowMs)}px;width:2px;background:var(--magenta);opacity:.7;box-shadow:0 0 6px var(--magenta);pointer-events:none;z-index:2"></div>`:''}
-        ${row.segments.map(seg=>{
-          const lx = Math.max(0, px(seg.sMs));
-          const rx = Math.min(vw, px(seg.eMs));
-          const w  = Math.max(2, rx - lx);
-          const cls = seg.type==='home'?'gb-home':seg.type==='int'?'gb-int':'gb-'+(seg.cat||'ops');
-          return `<div class="gantt-bar ${cls}" style="left:${lx}px;width:${w}px;position:absolute;top:50%;transform:translateY(-50%)" title="${new Date(seg.sMs).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})} – ${new Date(seg.eMs).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}"></div>`;
-        }).join('')}
-      </div>`;
-    }).join('')}
-  </div>`;
+  // Build tick header HTML
+  var tickHdrHtml='';
+  ticks.forEach(function(tk){
+    var x=px(tk.ms);
+    if(x>=-60&&x<=vw+60) tickHdrHtml+='<span class="gantt-tick-lbl" style="left:'+x+'px;transform:translateX(-50%)">'+tk.label+'</span>';
+  });
 
-  // ── Render label column ──
-  labelRowsEl.innerHTML = rows.map((row,ri)=>{
-    const rowBg = ri%2===0?'var(--bg-deep)':'rgba(139,92,246,.04)';
-    return`<div data-label-row="${ri}" style="min-height:40px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:${rowBg}">
-      ${rowIconHtml(row)}
-      <div style="min-width:0;overflow:hidden">
-        <div class="gantt-row-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.name)}</div>
-        ${row.sub?`<div class="gantt-row-sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.sub)}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
+  // Build tick grid lines HTML (shared across all rows)
+  var tickLinesHtml='';
+  ticks.forEach(function(tk){
+    tickLinesHtml+='<div style="position:absolute;top:0;bottom:0;left:'+px(tk.ms)+'px;width:1px;background:var(--border);pointer-events:none"></div>';
+  });
 
-  // Sync row heights
-  requestAnimationFrame(()=>{
-    const timeRows  = wrap.querySelectorAll('[data-gantt-row]');
-    const labelRows = labelRowsEl.querySelectorAll('[data-label-row]');
-    timeRows.forEach((tr,i)=>{
-      if(labelRows[i]){
-        const h = tr.offsetHeight;
-        labelRows[i].style.minHeight = h+'px';
-        labelRows[i].style.height    = h+'px';
-      }
+  // Now-line HTML
+  var nowLineHtml = nowInWin ? '<div style="position:absolute;top:0;bottom:0;left:'+px(nowMs)+'px;width:2px;background:var(--magenta);opacity:.8;pointer-events:none;z-index:3"></div>' : '';
+
+  // Build rows HTML
+  var rowsHtml='';
+  rows.forEach(function(row,ri){
+    var bg = ri%2===0 ? 'var(--bg-deep)' : 'rgba(139,92,246,.04)';
+    var barsHtml='';
+    row.segments.forEach(function(seg){
+      var lx=Math.max(-2,px(seg.sMs)), rx=Math.min(vw+2,px(seg.eMs)), w=Math.max(3,rx-lx);
+      var cls=seg.type==='home'?'gb-home':seg.type==='int'?'gb-int':'gb-'+(seg.cat||'ops');
+      barsHtml+='<div class="gantt-bar '+cls+'" style="left:'+lx+'px;width:'+w+'px;position:absolute;top:50%;transform:translateY(-50%)"></div>';
     });
+    rowsHtml+='<div data-gantt-row="'+ri+'" style="min-height:'+ROW_H+'px;position:relative;background:'+bg+';border-bottom:1px solid var(--border);overflow:hidden;width:'+vw+'px">'+tickLinesHtml+nowLineHtml+barsHtml+'</div>';
+  });
+
+  wrap.innerHTML='<div id="ganttInner" style="position:relative;width:'+vw+'px">'
+    +'<div style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px;overflow:hidden;width:'+vw+'px">'+tickHdrHtml+'</div>'
+    +rowsHtml
+    +'</div>';
+
+  // Build label column HTML
+  var lblHtml='';
+  rows.forEach(function(row,ri){
+    var bg = ri%2===0 ? 'var(--bg-deep)' : 'rgba(139,92,246,.04)';
+    lblHtml+='<div data-label-row="'+ri+'" style="min-height:'+ROW_H+'px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:'+bg+'">'
+      +rowIconHtml(row)
+      +'<div style="min-width:0;overflow:hidden">'
+      +'<div class="gantt-row-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.name)+'</div>'
+      +(row.sub?'<div class="gantt-row-sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(row.sub)+'</div>':'')
+      +'</div></div>';
+  });
+  labelRowsEl.innerHTML = lblHtml;
+
+  _ganttRenderedAnchorMs = anchorMs;
+  _ganttRenderedMsPerPx  = ganttMsPerPx;
+
+  requestAnimationFrame(function(){
+    var tr=wrap.querySelectorAll('[data-gantt-row]'), lr=labelRowsEl.querySelectorAll('[data-label-row]');
+    for(var i=0;i<tr.length;i++){ if(lr[i]){ var h=tr[i].offsetHeight; lr[i].style.minHeight=h+'px'; lr[i].style.height=h+'px'; }}
     lucide.createIcons();
   });
   initGanttPinch();
 }
+
 
 // ── Pan + Pinch zoom — init once, listeners persist ──
 let _ganttPinchReady = false;
