@@ -1076,7 +1076,7 @@ body { font-family: var(--font); color: var(--text); font-size: 14px; -webkit-fo
             <!-- Edge glow — menyala saat mencapai batas Big Bang -->
             <div id="ganttEdgeGlow" style="
               position:absolute;top:0;left:0;bottom:0;width:60px;
-              background:linear-gradient(to right, rgba(255,45,120,0.7), transparent);
+              background:linear-gradient(to right, rgba(255,45,120,0.9), transparent);
               pointer-events:none;z-index:20;opacity:0;
               transition:opacity 0.2s ease-out;
             "></div>
@@ -3003,18 +3003,13 @@ function clampGanttAnchor(anchor){
 }
 
 // Show/hide edge glow based on how close anchor is to Big Bang
-function updateEdgeGlow(){
+// overshootPx: seberapa jauh jari mendorong melewati batas (0 = tidak ada tekanan)
+function updateEdgeGlow(overshootPx){
   var glow = document.getElementById('ganttEdgeGlow');
   if(!glow) return;
-  var bbMs = getBigBangMs();
-  if(bbMs === null){ glow.style.opacity = '0'; return; }
-  var vw = ganttViewportW();
-  var visibleMs = ganttMsPerPx * vw;
-  // Distance from anchor to Big Bang in pixels
-  var distPx = (ganttAnchorMs - bbMs) / ganttMsPerPx;
-  // Glow intensifies as distPx approaches 0 (at boundary)
-  // Full glow when distPx <= 0 (clamped), fade starts at 120px away
-  var intensity = Math.max(0, Math.min(1, 1 - distPx / 120));
+  if(overshootPx === undefined) overshootPx = 0;
+  // Max intensity at 80px overshoot, cap at 0.38
+  var intensity = Math.max(0, Math.min(0.38, overshootPx / 80 * 0.38));
   glow.style.opacity = intensity.toFixed(3);
 }
 
@@ -3209,7 +3204,7 @@ function renderGantt(){
     var tr=wrap.querySelectorAll('[data-gantt-row]'), lr=labelRowsEl.querySelectorAll('[data-label-row]');
     for(var i=0;i<tr.length;i++){ if(lr[i]){ var h=tr[i].offsetHeight; lr[i].style.minHeight=h+'px'; lr[i].style.height=h+'px'; }}
     lucide.createIcons();
-    updateEdgeGlow();
+    updateEdgeGlow(0);
   });
   initGanttPinch();
 }
@@ -3257,12 +3252,14 @@ function initGanttPinch(){
     ganttAnchorMs = newAnchor;
     var vw = ganttViewportW();
     var baseOffset = -(GANTT_BUFFER * vw);
-    // Use actual anchor diff for translateX — respects clamp boundary
+    // actualDeltaPx = how far content actually moved (stops at Big Bang)
     var actualDeltaMs = panStartAnchor - newAnchor;
     var actualDeltaPx = actualDeltaMs / ganttMsPerPx;
     var inner = document.getElementById('ganttInner');
     if(inner) inner.style.transform = 'translateX('+(baseOffset + actualDeltaPx)+'px)';
-    updateEdgeGlow();
+    // overshoot = how far finger pushed past the boundary
+    var overshootPx = Math.max(0, e.deltaX - actualDeltaPx);
+    updateEdgeGlow(overshootPx);
     var driftPx = Math.abs(actualDeltaPx);
     if(driftPx > GANTT_BUFFER * vw * 0.5){
       if(!_panRaf) _panRaf = requestAnimationFrame(function(){
@@ -3276,7 +3273,7 @@ function initGanttPinch(){
     // Commit final position
     ganttAnchorMs = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
     renderGantt();
-    updateEdgeGlow();
+    updateEdgeGlow(0); // fade out on release
 
     // ── Momentum / inertia ──
     // Hammer velocityX: px/ms, positive = right swipe (pan left = negative anchor shift)
@@ -3308,7 +3305,7 @@ function initGanttPinch(){
       if(Math.abs(driftPx) > GANTT_BUFFER * vw * 0.5){
         renderGantt();
       }
-      updateEdgeGlow();
+      updateEdgeGlow(0);
       _momentumRaf = requestAnimationFrame(momentumStep);
     }
     _momentumRaf = requestAnimationFrame(momentumStep);
