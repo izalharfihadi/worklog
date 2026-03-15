@@ -2952,10 +2952,9 @@ function renderGantt(){
 
   const rowMap = new Map();
 
-  // Task rows
+  // Task rows — include all segments that overlap window
   const taskIds = [...new Set(
     allSorted.filter(e=>e.taskId&&['START','RESUME','STOP','PAUSE','DONE'].includes(e.type))
-             .filter(e=>new Date(e.tsStart||e.ts).getTime()<=endMs)
              .map(e=>e.taskId)
   )];
   taskIds.forEach(tid=>{
@@ -2967,14 +2966,21 @@ function renderGantt(){
     tevs.forEach(ev=>{
       if(ev.type==='START'||ev.type==='RESUME') ss = new Date(ev.tsStart||ev.ts).getTime();
       else if((ev.type==='STOP'||ev.type==='PAUSE'||ev.type==='DONE')&&ss!=null){
-        row.segments.push({sMs:ss, eMs:new Date(ev.ts).getTime(), cat:t.cat});
+        const eMs = new Date(ev.ts).getTime();
+        // Include if overlaps window
+        if(eMs > anchorMs && ss < endMs)
+          row.segments.push({sMs:ss, eMs, cat:t.cat});
         ss = null;
       }
     });
-    if(ss!=null && activeId===tid) row.segments.push({sMs:ss, eMs:Date.now(), cat:t.cat});
+    if(ss!=null && activeId===tid){
+      const eMs = Date.now();
+      if(eMs > anchorMs && ss < endMs)
+        row.segments.push({sMs:ss, eMs, cat:t.cat});
+    }
   });
 
-  // INT / HOME rows
+  // INT / HOME rows — segment overlap: clip to window, never skip
   allSorted.filter(e=>e.type==='INT'||e.type==='HOME').forEach(ev=>{
     const key = ev.type==='INT' ? 'int-'+(ev.intType||'x') : 'HOME';
     if(!rowMap.has(key)) rowMap.set(key,{name:ev.title||'Rumah',sub:'',segments:[],evType:ev.type,intType:ev.intType});
@@ -2985,9 +2991,10 @@ function renderGantt(){
     const eMs = nextEv
       ? new Date(nextEv.ts).getTime()
       : ((currentStatus===key||(currentStatus==='home'&&ev.type==='HOME')) ? Date.now() : sMs+5*60000);
-    // Only add segment if it overlaps the current window
-    if(eMs >= anchorMs && sMs <= endMs){
+    // Include segment if it overlaps window AT ALL (even if it started before window)
+    if(eMs > anchorMs && sMs < endMs){
       const segType = ev.type==='INT' ? 'int' : 'home';
+      // Clip segment to window boundaries for px calculation
       row.segments.push({sMs, eMs, type:segType, intType:ev.intType});
     }
   });
@@ -3124,6 +3131,7 @@ function initGanttPinch(){
 
     if(mode === 'pan' && e.touches.length === 1){
       currentDx = e.touches[0].clientX - panStartX;
+      // Pan: CSS translate for smooth visual feedback
       inner.style.transform = `translateX(${currentDx}px)`;
 
     } else if(mode === 'pinch' && e.touches.length === 2){
@@ -3131,34 +3139,35 @@ function initGanttPinch(){
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
       );
-      lastPinchScale = dist / pinchStartDist; // >1 zoom in, <1 zoom out
+      lastPinchScale = dist / pinchStartDist;
       const vw = ganttViewportW();
+      // Compute new state
       const newMsPerPx = Math.max(
         GANTT_MS_MIN / vw,
         Math.min(GANTT_MS_MAX / vw, pinchStartMsPerPx / lastPinchScale)
       );
-      // Visual: scaleX around pinch origin pixel
-      const originPx = (pinchOriginMs - ganttAnchorMs) / ganttMsPerPx;
-      inner.style.transformOrigin = `${originPx}px 0`;
-      inner.style.transform = `scaleX(${lastPinchScale})`;
+      ganttMsPerPx  = newMsPerPx;
+      ganttAnchorMs = pinchOriginMs - (pinchOriginMs - panStartAnchor) * (newMsPerPx / pinchStartMsPerPx);
+      // Throttled re-render (no CSS distortion)
+      if(!wrap._pinchRaf){
+        wrap._pinchRaf = requestAnimationFrame(()=>{
+          renderGantt();
+          wrap._pinchRaf = null;
+        });
+      }
     }
   },{passive:true});
 
   wrap.addEventListener('touchend', e=>{
     const inner = getInner();
     if(inner){ inner.style.transform = ''; inner.style.transformOrigin = ''; }
+    if(wrap._pinchRaf){ cancelAnimationFrame(wrap._pinchRaf); wrap._pinchRaf=null; }
 
     if(mode === 'pan'){
+      // Commit pan
       ganttAnchorMs = panStartAnchor - currentDx * ganttMsPerPx;
-    } else if(mode === 'pinch'){
-      const vw = ganttViewportW();
-      ganttMsPerPx = Math.max(
-        GANTT_MS_MIN / vw,
-        Math.min(GANTT_MS_MAX / vw, pinchStartMsPerPx / lastPinchScale)
-      );
-      // Keep pinch origin stationary
-      ganttAnchorMs = pinchOriginMs - (pinchOriginMs - ganttAnchorMs) * (ganttMsPerPx / pinchStartMsPerPx);
     }
+    // pinch: already committed ganttMsPerPx + ganttAnchorMs during touchmove
 
     mode = null; currentDx = 0;
     renderGantt();
