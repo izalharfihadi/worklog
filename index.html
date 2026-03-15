@@ -2687,7 +2687,7 @@ async function confirmFactoryReset(){
   try {
     // Hapus semua localStorage
     ['wl6_tasks','wl6_events','wl6_employees','wl6_active','wl6_activeStart',
-     'wl6_status','wl6_homeStart','wl6_onboarded','wl6_bigbang_id'].forEach(function(k){
+     'wl6_status','wl6_homeStart','wl6_onboarded'].forEach(function(k){
       localStorage.removeItem(k);
     });
     // Reset in-memory state
@@ -2720,7 +2720,7 @@ async function confirmFactoryReset(){
   setSyncStatus('syncing');
   try {
     ['wl6_tasks','wl6_events','wl6_employees','wl6_active','wl6_activeStart',
-     'wl6_status','wl6_homeStart','wl6_onboarded','wl6_bigbang_id'].forEach(function(k){
+     'wl6_status','wl6_homeStart','wl6_onboarded'].forEach(function(k){
       localStorage.removeItem(k);
     });
     tasks=[]; events=[]; employees=[];
@@ -2769,18 +2769,12 @@ async function execResetModal(){
       await gasPost('resetSheet',{sheet:'tasks'});
     }
     if(doEvents){
-      // Big Bang selalu dilindungi — execResetModal tidak pernah menghapusnya
-      // Factory Reset (confirmFactoryReset) yang bertugas menghapus Big Bang
-      var bigbangId = localStorage.getItem('wl6_bigbang_id');
-      var bigbang   = bigbangId ? events.find(function(e){ return e.id===bigbangId; }) : null;
-      if(!bigbang) bigbang = events.find(function(e){ return e.type==='HOME'; }); // fallback
-
+      // Big Bang selalu dilindungi — ID-nya fixed: BIGBANG00000000
+      var bigbang = events.find(function(e){ return e.id==='BIGBANG00000000'; });
       if(bigbang){
-        // Pertahankan Big Bang, hapus sisanya
         events=[bigbang]; save('wl6_events',[bigbang]); updateBadge();
-        await gasPost('resetSheet',{sheet:'events', keepId: bigbang.id});
+        await gasPost('resetSheet',{sheet:'events', keepId:'BIGBANG00000000'});
       } else {
-        // Tidak ada Big Bang sama sekali — hapus semua
         events=[]; save('wl6_events',[]); updateBadge();
         await gasPost('resetSheet',{sheet:'events'});
       }
@@ -2881,17 +2875,27 @@ function endTour(){
   setTimeout(()=>{
     overlay.classList.remove('active');
     overlay.style.pointerEvents = '';
-    // Klik mengerti = Big Bang — push HOME event pertama (immutable)
-    if(currentStatus !== 'home') setStatus('home');
-    else {
-      if(!events.find(e=>e.type==='HOME')){
-        pushEvent({taskId:'',title:'Rumah',type:'HOME',pic:'—',dept:'—',cat:'—'});
-      }
+    // Klik mengerti = Big Bang — push HOME event dengan ID sakral BIGBANG00000000
+    // ID ini fixed, tidak bisa terbentuk dari jalur lain, hanya factory reset yang bisa menghapusnya
+    if(!events.find(function(e){ return e.id==='BIGBANG00000000'; })){
+      var now = new Date();
+      var bigbangEv = {
+        id:'BIGBANG00000000', ts:now.toISOString(),
+        tsStart:now.toISOString(), tsEnd:'',
+        taskId:'', title:'Rumah', type:'HOME',
+        pic:'—', dept:'—', cat:'—',
+        incomplete:false, notes:''
+      };
+      events.push(bigbangEv);
+      save('wl6_events', events);
+      appendEventToSheets(bigbangEv);
     }
-    // Simpan ID Big Bang ke localStorage (sekali seumur hidup PWA)
-    var bigbang = events.find(function(e){ return e.type==='HOME'; });
-    if(bigbang && !localStorage.getItem('wl6_bigbang_id')){
-      localStorage.setItem('wl6_bigbang_id', bigbang.id);
+    // Set status home
+    if(currentStatus !== 'home'){
+      currentStatus = 'home';
+      homeStart = new Date();
+      save('wl6_status','home');
+      localStorage.setItem('wl6_homeStart', homeStart.toISOString());
     }
     renderAll();
   }, 50);
