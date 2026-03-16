@@ -3392,10 +3392,11 @@ function initGanttPinch(){
         });
       }
 
-      // 5. Update now-line
+      // 5. Update all now-lines (one per row)
       var nowMs = Date.now();
-      var nowEl = wrap2.querySelector('.gantt-now-line');
-      if(nowEl) nowEl.style.left = pxNow(nowMs) + 'px';
+      wrap2.querySelectorAll('.gantt-now-line').forEach(function(el){
+        el.style.left = pxNow(nowMs) + 'px';
+      });
 
       // 6. Check if tick interval needs to change (new ticks needed)
       var newIntervalMs = getTickIntervalMs(visNow);
