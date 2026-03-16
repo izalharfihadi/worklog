@@ -422,7 +422,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   transition: transform 250ms cubic-bezier(.4,0,.2,1);
   border-radius: var(--r); position: relative; z-index: 1;
 }
-.swipe-wrap.open .tc { transform: translateX(-128px); border-radius: var(--r) 0 0 var(--r); }
+.swipe-wrap.open .tc { transform: translateX(-192px); border-radius: var(--r) 0 0 var(--r); }
 .swipe-btn {
   width: 64px; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 4px;
@@ -432,8 +432,9 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
 }
 .swipe-btn svg { width: 20px; height: 20px; stroke: #fff; stroke-width: 2; }
 .swipe-btn:active { opacity: .75; }
-.swipe-btn.edit  { background: #16a34a; }
+.swipe-btn.edit  { background: #ca8a04; }
 .swipe-btn.del   { background: #dc2626; }
+.swipe-btn.done  { background: #16a34a; }
 .swipe-btn.disabled { background: #374151; cursor: default; }
 .swipe-btn.disabled svg { stroke: #6b7280; }
 .swipe-btn.disabled span { color: #6b7280; }
@@ -1097,7 +1098,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
         </div>
         <div class="field">
           <label>Nama Tugas</label>
-          <input type="text" id="f-title" placeholder="contoh: Buat invoice..." onkeydown="if(event.key==='Enter')document.getElementById('f-pic').focus()"/>
+          <input type="text" id="f-title" placeholder="contoh: Buat invoice..." autocapitalize="words" onkeydown="if(event.key==='Enter')document.getElementById('f-pic').focus()"/>
         </div>
         <div class="field" id="picField">
           <label>PIC</label>
@@ -1219,15 +1220,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
         </div>
         <div id="empTableWrap">
           <div class="emp-empty" id="empEmpty">Belum ada karyawan.<br>Tambahkan di atas.</div>
-          <table class="emp-table" id="empTable" style="display:none">
-            <thead><tr>
-              <th style="width:28px">#</th>
-              <th id="th-name" onclick="setEmpSort('name')">Nama</th>
-              <th id="th-dept" onclick="setEmpSort('dept')">Dept</th>
-              <th style="width:80px"></th>
-            </tr></thead>
-            <tbody id="empTbody"></tbody>
-          </table>
+          <div id="empList" style="display:none;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:4px"></div>
         </div>
       </div>
 
@@ -1747,50 +1740,47 @@ function getSortedEmployees() {
 }
 
 function renderEmployees(editId=null) {
-  const empty = document.getElementById('empEmpty');
-  const table = document.getElementById('empTable');
-  const tbody = document.getElementById('empTbody');
-  ['name','dept'].forEach(col => {
-    const th = document.getElementById('th-'+col);
-    if (!th) return;
-    th.className = empSort===col ? ('sort-'+empSortDir) : '';
-  });
-  if (!employees.length) { empty.style.display=''; table.style.display='none'; return; }
-  empty.style.display='none'; table.style.display='';
+  const empty   = document.getElementById('empEmpty');
+  const empList = document.getElementById('empList');
+  if (!employees.length) {
+    empty.style.display=''; empList.style.display='none'; return;
+  }
+  empty.style.display='none'; empList.style.display='';
   const sorted = getSortedEmployees();
-  tbody.innerHTML = sorted.map((e,i) => {
+  empList.innerHTML = sorted.map((e,i) => {
     if (e.id === editId) return `
-      <tr>
-        <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
-        <td><input class="emp-edit-input" id="edit-name-${e.id}" value="${esc(e.name)}" /></td>
-        <td><input class="emp-edit-input" id="edit-dept-${e.id}" value="${esc(e.dept)}" /></td>
-        <td style="text-align:right;white-space:nowrap">
-          <button class="btn-save-emp" onclick="saveEmployee('${e.id}')">✓</button>
-          <button class="btn-del-emp"  onclick="renderEmployees()">✕</button>
-        </td>
-      </tr>`;
+      <div style="padding:10px 12px;background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <span style="color:var(--muted);font-family:var(--mono);font-size:10px;width:18px;flex-shrink:0">${i+1}</span>
+        <input class="emp-edit-input" id="edit-name-${e.id}" value="${esc(e.name)}" style="flex:1"/>
+        <input class="emp-edit-input" id="edit-dept-${e.id}" value="${esc(e.dept)}" style="width:80px"/>
+        <button class="btn-save-emp" onclick="saveEmployee('${e.id}')">✓</button>
+        <button class="btn-del-emp"  onclick="renderEmployees()">✕</button>
+      </div>`;
     return `
-      <tr class="emp-swipe-row" data-emp-id="${e.id}" style="position:relative;overflow:hidden">
-        <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
-        <td>${esc(e.name)}</td>
-        <td><span class="emp-dept-badge">${esc(e.dept)}</span></td>
-        <td style="text-align:right;white-space:nowrap;width:80px">
-          <div style="display:flex;gap:4px;justify-content:flex-end">
-            <button style="width:32px;height:32px;border-radius:8px;border:none;background:#16a34a;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="openEditEmpModal('${e.id}')">
-              <i data-lucide="pencil" style="width:14px;height:14px;stroke:#fff"></i>
-            </button>
-            <button style="width:32px;height:32px;border-radius:8px;border:none;background:#dc2626;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="softDeleteEmployee('${e.id}')">
-              <i data-lucide="trash-2" style="width:14px;height:14px;stroke:#fff"></i>
-            </button>
+      <div class="emp-swipe-wrap" data-emp-id="${e.id}">
+        <div class="emp-row-inner">
+          <span class="emp-row-num">${i+1}</span>
+          <div style="flex:1;min-width:0">
+            <div class="emp-row-name">${esc(e.name)}</div>
           </div>
-        </td>
-      </tr>`;
+          <span class="emp-dept-badge">${esc(e.dept)}</span>
+        </div>
+        <div class="emp-swipe-actions">
+          <button class="swipe-btn edit" onclick="openEditEmpModal('${e.id}')">
+            <i data-lucide="pencil"></i><span>Edit</span>
+          </button>
+          <button class="swipe-btn del" onclick="softDeleteEmployee('${e.id}')">
+            <i data-lucide="trash-2"></i><span>Hapus</span>
+          </button>
+        </div>
+      </div>`;
   }).join('');
   if (editId) {
     const inp = document.getElementById('edit-name-'+editId);
     if (inp) { inp.focus(); inp.select(); }
   }
   lucide.createIcons();
+  initEmpSwipe();
 }
 function lookupDept(name) {
   const e = employees.find(x=>x.name.toLowerCase()===name.toLowerCase());
@@ -1966,6 +1956,10 @@ function setStatus(newStatus, opts={}) {
       save('wl6_tasks', tasks);
       pushEvent({taskId:activeId, title:t.title, pic:t.pic, dept:t.dept||'', cat:t.cat,
         type: opts.doneTask ? 'DONE' : 'PAUSE'});
+      // Sync status ke Sheets
+      if(opts.doneTask){
+        gasPost('editTask',{id:activeId, fields:{status:'done'}}).catch(()=>{});
+      }
     }
     activeId = null; activeStart = null;
     localStorage.removeItem('wl6_activeStart');
@@ -2024,6 +2018,8 @@ function markDone(id) {
     const t=tasks.find(x=>x.id===id); if(!t)return;
     t.status='done'; save('wl6_tasks',tasks);
     pushEvent({taskId:id,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'DONE'});
+    // Sync status done ke Sheets agar tidak hidup kembali saat reload
+    gasPost('editTask',{id, fields:{status:'done'}}).catch(()=>{});
     renderAll();
   }
   toast('✅ Selesai');
@@ -2046,7 +2042,9 @@ function goHome() {
 
 function resubmitTask(id){
   const t=tasks.find(x=>x.id===id); if(!t)return;
-  t.status='todo'; t.totalMs=0; save('wl6_tasks',tasks); renderAll(); toast('↑ Dikembalikan');
+  t.status='todo'; t.totalMs=0; save('wl6_tasks',tasks);
+  gasPost('editTask',{id, fields:{status:'todo', totalMin:0}}).catch(()=>{});
+  renderAll(); toast('↑ Dikembalikan');
 }
 
 function stopActive(evType){
@@ -2196,6 +2194,10 @@ function renderIntState(){
 //  SWIPE TO REVEAL
 // ══════════════════════════════════════════════
 let activeSwipe = null;
+
+function initEmpSwipe(){
+  initSwipe('.emp-swipe-wrap');
+}
 
 function initSwipe(selector) {
   document.querySelectorAll(selector).forEach(wrap => {
@@ -2529,9 +2531,6 @@ function renderTasks(){
               <span class="tc-date">${fmtDateShort(t.createdAt)}</span>
             </div>
           </div>
-          <div class="tc-actions">
-            <button class="btn-tc done" onclick="markDone('${t.id}')"><i data-lucide="check"></i></button>
-          </div>
         </div>
         <div class="swipe-actions">
           <button class="swipe-btn edit ${disabledCls}" onclick="openEditTaskModal('${t.id}')">
@@ -2539,6 +2538,9 @@ function renderTasks(){
           </button>
           <button class="swipe-btn del ${disabledCls}" onclick="openDeleteTaskModal('${t.id}')">
             <i data-lucide="trash-2"></i><span>Hapus</span>
+          </button>
+          <button class="swipe-btn done ${disabledCls}" onclick="markDone('${t.id}')">
+            <i data-lucide="check"></i><span>Selesai</span>
           </button>
         </div>
       </div>`;
