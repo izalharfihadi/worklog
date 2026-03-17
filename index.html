@@ -2880,7 +2880,14 @@ const TOUR_STEPS = [
 function updateSkipBtn(){
   var skipBtn = document.getElementById('tourSkipBtn');
   if(!skipBtn) return;
+  // Check both in-memory events AND localStorage (for pre-sync detection)
   var hasBigBang = events.find(function(e){ return e.id==='BIGBANG00000000'; });
+  if(!hasBigBang){
+    var stored = load('wl6_events');
+    if(stored && Array.isArray(stored)){
+      hasBigBang = stored.find(function(e){ return e.id==='BIGBANG00000000'; });
+    }
+  }
   if(hasBigBang){
     skipBtn.removeAttribute('disabled');
   } else {
