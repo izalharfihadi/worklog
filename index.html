@@ -890,8 +890,14 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   font-family: var(--font-body); font-size: 12px;
   padding: 8px 16px; border-radius: 20px;
   background: transparent; color: var(--muted);
-  border: 1px solid var(--border); cursor: pointer;
-  pointer-events: all;
+  border: 1px solid var(--border); cursor: default;
+  pointer-events: all; transition: all 0.3s ease;
+  opacity: 0.4;
+}
+.btn-tour-skip:not([disabled]) {
+  color: var(--text); border-color: var(--border-md);
+  opacity: 1; cursor: pointer;
+  background: var(--bg-card2);
 }
 
 /* ══ GANTT ══ */
@@ -1420,7 +1426,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
     <div class="tour-title" id="tourTitle">Selamat datang di WorkLog</div>
     <div class="tour-body" id="tourBody">Pencatat waktu kerjamu yang tidak pernah berhenti. Setiap detik aktivitasmu terekam — tidak ada celah.</div>
     <div class="tour-footer">
-      <button class="btn-tour-skip" id="tourSkipBtn" onclick="skipTour()" style="display:none">Lewati</button>
+      <button class="btn-tour-skip" id="tourSkipBtn" onclick="skipTour()" disabled>Lewati</button>
       <button class="btn-tour-next" id="tourNextBtn" onclick="tourNext(event)">Mulai →</button>
     </div>
   </div>
@@ -1618,12 +1624,8 @@ async function loadFromSheets() {
       save('wl6_events', events);
     }
     renderAll();
-    // Update tombol skip tour jika tour sedang tampil dan Big Bang sudah ter-load
-    var skipBtn = document.getElementById('tourSkipBtn');
-    if(skipBtn && document.getElementById('tourOverlay').classList.contains('active')){
-      var hasBigBang = events.find(function(e){ return e.id==='BIGBANG00000000'; });
-      skipBtn.style.display = hasBigBang ? '' : 'none';
-    }
+    // Update skip button after sync completes
+    updateSkipBtn();
     setSyncStatus('ok');
     // silent — indikator orb sudah cukup
   } catch(err) {
@@ -2839,15 +2841,24 @@ const TOUR_STEPS = [
   }
 ];
 
+function updateSkipBtn(){
+  var skipBtn = document.getElementById('tourSkipBtn');
+  if(!skipBtn) return;
+  var hasBigBang = events.find(function(e){ return e.id==='BIGBANG00000000'; });
+  if(hasBigBang){
+    skipBtn.removeAttribute('disabled');
+  } else {
+    skipBtn.setAttribute('disabled','');
+  }
+}
+
 function startTour(){
   if(load('wl6_onboarded')) return; // Already toured
   tourStep = 0;
   renderTourStep();
   document.getElementById('tourOverlay').classList.add('active');
-  // Tampilkan tombol Lewati hanya jika Big Bang sudah ada (clear cache scenario)
-  var hasBigBang = events.find(function(e){ return e.id==='BIGBANG00000000'; });
-  var skipBtn = document.getElementById('tourSkipBtn');
-  if(skipBtn) skipBtn.style.display = hasBigBang ? '' : 'none';
+  // Skip button always visible — enabled only if Big Bang exists
+  updateSkipBtn();
 }
 
 function renderTourStep(){
@@ -3169,7 +3180,14 @@ function renderGantt(){
     var row=rowMap.get(key);
     var sMs=new Date(ev.ts).getTime();
     var evIdx=allSorted.findIndex(function(x){ return x.id===ev.id; });
-    var nextEv=allSorted[evIdx+1];
+    // Skip DONE events — DONE is administrative only, not a new activity
+    var nextEv=null;
+    for(var ni=evIdx+1; ni<allSorted.length; ni++){
+      if(allSorted[ni].type !== 'DONE'){
+        nextEv = allSorted[ni];
+        break;
+      }
+    }
     var eMs=nextEv?new Date(nextEv.ts).getTime():((currentStatus===key||(currentStatus==='home'&&ev.type==='HOME'))?Date.now():sMs+5*60000);
     if(eMs>bufAnchor&&sMs<bufEndMs) row.segments.push({sMs:sMs,eMs:eMs,type:ev.type==='INT'?'int':'home',intType:ev.intType});
   });
