@@ -877,13 +877,20 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   font-size: 12px; color: var(--text2); line-height: 1.6;
   font-family: var(--mono); margin-bottom: 16px;
 }
-.tour-footer { display: flex; justify-content: flex-end; }
+.tour-footer { display: flex; justify-content: space-between; align-items: center; }
 .btn-tour-next {
   font-family: var(--font-body); font-size: 13px; font-weight: 700;
   padding: 10px 24px; border-radius: 20px;
   background: linear-gradient(135deg,#8b5cf6,#00e5ff);
   color: #fff; border: none; cursor: pointer;
   box-shadow: 0 4px 16px rgba(139,92,246,.4);
+  pointer-events: all;
+}
+.btn-tour-skip {
+  font-family: var(--font-body); font-size: 12px;
+  padding: 8px 16px; border-radius: 20px;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border); cursor: pointer;
   pointer-events: all;
 }
 
@@ -1201,7 +1208,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
         </button>
         <div class="emp-add-row">
           <div style="flex:1;position:relative">
-            <input type="text" id="emp-name" placeholder="Nama..." autocomplete="off"
+            <input type="text" id="emp-name" placeholder="Nama..." autocomplete="off" autocapitalize="words"
               oninput="onEmpNameInput()" onkeydown="onEmpNameKeydown(event)"
               onblur="setTimeout(closeEmpNameAc,200)"
               onkeypress="if(event.key==='Enter')document.getElementById('emp-dept').focus()"
@@ -1394,7 +1401,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
     </div>
     <div class="edit-modal-body">
       <input type="hidden" id="editEmpId"/>
-      <div class="field"><label>Nama</label><input type="text" id="ee-name" placeholder="Nama karyawan..."/></div>
+      <div class="field"><label>Nama</label><input type="text" id="ee-name" placeholder="Nama karyawan..." autocapitalize="words"/></div>
       <div class="field"><label>Departemen</label><input type="text" id="ee-dept" placeholder="Departemen..."/></div>
     </div>
     <div class="edit-modal-footer">
@@ -1413,6 +1420,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
     <div class="tour-title" id="tourTitle">Selamat datang di WorkLog</div>
     <div class="tour-body" id="tourBody">Pencatat waktu kerjamu yang tidak pernah berhenti. Setiap detik aktivitasmu terekam — tidak ada celah.</div>
     <div class="tour-footer">
+      <button class="btn-tour-skip" id="tourSkipBtn" onclick="skipTour()" style="display:none">Lewati</button>
       <button class="btn-tour-next" id="tourNextBtn" onclick="tourNext(event)">Mulai →</button>
     </div>
   </div>
@@ -2830,6 +2838,10 @@ function startTour(){
   tourStep = 0;
   renderTourStep();
   document.getElementById('tourOverlay').classList.add('active');
+  // Tampilkan tombol Lewati hanya jika Big Bang sudah ada (clear cache scenario)
+  var hasBigBang = events.find(function(e){ return e.id==='BIGBANG00000000'; });
+  var skipBtn = document.getElementById('tourSkipBtn');
+  if(skipBtn) skipBtn.style.display = hasBigBang ? '' : 'none';
 }
 
 function renderTourStep(){
@@ -2879,6 +2891,19 @@ function tourNext(e){
     endTour(); return;
   }
   renderTourStep();
+}
+
+function skipTour(){
+  // Lewati tour — Big Bang sudah ada, tidak perlu buat yang baru
+  localStorage.setItem('wl6_onboarded','1');
+  const overlay = document.getElementById('tourOverlay');
+  overlay.style.pointerEvents = 'none';
+  overlay.classList.remove('active');
+  overlay.style.pointerEvents = '';
+  // Anchor ke now, data tetap utuh
+  ganttMsPerPx = 0; // reset agar ganttInitIfNeeded anchor ke now
+  renderAll();
+  switchTab('running');
 }
 
 function endTour(){
