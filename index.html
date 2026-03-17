@@ -1622,15 +1622,20 @@ async function loadFromSheets() {
     // Load events
     const evRes = await gasGet('events');
     if (evRes.status === 'ok' && evRes.rows.length) {
-      events = evRes.rows.map(r => ({
-        id: r['ID'], ts: r['Timestamp'],
-        tsStart: r['Waktu Mulai'], tsEnd: r['Waktu Selesai'],
-        taskId: r['Task ID'], title: r['Judul'],
-        pic: r['PIC'], dept: r['Departemen'],
-        cat: r['Kategori'], type: r['Event'],
-        notes: r['Catatan'],
-        incomplete: r['Incomplete'] === 'YES' || r['Incomplete'] === true
-      })).filter(e => e.id && e.type);
+      const intTypeMap = {'WhatsApp':'whatsapp','MS Teams':'teams','Orang':'tamu','Toilet':'toilet','Rokok':'rokok'};
+      events = evRes.rows.map(r => {
+        var intType = r['intType'] || (r['Event']==='INT' ? (intTypeMap[r['Judul']]||'x') : undefined);
+        return {
+          id: r['ID'], ts: r['Timestamp'],
+          tsStart: r['Waktu Mulai'], tsEnd: r['Waktu Selesai'],
+          taskId: r['Task ID'], title: r['Judul'],
+          pic: r['PIC'], dept: r['Departemen'],
+          cat: r['Kategori'], type: r['Event'],
+          intType: intType,
+          notes: r['Catatan'],
+          incomplete: r['Incomplete'] === 'YES' || r['Incomplete'] === true
+        };
+      }).filter(e => e.id && e.type);
       save('wl6_events', events);
     }
     renderAll();
@@ -3196,7 +3201,15 @@ function renderGantt(){
   });
 
   // INT/HOME rows — register all that ever appeared
+  // Always derive intType from title if not set (for backward compat with old data)
+  var titleToIntType = {
+    'WhatsApp':'whatsapp','MS Teams':'teams',
+    'Orang':'tamu','Toilet':'toilet','Rokok':'rokok'
+  };
   allSorted.filter(function(e){ return e.type==='INT'||e.type==='HOME'; }).forEach(function(ev){
+    if(ev.type==='INT' && !ev.intType && titleToIntType[ev.title]){
+      ev.intType = titleToIntType[ev.title];
+    }
     var key=ev.type==='INT'?'int-'+(ev.intType||'x'):'HOME';
     if(!rowMap.has(key)) rowMap.set(key,{name:ev.title||'Rumah',sub:'',segments:[],evType:ev.type,intType:ev.intType});
   });
@@ -3219,6 +3232,9 @@ function renderGantt(){
   });
 
   allSorted.filter(function(e){ return e.type==='INT'||e.type==='HOME'; }).forEach(function(ev){
+    if(ev.type==='INT' && !ev.intType && titleToIntType[ev.title]){
+      ev.intType = titleToIntType[ev.title];
+    }
     var key=ev.type==='INT'?'int-'+(ev.intType||'x'):'HOME';
     var row=rowMap.get(key);
     var sMs=new Date(ev.ts).getTime();
