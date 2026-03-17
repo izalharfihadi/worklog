@@ -311,7 +311,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   color: var(--muted); transition: all var(--t);
 }
 .sort-btn.active { background: var(--purple-dim); border-color: var(--border-bright); color: var(--cyan); }
-.sort-btn:active { transform: scale(.94); }
+.sort-btn:active { opacity: 0.5; transform: scale(.96); transition: none; }
 /* drag-drop */
 .tc { cursor: grab; }
 .tc.dragging { opacity: .35; border-color: var(--cyan); cursor: grabbing; }
@@ -1179,7 +1179,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
     <div class="panel" id="panel-settings">
 
       <!-- ── Menu utama Settings ── -->
-      <div id="settings-main" class="panel-inner">
+      <div id="settings-main" class="panel-inner" style="overflow-y:auto">
         <div class="settings-title" style="margin-bottom:20px">Pengaturan</div>
 
         <button class="adv-link" onclick="showSettingsSub('karyawan')" style="border-top:1px solid var(--border)">
@@ -1208,32 +1208,42 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
       </div>
 
       <!-- ── Sub: Master Karyawan ── -->
-      <div id="settings-karyawan" class="panel-inner" style="display:none">
-        <button class="adv-back" onclick="showSettingsSub('main')">
-          <i data-lucide="arrow-left"></i> Master Karyawan
-        </button>
-        <div class="emp-add-row">
-          <div style="flex:1;position:relative">
-            <input type="text" id="emp-name" placeholder="Nama..." autocomplete="off" autocapitalize="words"
-              oninput="onEmpNameInput()" onkeydown="onEmpNameKeydown(event)"
-              onblur="setTimeout(closeEmpNameAc,200)"
-              onkeypress="if(event.key==='Enter')document.getElementById('emp-dept').focus()"
-              style="width:100%"/>
-            <div class="ac-dropdown" id="empNameDropdown"></div>
+      <div id="settings-karyawan" class="panel-inner" style="display:none;padding:0">
+        <!-- Sticky header with frosted glass -->
+        <div style="position:sticky;top:0;z-index:20;padding:14px 14px 10px;
+          background:rgba(18,16,42,0.75);
+          -webkit-backdrop-filter:blur(16px);
+          backdrop-filter:blur(16px);
+          border-bottom:1px solid var(--border)">
+          <button class="adv-back" onclick="showSettingsSub('main')" style="margin-bottom:10px">
+            <i data-lucide="arrow-left"></i> Master Karyawan
+          </button>
+          <div class="emp-add-row">
+            <div style="flex:1;position:relative">
+              <input type="text" id="emp-name" placeholder="Nama..." autocomplete="off" autocapitalize="words"
+                oninput="onEmpNameInput()" onkeydown="onEmpNameKeydown(event)"
+                onblur="setTimeout(closeEmpNameAc,200)"
+                onkeypress="if(event.key==='Enter')document.getElementById('emp-dept').focus()"
+                style="width:100%"/>
+              <div class="ac-dropdown" id="empNameDropdown"></div>
+            </div>
+            <div style="max-width:120px;position:relative">
+              <input type="text" id="emp-dept" placeholder="Dept..." autocomplete="off"
+                oninput="onEmpDeptInput()" onkeydown="onEmpDeptKeydown(event)"
+                onblur="setTimeout(closeEmpDeptAc,200)"
+                onkeypress="if(event.key==='Enter')addEmployee()"
+                style="width:100%"/>
+              <div class="ac-dropdown" id="empDeptDropdown"></div>
+            </div>
+            <button class="btn-add-emp" onclick="addEmployee()">+</button>
           </div>
-          <div style="max-width:120px;position:relative">
-            <input type="text" id="emp-dept" placeholder="Dept..." autocomplete="off"
-              oninput="onEmpDeptInput()" onkeydown="onEmpDeptKeydown(event)"
-              onblur="setTimeout(closeEmpDeptAc,200)"
-              onkeypress="if(event.key==='Enter')addEmployee()"
-              style="width:100%"/>
-            <div class="ac-dropdown" id="empDeptDropdown"></div>
-          </div>
-          <button class="btn-add-emp" onclick="addEmployee()">+</button>
         </div>
-        <div id="empTableWrap">
-          <div class="emp-empty" id="empEmpty">Belum ada karyawan.<br>Tambahkan di atas.</div>
-          <div id="empList" style="display:none;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:4px"></div>
+        <!-- Scrollable list -->
+        <div style="padding:10px 14px 20px">
+          <div id="empTableWrap">
+            <div class="emp-empty" id="empEmpty">Belum ada karyawan.<br>Tambahkan di atas.</div>
+            <div id="empList" style="display:none;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:4px"></div>
+          </div>
         </div>
       </div>
 
@@ -1879,7 +1889,7 @@ function onEmpNameInput() {
   dd.innerHTML = matches.map((e,i) => `
     <div class="ac-item" data-idx="${i}">
       <span class="ac-name">${esc(e.name)}</span>
-      <span class="ac-dept" style="color:var(--amber);font-size:9px">⚠ sudah ada</span>
+      <span style="color:var(--amber);font-size:13px;line-height:1">⚠</span>
     </div>`).join('');
   dd.querySelectorAll('.ac-item').forEach((el,i) =>
     el.addEventListener('mousedown', ev => { ev.preventDefault(); document.getElementById('emp-name').value = matches[i].name; closeEmpNameAc(); toast('⚠ '+matches[i].name+' sudah ada di master'); })
@@ -2431,18 +2441,41 @@ async function softDeleteEmployee(id){
 //  TASK SORT & DRAG-DROP
 // ══════════════════════════════════════════════
 let taskSort = 'manual';
+let taskSortDir = 'asc'; // 'asc' | 'desc'
 let dragSrcId = null;
 
 function setTaskSort(s) {
-  taskSort = s;
-  ['manual','date','name'].forEach(x => document.getElementById('sort-'+x).classList.toggle('active', x===s));
+  if(s === 'manual') {
+    taskSort = 'manual'; taskSortDir = 'asc';
+  } else if(taskSort === s) {
+    // Same button — toggle direction
+    taskSortDir = taskSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    taskSort = s; taskSortDir = 'asc';
+  }
+  updateSortBtns();
   renderTasks();
+}
+
+function updateSortBtns(){
+  ['manual','date','name'].forEach(function(x){
+    var btn = document.getElementById('sort-'+x);
+    btn.classList.toggle('active', x===taskSort);
+    // Show direction indicator for active non-manual
+    if(x !== 'manual' && x === taskSort){
+      var label = x === 'date' ? 'Tanggal' : 'Nama';
+      btn.textContent = label + (taskSortDir === 'asc' ? ' ↑' : ' ↓');
+    } else if(x !== 'manual'){
+      btn.textContent = x === 'date' ? 'Tanggal' : 'Nama';
+    }
+  });
 }
 
 function getSortedActive() {
   const active = tasks.filter(t => t.status !== 'done');
-  if (taskSort === 'date') return [...active].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
-  if (taskSort === 'name') return [...active].sort((a,b) => a.title.localeCompare(b.title, 'id'));
+  const dir = taskSortDir === 'asc' ? 1 : -1;
+  if (taskSort === 'date') return [...active].sort((a,b) => dir * (new Date(a.createdAt) - new Date(b.createdAt)));
+  if (taskSort === 'name') return [...active].sort((a,b) => dir * (a.pic||'').localeCompare(b.pic||'', 'id'));
   return active; // manual = as-stored
 }
 
@@ -2515,6 +2548,9 @@ function initDragDrop() {
 
 function doReorder(targetId) {
   if (!dragSrcId || dragSrcId === targetId) return;
+  // Auto-switch to manual when drag happens
+  taskSort = 'manual'; taskSortDir = 'asc';
+  updateSortBtns();
   const srcIdx = tasks.findIndex(t => t.id === dragSrcId);
   const tgtIdx = tasks.findIndex(t => t.id === targetId);
   if (srcIdx < 0 || tgtIdx < 0) return;
@@ -2541,7 +2577,7 @@ function renderTasks(){
           <div class="tc-body">
             <div class="tc-title">${esc(t.title)}</div>
             <div class="tc-meta">
-              ${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}
+              ${t.pic?`<span class="tc-pic">${esc(t.pic)}</span>`:''}
               ${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}
               <span class="tc-elapsed" id="el-${t.id}">${calcElapsed(t.id)}</span>
               <span class="tc-date">${fmtDateShort(t.createdAt)}</span>
@@ -2574,7 +2610,7 @@ function renderTasks(){
       <div class="tc-start" style="cursor:default"><i data-lucide="check-circle"></i></div>
       <div class="tc-body">
         <div class="tc-title">${esc(t.title)}</div>
-        <div class="tc-meta">${t.pic?`<span class="tc-pic">→ ${esc(t.pic)}</span>`:''}${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}<span class="tc-elapsed">${calcElapsed(t.id)}</span><span class="tc-date">${fmtDateShort(t.createdAt)}</span></div>
+        <div class="tc-meta">${t.pic?`<span class="tc-pic">${esc(t.pic)}</span>`:''}${t.dept?`<span class="tc-dept">${esc(t.dept)}</span>`:''}<span class="tc-elapsed">${calcElapsed(t.id)}</span><span class="tc-date">${fmtDateShort(t.createdAt)}</span></div>
       </div>
       <div class="tc-actions">
         <button class="btn-tc resub" onclick="resubmitTask('${t.id}')"><i data-lucide="rotate-ccw"></i></button>
