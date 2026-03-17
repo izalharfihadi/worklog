@@ -1618,6 +1618,12 @@ async function loadFromSheets() {
       save('wl6_events', events);
     }
     renderAll();
+    // Update tombol skip tour jika tour sedang tampil dan Big Bang sudah ter-load
+    var skipBtn = document.getElementById('tourSkipBtn');
+    if(skipBtn && document.getElementById('tourOverlay').classList.contains('active')){
+      var hasBigBang = events.find(function(e){ return e.id==='BIGBANG00000000'; });
+      skipBtn.style.display = hasBigBang ? '' : 'none';
+    }
     setSyncStatus('ok');
     // silent — indikator orb sudah cukup
   } catch(err) {
