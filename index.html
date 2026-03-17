@@ -1583,6 +1583,63 @@ async function gasGet(sheet) {
   return res.json();
 }
 
+// ══════════════════════════════════════════════
+//  RESTORE STATUS FROM EVENT HISTORY
+//  Dipanggil setelah loadFromSheets — memastikan
+//  status dilanjutkan dari titik terakhir yang tercatat
+//  tanpa menulis event baru ke timeline
+// ══════════════════════════════════════════════
+function restoreStatusFromHistory() {
+  // Hanya restore jika localStorage status hilang (clear cache scenario)
+  // Jika status sudah ada di localStorage, biarkan apa adanya
+  if (load('wl6_status') && load('wl6_status') !== 'home') return;
+  if (activeId) return; // ada task aktif, tidak perlu restore
+
+  if (!events.length) return;
+
+  // Ambil event terakhir berdasarkan timestamp
+  var sorted = events.slice().sort(function(a,b){
+    return new Date(b.ts) - new Date(a.ts);
+  });
+  var last = sorted[0];
+  if (!last) return;
+
+  var intTypeMap = {
+    'WhatsApp':'whatsapp','MS Teams':'teams',
+    'Orang':'tamu','Toilet':'toilet','Rokok':'rokok'
+  };
+
+  if (last.type === 'HOME') {
+    // Status terakhir adalah Rumah — pastikan homeStart benar
+    if (!homeStart || homeStart > new Date(last.ts)) {
+      homeStart = new Date(last.ts);
+      localStorage.setItem('wl6_homeStart', homeStart.toISOString());
+    }
+    currentStatus = 'home';
+    save('wl6_status', 'home');
+  } else if (last.type === 'INT') {
+    var intType = last.intType || intTypeMap[last.title] || 'x';
+    currentStatus = 'int-' + intType;
+    save('wl6_status', currentStatus);
+  } else if (last.type === 'PAUSE' || last.type === 'DONE') {
+    // Task di-pause atau done — status kembali ke home
+    if (!homeStart) {
+      homeStart = new Date(last.ts);
+      localStorage.setItem('wl6_homeStart', homeStart.toISOString());
+    }
+    currentStatus = 'home';
+    save('wl6_status', 'home');
+  } else if (last.type === 'START' || last.type === 'RESUME') {
+    // Task masih berjalan
+    activeId = last.taskId;
+    activeStart = new Date(last.ts);
+    save('wl6_active', activeId);
+    localStorage.setItem('wl6_activeStart', activeStart.toISOString());
+    currentStatus = 'task';
+    save('wl6_status', 'task');
+  }
+}
+
 // Load semua data dari Sheets saat startup
 async function loadFromSheets() {
   setSyncStatus('syncing');
@@ -1638,6 +1695,8 @@ async function loadFromSheets() {
       }).filter(e => e.id && e.type);
       save('wl6_events', events);
     }
+    // Restore status dari event terakhir jika localStorage kosong (fresh install/clear cache)
+    restoreStatusFromHistory();
     renderAll();
     // Update skip button after sync completes
     updateSkipBtn();
