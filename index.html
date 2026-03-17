@@ -2012,16 +2012,16 @@ function startTask(id) {
 }
 
 function markDone(id) {
-  if (currentStatus==='task' && activeId===id) {
-    setStatus('home', {doneTask:true});
-  } else {
-    const t=tasks.find(x=>x.id===id); if(!t)return;
-    t.status='done'; save('wl6_tasks',tasks);
-    pushEvent({taskId:id,title:t.title,pic:t.pic,dept:t.dept||'',cat:t.cat,type:'DONE'});
-    // Sync status done ke Sheets agar tidak hidup kembali saat reload
-    gasPost('editTask',{id, fields:{status:'done'}}).catch(()=>{});
-    renderAll();
+  // Tidak bisa Done task yang sedang aktif — harus run task lain dulu
+  if (activeId === id) {
+    toast('⚠ Jalankan task lain dulu sebelum menyelesaikan ini');
+    return;
   }
+  const t=tasks.find(x=>x.id===id); if(!t)return;
+  t.status='done'; save('wl6_tasks',tasks);
+  // Done hanya memindahkan card ke bawah — tidak push event apapun ke timeline
+  gasPost('editTask',{id, fields:{status:'done'}}).catch(()=>{});
+  renderAll();
   toast('✅ Selesai');
 }
 
@@ -2533,13 +2533,13 @@ function renderTasks(){
           </div>
         </div>
         <div class="swipe-actions">
-          <button class="swipe-btn edit ${disabledCls}" onclick="openEditTaskModal('${t.id}')">
+          <button class="swipe-btn edit ${disabledCls}" ${isAct?'disabled':''} onclick="openEditTaskModal('${t.id}')">
             <i data-lucide="pencil"></i><span>Edit</span>
           </button>
-          <button class="swipe-btn del ${disabledCls}" onclick="openDeleteTaskModal('${t.id}')">
+          <button class="swipe-btn del ${disabledCls}" ${isAct?'disabled':''} onclick="openDeleteTaskModal('${t.id}')">
             <i data-lucide="trash-2"></i><span>Hapus</span>
           </button>
-          <button class="swipe-btn done ${disabledCls}" onclick="markDone('${t.id}')">
+          <button class="swipe-btn done ${disabledCls}" ${isAct?'disabled':''} onclick="markDone('${t.id}')">
             <i data-lucide="check"></i><span>Selesai</span>
           </button>
         </div>
@@ -3098,6 +3098,7 @@ function renderGantt(){
   var allSorted = events.slice().sort(function(a,b){ return new Date(a.ts)-new Date(b.ts); });
   var rowMap = new Map();
 
+  // ── PASS 1: Build ALL rows from entire event history (window-independent) ──
   // Task rows
   var taskIds = [];
   allSorted.forEach(function(e){
@@ -3107,6 +3108,17 @@ function renderGantt(){
   taskIds.forEach(function(tid){
     var t=tasks.find(function(x){ return x.id===tid; }); if(!t) return;
     if(!rowMap.has(tid)) rowMap.set(tid,{name:t.title,sub:t.pic||t.dept||'',segments:[],evType:'TASK'});
+  });
+
+  // INT/HOME rows — register all that ever appeared
+  allSorted.filter(function(e){ return e.type==='INT'||e.type==='HOME'; }).forEach(function(ev){
+    var key=ev.type==='INT'?'int-'+(ev.intType||'x'):'HOME';
+    if(!rowMap.has(key)) rowMap.set(key,{name:ev.title||'Rumah',sub:'',segments:[],evType:ev.type,intType:ev.intType});
+  });
+
+  // ── PASS 2: Fill segments — only those overlapping buffer window ──
+  taskIds.forEach(function(tid){
+    var t=tasks.find(function(x){ return x.id===tid; }); if(!t) return;
     var row=rowMap.get(tid);
     var tevs=allSorted.filter(function(e){ return e.taskId===tid; }).sort(function(a,b){ return new Date(a.ts)-new Date(b.ts); });
     var ss=null;
@@ -3121,10 +3133,8 @@ function renderGantt(){
     if(ss!=null&&activeId===tid){ var eMs=Date.now(); if(eMs>bufAnchor&&ss<bufEndMs) row.segments.push({sMs:ss,eMs:eMs,cat:t.cat}); }
   });
 
-  // INT/HOME rows
   allSorted.filter(function(e){ return e.type==='INT'||e.type==='HOME'; }).forEach(function(ev){
     var key=ev.type==='INT'?'int-'+(ev.intType||'x'):'HOME';
-    if(!rowMap.has(key)) rowMap.set(key,{name:ev.title||'Rumah',sub:'',segments:[],evType:ev.type,intType:ev.intType});
     var row=rowMap.get(key);
     var sMs=new Date(ev.ts).getTime();
     var evIdx=allSorted.findIndex(function(x){ return x.id===ev.id; });
@@ -3133,14 +3143,10 @@ function renderGantt(){
     if(eMs>bufAnchor&&sMs<bufEndMs) row.segments.push({sMs:sMs,eMs:eMs,type:ev.type==='INT'?'int':'home',intType:ev.intType});
   });
 
+  // All rows always shown — bars may be empty if no activity in current window
   var allRows=[...rowMap.values()], allKeys=[...rowMap.keys()];
-  var rows=[], keys=[];
-  allRows.forEach(function(r,i){
-    if(r.segments.length>0||(r.evType==='TASK'&&allKeys[i]===activeId)){
-      rows.push(r); keys.push(allKeys[i]);
-    }
-  });
-  if(!rows.length && allRows.length>0){ rows=allRows.slice(); keys=allKeys.slice(); }
+  var rows=allRows.slice(), keys=allKeys.slice();
+
   if(!rows.length){
     wrap.innerHTML='<div class="gantt-empty">Belum ada aktivitas.</div>';
     labelRowsEl.innerHTML=''; return;
