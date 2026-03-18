@@ -1132,10 +1132,11 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
     </div>
 
     <!-- RUNNING -->
-    <div class="panel active" id="panel-running" style="display:flex;flex-direction:column;overflow:visible">
-      <!-- Sticky header: interrupt row + sort bar -->
-      <div id="running-sticky" style="flex-shrink:0;position:relative;z-index:10;
-        background:linear-gradient(to bottom, var(--bg-deep) 55%, rgba(13,11,26,0.6) 80%, transparent 100%);">
+    <div class="panel active" id="panel-running" style="overflow-y:auto;-webkit-overflow-scrolling:touch">
+      <!-- Sticky header: interrupt row + sort bar — inside scroll so cards can slide beneath -->
+      <div id="running-sticky" style="position:sticky;top:0;z-index:10;
+        background:linear-gradient(to bottom, var(--bg-deep) 0%, var(--bg-deep) 65%, rgba(13,11,26,0.0) 100%);
+        padding-bottom:28px;margin-bottom:-28px">
         <div class="int-row" style="justify-content:space-around;padding:10px 10px">
           <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams')"><i data-lucide="message-square-text"></i></button>
           <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp')"><i data-lucide="message-circle"></i></button>
@@ -1145,7 +1146,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
           <div class="int-div"></div>
           <button class="btn-pulang" data-itype="home" onclick="goHome()"><i data-lucide="house"></i></button>
         </div>
-        <div style="padding:8px 14px 12px">
+        <div style="padding:8px 14px 0">
           <div class="sort-bar">
             <span>Sort:</span>
             <button class="sort-btn active" id="sort-manual" onclick="setTaskSort('manual')">Manual</button>
@@ -1153,24 +1154,19 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
             <button class="sort-btn" id="sort-name"   onclick="setTaskSort('name')">Nama</button>
           </div>
         </div>
-        <!-- Fade mask — konten scroll ke atas melewati ini akan fade -->
-        <div style="position:absolute;bottom:-24px;left:0;right:0;height:24px;pointer-events:none;z-index:5;
-          background:linear-gradient(to bottom, var(--bg-deep) 0%, transparent 100%)"></div>
       </div>
-      <!-- Scrollable task list -->
-      <div id="running-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative">
-        <div class="panel-inner" style="padding-top:12px">
-          <div class="task-stack" id="activeTasks">
-            <div class="task-empty" id="activeEmpty">Belum ada tugas.<br>Tambah di tab Submit ↓</div>
+      <!-- Task list — scrolls under the sticky header -->
+      <div class="panel-inner" style="padding-top:8px">
+        <div class="task-stack" id="activeTasks">
+          <div class="task-empty" id="activeEmpty">Belum ada tugas.<br>Tambah di tab Submit ↓</div>
+        </div>
+        <div id="completedSection" style="display:none">
+          <div class="completed-divider">
+            <div class="cd-line"></div>
+            <div class="cd-label">Completed</div>
+            <div class="cd-line"></div>
           </div>
-          <div id="completedSection" style="display:none">
-            <div class="completed-divider">
-              <div class="cd-line"></div>
-              <div class="cd-label">Completed</div>
-              <div class="cd-line"></div>
-            </div>
-            <div class="task-stack" id="doneTasks"></div>
-          </div>
+          <div class="task-stack" id="doneTasks"></div>
         </div>
       </div>
     </div>
@@ -1222,9 +1218,10 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
 
       <!-- ── Sub: Master Karyawan ── -->
       <div id="settings-karyawan" class="panel-inner" style="display:none;padding:0">
-        <!-- Sticky header with gradient fade -->
-        <div style="position:sticky;top:0;z-index:20;padding:14px 14px 10px;
-          background:linear-gradient(to bottom, var(--bg-deep) 60%, rgba(13,11,26,0.6) 85%, transparent 100%);">
+        <!-- Sticky header — inside scroll, cards slide beneath with fade -->
+        <div style="position:sticky;top:0;z-index:20;
+          background:linear-gradient(to bottom, var(--bg-deep) 0%, var(--bg-deep) 60%, rgba(13,11,26,0.0) 100%);
+          padding:14px 14px 32px;margin-bottom:-28px">
           <button class="adv-back" onclick="showSettingsSub('main')" style="margin-bottom:10px">
             <i data-lucide="arrow-left"></i> Master Karyawan
           </button>
@@ -1247,12 +1244,9 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
             </div>
             <button class="btn-add-emp" onclick="addEmployee()">+</button>
           </div>
-          <!-- Fade mask bawah header -->
-          <div style="position:absolute;bottom:-20px;left:0;right:0;height:20px;pointer-events:none;
-            background:linear-gradient(to bottom, var(--bg-deep) 0%, rgba(13,11,26,0.5) 50%, transparent 100%)"></div>
         </div>
-        <!-- Scrollable list -->
-        <div style="padding:10px 14px 20px;position:relative">
+        <!-- List — scrolls under sticky header -->
+        <div style="padding:0 14px 20px">
           <div id="empTableWrap">
             <div class="emp-empty" id="empEmpty">Belum ada karyawan.<br>Tambahkan di atas.</div>
             <div id="empList" style="display:none;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:4px"></div>
