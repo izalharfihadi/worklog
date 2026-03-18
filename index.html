@@ -1096,7 +1096,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
               <!-- Sticky tick header row -->
               <thead id="ganttTickHdrRow" style="position:sticky;top:0;z-index:10;background:var(--bg-mid)">
                 <tr style="height:28px;border-bottom:1px solid var(--border)">
-                  <th style="background:var(--bg-mid);border-right:1px solid var(--border);padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px;font-weight:400;text-align:left;white-space:nowrap">AKTIVITAS</th>
+                  <th style="background:var(--bg-mid);border-right:1px solid var(--border);padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px;font-weight:400;text-align:left;white-space:nowrap;box-shadow:4px 0 12px rgba(0,0,0,0.5),2px 0 4px rgba(139,92,246,0.15)">AKTIVITAS</th>
                   <th style="background:var(--bg-mid);padding:0;overflow:hidden;position:relative">
                     <div id="ganttTickHdrInner" style="position:relative;height:28px;overflow:hidden"></div>
                   </th>
@@ -1108,8 +1108,8 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
               </tbody>
             </table>
           </div>
-          <!-- ganttWrap: invisible gesture receiver, covers timeline area -->
-          <div id="ganttWrap" style="position:absolute;top:28px;left:120px;right:0;bottom:0;touch-action:pan-y;user-select:none;-webkit-user-select:none;pointer-events:auto;z-index:5"></div>
+          <!-- ganttWrap: gesture receiver covers FULL gantt area including label -->
+          <div id="ganttWrap" style="position:absolute;top:28px;left:0;right:0;bottom:0;touch-action:pan-y;user-select:none;-webkit-user-select:none;pointer-events:auto;z-index:5"></div>
           <!-- ganttContent: not used for display, kept for compat -->
           <div id="ganttContent" style="display:none"></div>
           <!-- Edge glow -->
@@ -3419,7 +3419,7 @@ function renderGantt(){
     });
     // Label td
     var fadeGrad='linear-gradient(to right, transparent 60%, '+bg+' 100%)';
-    var labelTd='<td data-label-row="'+ri+'" style="background:'+bg+';border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:7px 8px;vertical-align:middle;width:120px">'
+    var labelTd='<td data-label-row="'+ri+'" style="background:'+bg+';border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:7px 8px;vertical-align:middle;width:120px;box-shadow:4px 0 12px rgba(0,0,0,0.5),2px 0 4px rgba(139,92,246,0.15)">'
       +'<div style="display:flex;align-items:center;gap:5px">'
       +rowIconHtml(row)
       +'<div style="min-width:0;overflow:hidden;position:relative;flex:1">'
