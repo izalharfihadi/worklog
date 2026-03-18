@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/motion@10.16.4/dist/motion.js"></script>
 <style>
 :root {
   /* ── Dark Space Purple Palette ── */
@@ -230,13 +231,16 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   padding: 0 3px; box-shadow: 0 0 8px var(--magenta);
 }
 .tab-badge.hidden { display: none; }
-/* active indicator line */
-.tab-btn.active::before {
-  content: '';
-  position: absolute; top: 0; left: 20%; right: 20%;
-  height: 2px; border-radius: 0 0 2px 2px;
-  background: var(--cyan);
-  box-shadow: 0 0 8px var(--cyan);
+/* active indicator — handled by pill bubble JS */
+/* Panel transition — fade + scale */
+.panel {
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+.panel:not(.active) {
+  opacity: 0; transform: scale(0.98); pointer-events: none;
+}
+.panel.active {
+  opacity: 1; transform: scale(1);
 }
 
 /* ══ SECTION LABELS ══ */
@@ -1130,34 +1134,48 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
     </div>
 
     <!-- RUNNING -->
-    <div class="panel active" id="panel-running">
-      <!-- interrupt row — full width, no label -->
-      <div class="int-row" style="justify-content:space-around;padding:10px 10px">
-        <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams')"><i data-lucide="message-square-text"></i></button>
-        <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp')"><i data-lucide="message-circle"></i></button>
-        <button class="int-btn" data-itype="tamu"     onclick="triggerInt('tamu')"><i data-lucide="user-round"></i></button>
-        <button class="int-btn" data-itype="toilet"   onclick="triggerInt('toilet')"><i data-lucide="toilet"></i></button>
-        <button class="int-btn" data-itype="rokok"    onclick="triggerInt('rokok')"><i data-lucide="cigarette"></i></button>
-        <div class="int-div"></div>
-        <button class="btn-pulang" data-itype="home" onclick="goHome()"><i data-lucide="house"></i></button>
-      </div>
-      <div class="panel-inner">
-        <div class="sort-bar" style="margin-bottom:10px">
-          <span>Sort:</span>
-          <button class="sort-btn active" id="sort-manual" onclick="setTaskSort('manual')">Manual</button>
-          <button class="sort-btn" id="sort-date"   onclick="setTaskSort('date')">Tanggal</button>
-          <button class="sort-btn" id="sort-name"   onclick="setTaskSort('name')">Nama</button>
+    <div class="panel active" id="panel-running" style="display:flex;flex-direction:column;overflow:hidden">
+      <!-- Sticky header: interrupt row + sort bar -->
+      <div id="running-sticky" style="flex-shrink:0;position:relative;z-index:10;
+        background:rgba(18,16,42,0.85);
+        -webkit-backdrop-filter:blur(16px);
+        backdrop-filter:blur(16px);
+        border-bottom:1px solid var(--border)">
+        <div class="int-row" style="justify-content:space-around;padding:10px 10px">
+          <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams')"><i data-lucide="message-square-text"></i></button>
+          <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp')"><i data-lucide="message-circle"></i></button>
+          <button class="int-btn" data-itype="tamu"     onclick="triggerInt('tamu')"><i data-lucide="user-round"></i></button>
+          <button class="int-btn" data-itype="toilet"   onclick="triggerInt('toilet')"><i data-lucide="toilet"></i></button>
+          <button class="int-btn" data-itype="rokok"    onclick="triggerInt('rokok')"><i data-lucide="cigarette"></i></button>
+          <div class="int-div"></div>
+          <button class="btn-pulang" data-itype="home" onclick="goHome()"><i data-lucide="house"></i></button>
         </div>
-        <div class="task-stack" id="activeTasks">
-          <div class="task-empty" id="activeEmpty">Belum ada tugas.<br>Tambah di tab Submit ↓</div>
-        </div>
-        <div id="completedSection" style="display:none">
-          <div class="completed-divider">
-            <div class="cd-line"></div>
-            <div class="cd-label">Completed</div>
-            <div class="cd-line"></div>
+        <div style="padding:0 14px 10px">
+          <div class="sort-bar">
+            <span>Sort:</span>
+            <button class="sort-btn active" id="sort-manual" onclick="setTaskSort('manual')">Manual</button>
+            <button class="sort-btn" id="sort-date"   onclick="setTaskSort('date')">Tanggal</button>
+            <button class="sort-btn" id="sort-name"   onclick="setTaskSort('name')">Nama</button>
           </div>
-          <div class="task-stack" id="doneTasks"></div>
+        </div>
+      </div>
+      <!-- Scrollable task list with fade top -->
+      <div id="running-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative">
+        <!-- Fade overlay at top -->
+        <div style="position:sticky;top:0;left:0;right:0;height:32px;z-index:5;pointer-events:none;
+          background:linear-gradient(to bottom, var(--bg-deep) 0%, transparent 100%)"></div>
+        <div class="panel-inner" style="padding-top:4px">
+          <div class="task-stack" id="activeTasks">
+            <div class="task-empty" id="activeEmpty">Belum ada tugas.<br>Tambah di tab Submit ↓</div>
+          </div>
+          <div id="completedSection" style="display:none">
+            <div class="completed-divider">
+              <div class="cd-line"></div>
+              <div class="cd-label">Completed</div>
+              <div class="cd-line"></div>
+            </div>
+            <div class="task-stack" id="doneTasks"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1239,7 +1257,10 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
           </div>
         </div>
         <!-- Scrollable list -->
-        <div style="padding:10px 14px 20px">
+        <div style="padding:10px 14px 20px;position:relative">
+          <!-- Fade overlay at top of list -->
+          <div style="position:sticky;top:0;left:0;right:0;height:28px;z-index:5;pointer-events:none;
+            background:linear-gradient(to bottom, var(--bg-deep) 0%, transparent 100%);margin-bottom:-28px"></div>
           <div id="empTableWrap">
             <div class="emp-empty" id="empEmpty">Belum ada karyawan.<br>Tambahkan di atas.</div>
             <div id="empList" style="display:none;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:4px"></div>
@@ -1278,7 +1299,11 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
   </div><!-- /panels -->
 
   <!-- ══ BOTTOM TAB BAR ══ -->
-  <div class="tabbar">
+  <div class="tabbar" style="position:relative">
+    <!-- Pill bubble — bergeser antar tab -->
+    <div id="tab-pill" style="position:absolute;top:0;height:2px;border-radius:0 0 2px 2px;
+      background:var(--cyan);box-shadow:0 0 8px var(--cyan);
+      pointer-events:none;z-index:10;transform-origin:center top"></div>
     <button class="tab-btn" onclick="switchTab('dashboard')" id="tab-dashboard">
       <span class="tab-icon"><i data-lucide="layout-dashboard"></i></span>
       <span class="tab-label">Dashboard</span>
@@ -1517,6 +1542,8 @@ window.addEventListener('DOMContentLoaded', () => {
   tickClock(); setInterval(tickClock, 1000);
   setInterval(tickTimer, 1000);
   renderAll();
+  // Init pill position after layout
+  setTimeout(() => animatePill('running'), 100);
   loadFromSheets();                     // pull data dari Sheets saat buka app
   setInterval(autoSync, 60000);         // auto-sync tiap 1 menit
   window.addEventListener('beforeunload', autoPause);
@@ -1745,18 +1772,47 @@ async function appendEventToSheets(ev) {
 // ══════════════════════════════════════════════
 //  TABS
 // ══════════════════════════════════════════════
+// Tab order for pill direction
+const TAB_ORDER = ['dashboard','submit','running','editlog','settings'];
+let _currentTab = 'running';
+
+function animatePill(toName) {
+  const pill = document.getElementById('tab-pill');
+  const toBtn = document.getElementById('tab-'+toName);
+  if (!pill || !toBtn) return;
+  const tabbar = toBtn.parentElement;
+  const barRect = tabbar.getBoundingClientRect();
+  const btnRect = toBtn.getBoundingClientRect();
+  const btnW = btnRect.width;
+  const targetLeft = btnRect.left - barRect.left + btnW * 0.2;
+  const targetWidth = btnW * 0.6;
+
+  // Use Motion One if available, else fallback to CSS
+  if (window.Motion && window.Motion.animate) {
+    window.Motion.animate(pill, {
+      left: targetLeft + 'px',
+      width: [targetWidth * 1.4 + 'px', targetWidth + 'px'],
+    }, {
+      duration: 0.3,
+      easing: [0.34, 1.56, 0.64, 1] // spring-like
+    });
+  } else {
+    pill.style.left = targetLeft + 'px';
+    pill.style.width = targetWidth + 'px';
+  }
+}
+
 function switchTab(name) {
+  _currentTab = name;
   ['dashboard','submit','running','editlog','settings'].forEach(t => {
     document.getElementById('panel-'+t).classList.toggle('active', t===name);
     document.getElementById('tab-'+t).classList.toggle('active', t===name);
   });
+  animatePill(name);
   if (name==='editlog')   renderEvents();
   if (name==='dashboard') {
-    // Only init if gantt hasn't been initialized yet
-    // Preserve user's zoom/pan state across tab switches
     setTimeout(()=>{
       if(ganttMsPerPx === 0) ganttInitIfNeeded();
-      // Don't re-anchor — preserve user's scroll position
       renderGantt();
       initGanttPinch();
     }, 50);
@@ -2293,13 +2349,13 @@ function initSwipe(selector) {
   document.querySelectorAll(selector).forEach(wrap => {
     if (wrap._swipeInited) return;
     wrap._swipeInited = true;
-    let startX=0, startY=0, dx=0, isSwiping=false;
+    let startX=0, startY=0, dx=0, isSwiping=false, isScrolling=false;
 
     wrap.addEventListener('touchstart', e => {
       if (e.touches.length !== 1) return;
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
-      dx = 0; isSwiping = false;
+      dx = 0; isSwiping = false; isScrolling = false;
     }, {passive:true});
 
     wrap.addEventListener('touchmove', e => {
@@ -2308,23 +2364,29 @@ function initSwipe(selector) {
       const cy = e.touches[0].clientY;
       const adx = Math.abs(cx - startX);
       const ady = Math.abs(cy - startY);
-      if (!isSwiping && ady > adx) return; // vertical scroll
-      isSwiping = true;
+      // If direction not yet determined
+      if (!isSwiping && !isScrolling) {
+        // Require horizontal to be clearly dominant (ratio 2:1) AND min 8px horizontal
+        if (ady > adx * 0.5) { isScrolling = true; return; } // vertical dominant
+        if (adx < 8) return; // not enough horizontal movement yet
+        isSwiping = true;
+      }
+      if (isScrolling) return;
       dx = cx - startX;
-      // Only allow left swipe (reveal) or right swipe (close)
-      if (dx < -10 && !wrap.classList.contains('open')) {
+      // Require minimum 20px horizontal before triggering open/close
+      if (dx < -20 && !wrap.classList.contains('open')) {
         if (activeSwipe && activeSwipe !== wrap) {
           activeSwipe.classList.remove('open');
         }
         wrap.classList.add('open');
         activeSwipe = wrap;
-      } else if (dx > 10 && wrap.classList.contains('open')) {
+      } else if (dx > 20 && wrap.classList.contains('open')) {
         wrap.classList.remove('open');
         if (activeSwipe === wrap) activeSwipe = null;
       }
     }, {passive:true});
 
-    wrap.addEventListener('touchend', () => { isSwiping=false; });
+    wrap.addEventListener('touchend', () => { isSwiping=false; isScrolling=false; });
   });
 
   // Close open swipe on tap outside
@@ -3463,7 +3525,7 @@ function initGanttPinch(){
     // ── Momentum / inertia ──
     // Hammer velocityX: px/ms, positive = right swipe (pan left = negative anchor shift)
     var velocity = -e.velocityX; // px/ms, direction: positive = moving forward in time
-    var FRICTION  = 0.90;        // deceleration per frame — higher = stops faster
+    var FRICTION  = 0.95;        // deceleration per frame — higher = stops faster
     var MIN_VEL   = 0.05;        // stop threshold px/ms — higher = stops sooner
 
     if(Math.abs(velocity) < 0.1) return; // ignore slow releases — no momentum
