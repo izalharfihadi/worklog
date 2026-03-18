@@ -177,8 +177,16 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
 
 /* ══ PANELS ══ */
 .panels { flex: 1; overflow: hidden; position: relative; z-index: 1; }
-.panel { display: none; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.panel.active { display: block; }
+.panel {
+  position: absolute; inset: 0;
+  height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  transition: opacity 150ms ease, transform 150ms ease;
+  opacity: 0; transform: scale(0.98); pointer-events: none;
+}
+.panel.active {
+  opacity: 1; transform: scale(1); pointer-events: auto;
+  position: relative;
+}
 .panel-inner { padding: 14px 14px 20px; }
 
 /* scrollbar hidden on mobile */
@@ -232,16 +240,6 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
 }
 .tab-badge.hidden { display: none; }
 /* active indicator — handled by pill bubble JS */
-/* Panel transition — fade + scale */
-.panel {
-  transition: opacity 150ms ease, transform 150ms ease;
-}
-.panel:not(.active) {
-  opacity: 0; transform: scale(0.98); pointer-events: none;
-}
-.panel.active {
-  opacity: 1; transform: scale(1);
-}
 
 /* ══ SECTION LABELS ══ */
 .sec-label {
@@ -1134,13 +1132,13 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
     </div>
 
     <!-- RUNNING -->
-    <div class="panel active" id="panel-running" style="display:flex;flex-direction:column;overflow:hidden">
+    <div class="panel active" id="panel-running" style="display:flex;flex-direction:column;overflow:visible">
       <!-- Sticky header: interrupt row + sort bar -->
       <div id="running-sticky" style="flex-shrink:0;position:relative;z-index:10;
-        background:rgba(18,16,42,0.85);
-        -webkit-backdrop-filter:blur(16px);
-        backdrop-filter:blur(16px);
-        border-bottom:1px solid var(--border)">
+        background:rgba(13,11,26,0.72);
+        -webkit-backdrop-filter:saturate(180%) blur(20px);
+        backdrop-filter:saturate(180%) blur(20px);
+        border-bottom:1px solid rgba(139,92,246,.15)">
         <div class="int-row" style="justify-content:space-around;padding:10px 10px">
           <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams')"><i data-lucide="message-square-text"></i></button>
           <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp')"><i data-lucide="message-circle"></i></button>
@@ -1150,7 +1148,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
           <div class="int-div"></div>
           <button class="btn-pulang" data-itype="home" onclick="goHome()"><i data-lucide="house"></i></button>
         </div>
-        <div style="padding:0 14px 10px">
+        <div style="padding:8px 14px 12px">
           <div class="sort-bar">
             <span>Sort:</span>
             <button class="sort-btn active" id="sort-manual" onclick="setTaskSort('manual')">Manual</button>
@@ -1159,12 +1157,9 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
           </div>
         </div>
       </div>
-      <!-- Scrollable task list with fade top -->
+      <!-- Scrollable task list -->
       <div id="running-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative">
-        <!-- Fade overlay at top -->
-        <div style="position:sticky;top:0;left:0;right:0;height:32px;z-index:5;pointer-events:none;
-          background:linear-gradient(to bottom, var(--bg-deep) 0%, transparent 100%)"></div>
-        <div class="panel-inner" style="padding-top:4px">
+        <div class="panel-inner" style="padding-top:12px">
           <div class="task-stack" id="activeTasks">
             <div class="task-empty" id="activeEmpty">Belum ada tugas.<br>Tambah di tab Submit ↓</div>
           </div>
