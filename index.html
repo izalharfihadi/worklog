@@ -1084,15 +1084,9 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
             <button class="gantt-zoom-btn"        id="zoom-month" onclick="setZoom('month')">Bulan</button>
           </div>
         </div>
-        <div style="flex:1;display:flex;overflow:hidden;position:relative;background:var(--bg-deep)">
-          <!-- Fixed label column -->
-          <div id="ganttLabels" style="width:120px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-deep);border-right:1px solid var(--border);z-index:10">
-            <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
-            <div id="ganttLabelRows" style="overflow-y:auto;flex:1;background:var(--bg-deep);scrollbar-width:none;-ms-overflow-style:none"
-              onscroll="syncGanttLabelScroll(this)"></div>
-          </div>
-          <!-- Timeline -->
-          <div id="ganttWrap" style="flex:1;overflow:hidden;overflow-y:auto;background:var(--bg-deep);touch-action:none;user-select:none;-webkit-user-select:none;position:relative" onscroll="syncGanttScroll(this)">
+        <div style="flex:1;overflow:hidden;position:relative;background:var(--bg-deep)">
+          <!-- Single scroll container — label sticky left, timeline scrolls as one unit -->
+          <div id="ganttWrap" style="width:100%;height:100%;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg-deep);touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative">
             <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
             <!-- Edge glow — menyala saat mencapai batas Big Bang -->
             <div id="ganttEdgeGlow" style="
@@ -3395,48 +3389,48 @@ function renderGantt(){
   // Now-line
   var nowLineHtml = nowInWin ? '<div class="gantt-now-line" style="position:absolute;top:0;bottom:0;left:'+px(nowMs)+'px;width:2px;background:var(--magenta);opacity:.8;pointer-events:none;z-index:3"></div>' : '';
 
-  // Rows
+  // Rows — label embedded as sticky-left inside each row
   var rowsHtml='';
   rows.forEach(function(row,ri){
-    var bg=ri%2===0?'var(--bg-deep)':' rgba(139,92,246,.04)';
+    var bg=ri%2===0?'var(--bg-deep)':'rgba(139,92,246,.04)';
     var barsHtml='';
     row.segments.forEach(function(seg){
       var lx=Math.max(-2,px(seg.sMs)), rx=Math.min(bufW+2,px(seg.eMs)), w=Math.max(3,rx-lx);
       var cls=seg.type==='home'?'gb-home':seg.type==='int'?'gb-int':'gb-'+(seg.cat||'ops');
-      barsHtml+='<div class="gantt-bar '+cls+'" data-sms="'+seg.sMs+'" data-ems="'+seg.eMs+'" style="left:'+lx+'px;width:'+w+'px;position:absolute;top:50%;transform:translateY(-50%)"></div>';
+      barsHtml+='<div class="gantt-bar '+cls+'" data-sms="'+seg.sMs+'" data-ems="'+seg.eMs+'" style="left:'+(lx+120)+'px;width:'+w+'px;position:absolute;top:50%;transform:translateY(-50%)"></div>';
     });
-    rowsHtml+='<div data-gantt-row="'+ri+'" style="min-height:'+ROW_H+'px;position:relative;background:'+bg+';border-bottom:1px solid var(--border);overflow:hidden;width:'+bufW+'px">'+tickLinesHtml+nowLineHtml+barsHtml+'</div>';
-  });
-
-  // ganttInner: shifted left by 2vw so visible area shows correctly
-  var offsetX = -(GANTT_BUFFER * vw);
-  wrap.innerHTML='<div id="ganttInner" style="position:relative;width:'+bufW+'px;transform:translateX('+offsetX+'px);will-change:transform">' 
-    +'<div id="ganttTickHdr" style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px;overflow:hidden;width:'+bufW+'px">'+tickHdrHtml+'</div>'
-    +rowsHtml
-    +'</div>';
-
-  // Label column
-  var lblHtml='';
-  rows.forEach(function(row,ri){
-    var bg=ri%2===0?'var(--bg-deep)':' rgba(139,92,246,.04)';
-    // Fade gradient: transparent → row background color
+    // Label as sticky-left inside the row
     var fadeGrad='linear-gradient(to right, transparent 60%, '+bg+' 100%)';
-    lblHtml+='<div data-label-row="'+ri+'" style="min-height:'+ROW_H+'px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:'+bg+'">'
+    var labelHtml='<div data-label-row="'+ri+'" style="position:sticky;left:0;width:120px;flex-shrink:0;z-index:4;'
+      +'background:'+bg+';border-right:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px">'
       +rowIconHtml(row)
       +'<div style="min-width:0;overflow:hidden;position:relative;flex:1">'
       +'<div style="white-space:nowrap;font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--text)">'+esc(row.name)+'</div>'
       +(row.sub?'<div style="white-space:nowrap;font-family:var(--font-body);font-size:11px;color:var(--muted);margin-top:1px">'+esc(row.sub)+'</div>':'')
       +'<div style="position:absolute;top:0;right:0;bottom:0;width:28px;background:'+fadeGrad+';pointer-events:none"></div>'
       +'</div></div>';
+    rowsHtml+='<div data-gantt-row="'+ri+'" style="min-height:'+ROW_H+'px;display:flex;align-items:stretch;position:relative;background:'+bg+';border-bottom:1px solid var(--border)">'
+      +labelHtml
+      +'<div style="flex:1;position:relative;min-width:'+(bufW-120)+'px;overflow:hidden">'+tickLinesHtml+nowLineHtml+barsHtml+'</div>'
+      +'</div>';
   });
-  labelRowsEl.innerHTML=lblHtml;
+
+  // ganttInner: no horizontal translateX offset needed — label is sticky
+  wrap.innerHTML='<div id="ganttInner" style="position:relative;min-width:'+(bufW+120)+'px;will-change:transform">'
+    +'<div id="ganttTickHdr" style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px;display:flex">'
+    +'<div style="width:120px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-mid);font-family:var(--font-body);font-size:10px;color:var(--muted);display:flex;align-items:center;padding:0 8px;letter-spacing:.5px;position:sticky;left:0;z-index:9">AKTIVITAS</div>'
+    +'<div style="flex:1;position:relative;overflow:hidden;height:28px">'+tickHdrHtml+'</div>'
+    +'</div>'
+    +rowsHtml
+    +'</div>';
+
+  // labelRowsEl no longer used for rendering — clear it
+  if(labelRowsEl) labelRowsEl.innerHTML='';
 
   _ganttRenderedAnchorMs = anchorMs;
   _ganttRenderedMsPerPx  = ganttMsPerPx;
 
   requestAnimationFrame(function(){
-    var tr=wrap.querySelectorAll('[data-gantt-row]'), lr=labelRowsEl.querySelectorAll('[data-label-row]');
-    for(var i=0;i<tr.length;i++){ if(lr[i]){ var h=tr[i].offsetHeight; lr[i].style.minHeight=h+'px'; lr[i].style.height=h+'px'; }}
     lucide.createIcons();
     updateEdgeGlow(0);
   });
@@ -3594,12 +3588,13 @@ function initGanttPinch(){
       if(!wrap2){ _pinchRaf=null; return; }
 
       // 2. Update bars — vector-like recalculate from data-sms/data-ems
+      // Bar left is offset by 120px label column width
       wrap2.querySelectorAll('.gantt-bar').forEach(function(el){
         var sMs = parseFloat(el.dataset.sms);
         var eMs = parseFloat(el.dataset.ems);
         var lx  = Math.max(-2, pxNow(sMs));
         var rx  = Math.min(bufWNow+2, pxNow(eMs));
-        el.style.left  = lx + 'px';
+        el.style.left  = (lx + 120) + 'px';
         el.style.width = Math.max(3, rx-lx) + 'px';
       });
 
