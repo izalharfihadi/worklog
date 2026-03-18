@@ -3658,8 +3658,8 @@ function initGanttPinch(){
 
   mc.on('pinchend pinchcancel', function(){
     if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
-    // Full rebuild with correct coordinates
-    renderGantt();
+    // Defer render ke event loop berikutnya — beri ruang gesture handler selesai dulu
+    setTimeout(function(){ renderGantt(); }, 0);
   });
 }
 // ── Scroll pan (horizontal scroll → move anchor) ──
