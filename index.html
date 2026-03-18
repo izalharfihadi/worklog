@@ -1084,23 +1084,20 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
             <button class="gantt-zoom-btn"        id="zoom-month" onclick="setZoom('month')">Bulan</button>
           </div>
         </div>
-        <div style="flex:1;overflow:hidden;position:relative;background:var(--bg-deep)">
+        <div style="flex:1;overflow:hidden;position:relative;background:var(--bg-deep);display:flex;flex-direction:column">
+          <!-- Tick header — fixed, never scrolls -->
+          <div id="ganttTickHdrRow" style="flex-shrink:0;z-index:10;display:flex;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px">
+            <div style="width:120px;flex-shrink:0;border-right:1px solid var(--border);display:flex;align-items:center;padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px">AKTIVITAS</div>
+            <div id="ganttTickHdrInner" style="flex:1;overflow:hidden;position:relative;height:28px"></div>
+          </div>
           <!-- Single scroll container — label + timeline scroll as one unit vertically -->
-          <div id="ganttScroller" style="width:100%;height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative">
-            <!-- Sticky tick header row — spans full width -->
-            <div id="ganttTickHdrRow" style="position:sticky;top:0;z-index:10;display:flex;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px">
-              <div style="width:120px;flex-shrink:0;border-right:1px solid var(--border);display:flex;align-items:center;padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px">AKTIVITAS</div>
-              <div id="ganttTickHdrInner" style="flex:1;overflow:hidden;position:relative;height:28px"></div>
-            </div>
-            <!-- Rows: label + timeline side by side, full-width -->
-            <div id="ganttRowsWrap" style="display:flex;position:relative">
-              <!-- Label column — no overflow, scrolls with parent -->
-              <div id="ganttLabelRows" style="width:120px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-deep);z-index:5"></div>
-              <!-- Timeline — pan via translateX on ganttInner -->
-              <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative">
-                <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
-                <div id="ganttEdgeGlow" style="position:absolute;top:0;left:0;width:60px;background:linear-gradient(to right,rgba(255,45,120,0.9),transparent);pointer-events:none;z-index:20;opacity:0;transition:opacity 0.2s ease-out"></div>
-              </div>
+          <div id="ganttScroller" style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative;display:flex">
+            <!-- Label column — no overflow, scrolls with parent -->
+            <div id="ganttLabelRows" style="width:120px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-deep);z-index:5"></div>
+            <!-- Timeline — pan via translateX on ganttInner -->
+            <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative">
+              <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
+              <div id="ganttEdgeGlow" style="position:absolute;top:0;left:0;width:60px;background:linear-gradient(to right,rgba(255,45,120,0.9),transparent);pointer-events:none;z-index:20;opacity:0;transition:opacity 0.2s ease-out"></div>
             </div>
           </div>
         </div>
