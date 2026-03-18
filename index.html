@@ -1084,22 +1084,24 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
             <button class="gantt-zoom-btn"        id="zoom-month" onclick="setZoom('month')">Bulan</button>
           </div>
         </div>
-        <div style="flex:1;display:flex;overflow:hidden;position:relative;background:var(--bg-deep)">
-          <!-- Label column — fixed left, synced vertically via JS -->
-          <div id="ganttLabels" style="width:120px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-deep);border-right:1px solid var(--border);z-index:10;overflow:hidden">
-            <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
-            <div id="ganttLabelRows" style="overflow:hidden;flex:1;background:var(--bg-deep)"></div>
-          </div>
-          <!-- Timeline — pan horizontally via translateX, scroll vertically -->
-          <div id="ganttWrap" style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--bg-deep);touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative" onscroll="syncGanttScroll(this)">
-            <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
-            <!-- Edge glow -->
-            <div id="ganttEdgeGlow" style="
-              position:absolute;top:0;left:0;width:60px;
-              background:linear-gradient(to right, rgba(255,45,120,0.9), transparent);
-              pointer-events:none;z-index:20;opacity:0;
-              transition:opacity 0.2s ease-out;
-            "></div>
+        <div style="flex:1;overflow:hidden;position:relative;background:var(--bg-deep)">
+          <!-- Single scroll container — label + timeline scroll as one unit vertically -->
+          <div id="ganttScroller" style="width:100%;height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative">
+            <!-- Sticky tick header row — spans full width -->
+            <div id="ganttTickHdrRow" style="position:sticky;top:0;z-index:10;display:flex;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px">
+              <div style="width:120px;flex-shrink:0;border-right:1px solid var(--border);display:flex;align-items:center;padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px">AKTIVITAS</div>
+              <div id="ganttTickHdrInner" style="flex:1;overflow:hidden;position:relative;height:28px"></div>
+            </div>
+            <!-- Rows: label + timeline side by side, full-width -->
+            <div id="ganttRowsWrap" style="display:flex;position:relative">
+              <!-- Label column — no overflow, scrolls with parent -->
+              <div id="ganttLabelRows" style="width:120px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-deep);z-index:5"></div>
+              <!-- Timeline — pan via translateX on ganttInner -->
+              <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative">
+                <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
+                <div id="ganttEdgeGlow" style="position:absolute;top:0;left:0;width:60px;background:linear-gradient(to right,rgba(255,45,120,0.9),transparent);pointer-events:none;z-index:20;opacity:0;transition:opacity 0.2s ease-out"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3417,14 +3419,20 @@ function renderGantt(){
     rowsHtml+='<div data-gantt-row="'+ri+'" style="min-height:'+ROW_H+'px;position:relative;background:'+bg+';border-bottom:1px solid var(--border);overflow:hidden;width:'+bufW+'px">'+tickLinesHtml+nowLineHtml+barsHtml+'</div>';
   });
 
-  // ganttInner: translateX for pan (timeline only)
+  // Tick header — render into sticky header row
+  var tickHdrInner = document.getElementById('ganttTickHdrInner');
+  if(tickHdrInner){
+    var offsetX = -(GANTT_BUFFER * vw);
+    tickHdrInner.innerHTML='<div id="ganttTickHdr" style="position:absolute;top:0;left:0;width:'+bufW+'px;height:28px;transform:translateX('+offsetX+'px);will-change:transform">'+tickHdrHtml+'</div>';
+  }
+
+  // ganttInner: translateX for pan (timeline rows only)
   var offsetX = -(GANTT_BUFFER * vw);
   wrap.innerHTML='<div id="ganttInner" style="position:relative;width:'+bufW+'px;transform:translateX('+offsetX+'px);will-change:transform">'
-    +'<div id="ganttTickHdr" style="position:sticky;top:0;z-index:8;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px;overflow:hidden;width:'+bufW+'px">'+tickHdrHtml+'</div>'
     +rowsHtml
     +'</div>';
 
-  // Label column — separate, synced via JS scroll
+  // Label column
   labelRowsEl.innerHTML=labelHtml;
 
   _ganttRenderedAnchorMs = anchorMs;
@@ -3495,6 +3503,9 @@ function initGanttPinch(){
     var actualDeltaPx = actualDeltaMs / ganttMsPerPx;
     var inner = document.getElementById('ganttInner');
     if(inner) inner.style.transform = 'translateX('+(baseOffset + actualDeltaPx)+'px)';
+    // Sync tick header
+    var tickHdr = document.getElementById('ganttTickHdr');
+    if(tickHdr) tickHdr.style.transform = 'translateX('+(baseOffset + actualDeltaPx)+'px)';
     // overshoot = how far finger pushed past the boundary
     var overshootPx = Math.max(0, e.deltaX - actualDeltaPx);
     updateEdgeGlow(overshootPx);
@@ -3538,6 +3549,8 @@ function initGanttPinch(){
       var baseOffset = -(GANTT_BUFFER * vw);
       var inner = document.getElementById('ganttInner');
       if(inner) inner.style.transform = 'translateX('+(baseOffset - driftPx)+'px)';
+      var tickHdr = document.getElementById('ganttTickHdr');
+      if(tickHdr) tickHdr.style.transform = 'translateX('+(baseOffset - driftPx)+'px)';
 
       // Re-render if drifted more than 50% of buffer
       if(Math.abs(driftPx) > GANTT_BUFFER * vw * 0.5){
