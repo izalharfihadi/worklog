@@ -1086,7 +1086,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
         </div>
         <div style="flex:1;overflow:hidden;position:relative;background:var(--bg-deep)">
           <!-- Outer scroll — vertical only, clips horizontal -->
-          <div id="ganttScroller" style="width:100%;height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;user-select:none;-webkit-user-select:none">
+          <div id="ganttScroller" style="width:100%;height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch">
             <!-- Table layout: most reliable cross-browser sticky column -->
             <table style="width:100%;border-collapse:collapse;table-layout:fixed">
               <colgroup>
@@ -3464,14 +3464,13 @@ var _ganttLeft = 120; // cached left offset of timeline area (label width)
 var _ganttRenderFromMomentum = false; // flag to skip initGanttPinch during momentum
 
 function initGanttPinch(){
-  var wrap = document.getElementById('ganttScroller');
+  var wrap = document.getElementById('ganttWrap');
   if(!wrap || typeof Hammer === 'undefined') return;
 
-  // Cache stable left offset — measured from shell left edge, not affected by scroll
+  // Cache stable left offset
   var shellEl = document.querySelector('.shell');
   var wrapRect = wrap.getBoundingClientRect();
   var shellRect = shellEl ? shellEl.getBoundingClientRect() : {left:0};
-  // Timeline starts at label width (120px) from ganttScroller left
   _ganttLeft = (wrapRect.left - shellRect.left) + 120;
 
   // Destroy previous instance so state is always fresh
