@@ -1135,10 +1135,7 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
     <div class="panel active" id="panel-running" style="display:flex;flex-direction:column;overflow:visible">
       <!-- Sticky header: interrupt row + sort bar -->
       <div id="running-sticky" style="flex-shrink:0;position:relative;z-index:10;
-        background:rgba(13,11,26,0.72);
-        -webkit-backdrop-filter:saturate(180%) blur(20px);
-        backdrop-filter:saturate(180%) blur(20px);
-        border-bottom:1px solid rgba(139,92,246,.15)">
+        background:linear-gradient(to bottom, var(--bg-deep) 60%, transparent 100%);">
         <div class="int-row" style="justify-content:space-around;padding:10px 10px">
           <button class="int-btn" data-itype="teams"    onclick="triggerInt('teams')"><i data-lucide="message-square-text"></i></button>
           <button class="int-btn" data-itype="whatsapp" onclick="triggerInt('whatsapp')"><i data-lucide="message-circle"></i></button>
@@ -1156,6 +1153,9 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
             <button class="sort-btn" id="sort-name"   onclick="setTaskSort('name')">Nama</button>
           </div>
         </div>
+        <!-- Fade mask — konten scroll ke atas melewati ini akan fade -->
+        <div style="position:absolute;bottom:-24px;left:0;right:0;height:24px;pointer-events:none;z-index:5;
+          background:linear-gradient(to bottom, var(--bg-deep) 0%, transparent 100%)"></div>
       </div>
       <!-- Scrollable task list -->
       <div id="running-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative">
@@ -1222,12 +1222,9 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
 
       <!-- ── Sub: Master Karyawan ── -->
       <div id="settings-karyawan" class="panel-inner" style="display:none;padding:0">
-        <!-- Sticky header with frosted glass -->
+        <!-- Sticky header with gradient fade -->
         <div style="position:sticky;top:0;z-index:20;padding:14px 14px 10px;
-          background:rgba(18,16,42,0.75);
-          -webkit-backdrop-filter:blur(16px);
-          backdrop-filter:blur(16px);
-          border-bottom:1px solid var(--border)">
+          background:linear-gradient(to bottom, var(--bg-deep) 70%, transparent 100%);">
           <button class="adv-back" onclick="showSettingsSub('main')" style="margin-bottom:10px">
             <i data-lucide="arrow-left"></i> Master Karyawan
           </button>
@@ -1250,12 +1247,12 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
             </div>
             <button class="btn-add-emp" onclick="addEmployee()">+</button>
           </div>
+          <!-- Fade mask bawah header -->
+          <div style="position:absolute;bottom:-20px;left:0;right:0;height:20px;pointer-events:none;
+            background:linear-gradient(to bottom, var(--bg-deep) 0%, transparent 100%)"></div>
         </div>
         <!-- Scrollable list -->
         <div style="padding:10px 14px 20px;position:relative">
-          <!-- Fade overlay at top of list -->
-          <div style="position:sticky;top:0;left:0;right:0;height:28px;z-index:5;pointer-events:none;
-            background:linear-gradient(to bottom, var(--bg-deep) 0%, transparent 100%);margin-bottom:-28px"></div>
           <div id="empTableWrap">
             <div class="emp-empty" id="empEmpty">Belum ada karyawan.<br>Tambahkan di atas.</div>
             <div id="empList" style="display:none;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:4px"></div>
