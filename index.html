@@ -1088,7 +1088,8 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
           <!-- Fixed label column -->
           <div id="ganttLabels" style="width:120px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-deep);border-right:1px solid var(--border);z-index:10">
             <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
-            <div id="ganttLabelRows" style="overflow-y:auto;flex:1;background:var(--bg-deep);scrollbar-width:none;-ms-overflow-style:none"></div>
+            <div id="ganttLabelRows" style="overflow-y:auto;flex:1;background:var(--bg-deep);scrollbar-width:none;-ms-overflow-style:none"
+              onscroll="syncGanttLabelScroll(this)"></div>
           </div>
           <!-- Timeline -->
           <div id="ganttWrap" style="flex:1;overflow:hidden;overflow-y:auto;background:var(--bg-deep);touch-action:none;user-select:none;-webkit-user-select:none;position:relative" onscroll="syncGanttScroll(this)">
@@ -3664,10 +3665,18 @@ function initGanttPinch(){
 }
 // ── Scroll pan (horizontal scroll → move anchor) ──
 function syncGanttScroll(el){
-  // Sync vertical scroll: timeline → label rows
+  // Timeline scroll → sync label rows
   const labelRows = document.getElementById('ganttLabelRows');
   if(labelRows && labelRows.scrollTop !== el.scrollTop){
     labelRows.scrollTop = el.scrollTop;
+  }
+}
+
+function syncGanttLabelScroll(el){
+  // Label scroll → sync timeline
+  const wrap = document.getElementById('ganttWrap');
+  if(wrap && wrap.scrollTop !== el.scrollTop){
+    wrap.scrollTop = el.scrollTop;
   }
 }
 
