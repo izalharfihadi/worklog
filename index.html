@@ -1084,22 +1084,36 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
             <button class="gantt-zoom-btn"        id="zoom-month" onclick="setZoom('month')">Bulan</button>
           </div>
         </div>
-        <div style="flex:1;overflow:hidden;position:relative;background:var(--bg-deep);display:flex;flex-direction:column">
-          <!-- Tick header — fixed, never scrolls -->
-          <div id="ganttTickHdrRow" style="flex-shrink:0;z-index:10;display:flex;background:var(--bg-mid);border-bottom:1px solid var(--border);height:28px">
-            <div style="width:120px;flex-shrink:0;border-right:1px solid var(--border);display:flex;align-items:center;padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px">AKTIVITAS</div>
-            <div id="ganttTickHdrInner" style="flex:1;overflow:hidden;position:relative;height:28px"></div>
+        <div style="flex:1;overflow:hidden;position:relative;background:var(--bg-deep)">
+          <!-- Outer scroll — vertical only, clips horizontal -->
+          <div id="ganttScroller" style="width:100%;height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch">
+            <!-- Table layout: most reliable cross-browser sticky column -->
+            <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+              <colgroup>
+                <col style="width:120px">
+                <col style="width:calc(100% - 120px)">
+              </colgroup>
+              <!-- Sticky tick header row -->
+              <thead id="ganttTickHdrRow" style="position:sticky;top:0;z-index:10;background:var(--bg-mid)">
+                <tr style="height:28px;border-bottom:1px solid var(--border)">
+                  <th style="background:var(--bg-mid);border-right:1px solid var(--border);padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px;font-weight:400;text-align:left;white-space:nowrap">AKTIVITAS</th>
+                  <th style="background:var(--bg-mid);padding:0;overflow:hidden;position:relative">
+                    <div id="ganttTickHdrInner" style="position:relative;height:28px;overflow:hidden"></div>
+                  </th>
+                </tr>
+              </thead>
+              <!-- Body rows -->
+              <tbody id="ganttTableBody">
+                <tr><td colspan="2" style="padding:20px;text-align:center;color:var(--muted);font-family:var(--font-body);font-size:13px">Belum ada data.</td></tr>
+              </tbody>
+            </table>
           </div>
-          <!-- Single scroll container — label + timeline scroll as one unit vertically -->
-          <div id="ganttScroller" style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative;display:flex">
-            <!-- Label column — scrolls with parent -->
-            <div id="ganttLabelRows" style="width:120px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-deep);z-index:5"></div>
-            <!-- Timeline — pan via translateX on ganttInner, clips horizontal -->
-            <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative">
-              <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
-              <div id="ganttEdgeGlow" style="position:absolute;top:0;left:0;width:60px;background:linear-gradient(to right,rgba(255,45,120,0.9),transparent);pointer-events:none;z-index:20;opacity:0;transition:opacity 0.2s ease-out"></div>
-            </div>
-          </div>
+          <!-- ganttWrap: invisible gesture receiver, covers timeline area -->
+          <div id="ganttWrap" style="position:absolute;top:28px;left:120px;right:0;bottom:0;touch-action:pan-y;user-select:none;-webkit-user-select:none;pointer-events:auto;z-index:5"></div>
+          <!-- ganttContent: not used for display, kept for compat -->
+          <div id="ganttContent" style="display:none"></div>
+          <!-- Edge glow -->
+          <div id="ganttEdgeGlow" style="position:absolute;top:28px;left:120px;width:60px;background:linear-gradient(to right,rgba(255,45,120,0.9),transparent);pointer-events:none;z-index:20;opacity:0;transition:opacity 0.2s ease-out"></div>
         </div>
       </div>
     </div>
@@ -3211,8 +3225,8 @@ function updateEdgeGlow(overshootPx){
   if(!glow) return;
   if(overshootPx === undefined) overshootPx = 0;
   // Sync height to ganttContent (rows only, not empty space below)
-  var content = document.getElementById('ganttContent');
-  if(content) glow.style.height = content.offsetHeight + 'px';
+  var content = document.getElementById('ganttScroller');
+  if(content) glow.style.height = content.scrollHeight + 'px';
   // Max intensity at 80px overshoot, cap at 0.38
   var intensity = Math.max(0, Math.min(0.38, overshootPx / 80 * 0.38));
   glow.style.opacity = intensity.toFixed(3);
@@ -3393,8 +3407,8 @@ function renderGantt(){
   // Now-line
   var nowLineHtml = nowInWin ? '<div class="gantt-now-line" style="position:absolute;top:0;bottom:0;left:'+px(nowMs)+'px;width:2px;background:var(--magenta);opacity:.8;pointer-events:none;z-index:3"></div>' : '';
 
-  // Rows — label in left col, bars in right col, both rendered per row
-  var labelHtml='', rowsHtml='';
+  // Rows — combined into table rows: label td + timeline td
+  var tbodyHtml='';
   rows.forEach(function(row,ri){
     var bg=ri%2===0?'var(--bg-deep)':'rgba(139,92,246,.04)';
     var barsHtml='';
@@ -3403,52 +3417,39 @@ function renderGantt(){
       var cls=seg.type==='home'?'gb-home':seg.type==='int'?'gb-int':'gb-'+(seg.cat||'ops');
       barsHtml+='<div class="gantt-bar '+cls+'" data-sms="'+seg.sMs+'" data-ems="'+seg.eMs+'" style="left:'+lx+'px;width:'+w+'px;position:absolute;top:50%;transform:translateY(-50%)"></div>';
     });
-    // Label col
+    // Label td
     var fadeGrad='linear-gradient(to right, transparent 60%, '+bg+' 100%)';
-    labelHtml+='<div data-label-row="'+ri+'" style="min-height:'+ROW_H+'px;border-bottom:1px solid var(--border);padding:7px 8px;display:flex;align-items:center;gap:5px;background:'+bg+'">'
+    var labelTd='<td data-label-row="'+ri+'" style="background:'+bg+';border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:7px 8px;vertical-align:middle;width:120px">'
+      +'<div style="display:flex;align-items:center;gap:5px">'
       +rowIconHtml(row)
       +'<div style="min-width:0;overflow:hidden;position:relative;flex:1">'
       +'<div style="white-space:nowrap;font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--text)">'+esc(row.name)+'</div>'
       +(row.sub?'<div style="white-space:nowrap;font-family:var(--font-body);font-size:11px;color:var(--muted);margin-top:1px">'+esc(row.sub)+'</div>':'')
       +'<div style="position:absolute;top:0;right:0;bottom:0;width:28px;background:'+fadeGrad+';pointer-events:none"></div>'
-      +'</div></div>';
-    // Timeline row
-    rowsHtml+='<div data-gantt-row="'+ri+'" style="min-height:'+ROW_H+'px;position:relative;background:'+bg+';border-bottom:1px solid var(--border);overflow:hidden;width:'+bufW+'px">'+tickLinesHtml+nowLineHtml+barsHtml+'</div>';
+      +'</div></div></td>';
+    // Timeline td
+    var timelineTd='<td data-gantt-row="'+ri+'" style="background:'+bg+';border-bottom:1px solid var(--border);padding:0;overflow:hidden;position:relative;height:'+ROW_H+'px">'
+      +'<div class="gantt-row-inner" style="position:absolute;top:0;left:0;width:'+bufW+'px;height:100%;transform:translateX('+(-(GANTT_BUFFER*vw))+'px);will-change:transform">'
+      +tickLinesHtml+nowLineHtml+barsHtml
+      +'</div></td>';
+    tbodyHtml+='<tr>'+labelTd+timelineTd+'</tr>';
   });
 
-  // Tick header — render into sticky header row
+  // Tick header
   var tickHdrInner = document.getElementById('ganttTickHdrInner');
   if(tickHdrInner){
     var offsetX = -(GANTT_BUFFER * vw);
     tickHdrInner.innerHTML='<div id="ganttTickHdr" style="position:absolute;top:0;left:0;width:'+bufW+'px;height:28px;transform:translateX('+offsetX+'px);will-change:transform">'+tickHdrHtml+'</div>';
   }
 
-  // ganttInner: translateX for pan (timeline rows only)
-  var offsetX = -(GANTT_BUFFER * vw);
-  wrap.innerHTML='<div id="ganttInner" style="position:relative;width:'+bufW+'px;transform:translateX('+offsetX+'px);will-change:transform">'
-    +rowsHtml
-    +'</div>';
-
-  // Label column
-  labelRowsEl.innerHTML=labelHtml;
+  // Render table body
+  var tbody = document.getElementById('ganttTableBody');
+  if(tbody) tbody.innerHTML = tbodyHtml || '<tr><td colspan="2" style="padding:20px;text-align:center;color:var(--muted);font-family:var(--font-body);font-size:13px">Belum ada aktivitas.</td></tr>';
 
   _ganttRenderedAnchorMs = anchorMs;
   _ganttRenderedMsPerPx  = ganttMsPerPx;
 
   requestAnimationFrame(function(){
-    // Sync row heights — label rows must match timeline rows exactly
-    var tr=wrap.querySelectorAll('[data-gantt-row]');
-    var lr=labelRowsEl.querySelectorAll('[data-label-row]');
-    for(var i=0;i<tr.length;i++){
-      if(lr[i]){
-        var h=tr[i].offsetHeight;
-        lr[i].style.minHeight=h+'px';
-        lr[i].style.height=h+'px';
-      }
-    }
-    // Ensure ganttLabelRows total height matches ganttContent
-    // so ganttScroller scroll height is correct
-    labelRowsEl.style.height = wrap.offsetHeight + 'px';
     lucide.createIcons();
     updateEdgeGlow(0);
   });
@@ -3498,15 +3499,18 @@ function initGanttPinch(){
     ganttAnchorMs = newAnchor;
     var vw = ganttViewportW();
     var baseOffset = -(GANTT_BUFFER * vw);
-    // actualDeltaPx = how far content actually moved (stops at Big Bang)
     var actualDeltaMs = panStartAnchor - newAnchor;
     var actualDeltaPx = actualDeltaMs / ganttMsPerPx;
-    var inner = document.getElementById('ganttInner');
-    if(inner) inner.style.transform = 'translateX('+(baseOffset + actualDeltaPx)+'px)';
-    // Sync tick header
+    var tx = baseOffset + actualDeltaPx;
+    // Move all timeline row inners + tick header
+    var scroller = document.getElementById('ganttScroller');
+    if(scroller){
+      scroller.querySelectorAll('.gantt-row-inner').forEach(function(el){
+        el.style.transform='translateX('+tx+'px)';
+      });
+    }
     var tickHdr = document.getElementById('ganttTickHdr');
-    if(tickHdr) tickHdr.style.transform = 'translateX('+(baseOffset + actualDeltaPx)+'px)';
-    // overshoot = how far finger pushed past the boundary
+    if(tickHdr) tickHdr.style.transform = 'translateX('+tx+'px)';
     var overshootPx = Math.max(0, e.deltaX - actualDeltaPx);
     updateEdgeGlow(overshootPx);
     var driftPx = Math.abs(actualDeltaPx);
@@ -3547,10 +3551,15 @@ function initGanttPinch(){
       var driftMs = ganttAnchorMs - _ganttRenderedAnchorMs;
       var driftPx = driftMs / ganttMsPerPx;
       var baseOffset = -(GANTT_BUFFER * vw);
-      var inner = document.getElementById('ganttInner');
-      if(inner) inner.style.transform = 'translateX('+(baseOffset - driftPx)+'px)';
+      var tx2 = baseOffset - driftPx;
+      var scroller2 = document.getElementById('ganttScroller');
+      if(scroller2){
+        scroller2.querySelectorAll('.gantt-row-inner').forEach(function(el){
+          el.style.transform='translateX('+tx2+'px)';
+        });
+      }
       var tickHdr = document.getElementById('ganttTickHdr');
-      if(tickHdr) tickHdr.style.transform = 'translateX('+(baseOffset - driftPx)+'px)';
+      if(tickHdr) tickHdr.style.transform = 'translateX('+tx2+'px)';
 
       // Re-render if drifted more than 50% of buffer
       if(Math.abs(driftPx) > GANTT_BUFFER * vw * 0.5){
@@ -3610,23 +3619,34 @@ function initGanttPinch(){
       var bufWNow   = vw * (1 + GANTT_BUFFER * 2);
       var pxNow     = function(ms){ return Math.round((ms - bufAncNow) / newMsPerPx); };
 
-      var wrap2 = document.getElementById('ganttContent');
+      var wrap2 = document.getElementById('ganttScroller');
       if(!wrap2){ _pinchRaf=null; return; }
 
-      // 2. Update bars — vector-like recalculate from data-sms/data-ems
-      wrap2.querySelectorAll('.gantt-bar').forEach(function(el){
-        var sMs = parseFloat(el.dataset.sms);
-        var eMs = parseFloat(el.dataset.ems);
-        var lx  = Math.max(-2, pxNow(sMs));
-        var rx  = Math.min(bufWNow+2, pxNow(eMs));
-        el.style.left  = lx + 'px';
-        el.style.width = Math.max(3, rx-lx) + 'px';
-      });
+      // 2. Update bars — recalculate from data-sms/data-ems
+      var scroller3 = document.getElementById('ganttScroller');
+      if(scroller3){
+        scroller3.querySelectorAll('.gantt-bar').forEach(function(el){
+          var sMs = parseFloat(el.dataset.sms);
+          var eMs = parseFloat(el.dataset.ems);
+          var lx  = Math.max(-2, pxNow(sMs));
+          var rx  = Math.min(bufWNow+2, pxNow(eMs));
+          el.style.left  = lx + 'px';
+          el.style.width = Math.max(3, rx-lx) + 'px';
+        });
+        // Update row inner widths + transforms
+        var newOffsetX = -(GANTT_BUFFER * vw);
+        scroller3.querySelectorAll('.gantt-row-inner').forEach(function(el){
+          el.style.width = bufWNow+'px';
+          el.style.transform = 'translateX('+newOffsetX+'px)';
+        });
+      }
 
-      // 3. Update grid lines — recalculate from data-ms
-      wrap2.querySelectorAll('.gantt-grid-line').forEach(function(el){
-        el.style.left = pxNow(parseFloat(el.dataset.ms)) + 'px';
-      });
+      // 3. Update grid lines
+      if(scroller3){
+        scroller3.querySelectorAll('.gantt-grid-line').forEach(function(el){
+          el.style.left = pxNow(parseFloat(el.dataset.ms)) + 'px';
+        });
+      }
 
       // 4. Update tick labels — recalculate from data-ms
       var tickHdr = document.getElementById('ganttTickHdr');
@@ -3636,11 +3656,13 @@ function initGanttPinch(){
         });
       }
 
-      // 5. Update all now-lines (one per row)
+      // 5. Update now-lines
       var nowMs = Date.now();
-      wrap2.querySelectorAll('.gantt-now-line').forEach(function(el){
-        el.style.left = pxNow(nowMs) + 'px';
-      });
+      if(scroller3){
+        scroller3.querySelectorAll('.gantt-now-line').forEach(function(el){
+          el.style.left = pxNow(nowMs) + 'px';
+        });
+      }
 
       // 6. Check if tick interval needs to change (new ticks needed)
       var newIntervalMs = getTickIntervalMs(visNow);
@@ -3664,9 +3686,10 @@ function initGanttPinch(){
           newGridHtml += '<div class="gantt-grid-line" data-ms="'+tk.ms+'" style="position:absolute;top:0;bottom:0;left:'+pxNow(tk.ms)+'px;width:1px;background:var(--border);pointer-events:none"></div>';
         });
         wrap2.querySelectorAll('[data-gantt-row]').forEach(function(rowEl){
-          // Remove old grid lines, keep bars and now-line
-          rowEl.querySelectorAll('.gantt-grid-line').forEach(function(gl){ gl.remove(); });
-          rowEl.insertAdjacentHTML('afterbegin', newGridHtml);
+          var inner = rowEl.querySelector('.gantt-row-inner');
+          if(!inner) return;
+          inner.querySelectorAll('.gantt-grid-line').forEach(function(gl){ gl.remove(); });
+          inner.insertAdjacentHTML('afterbegin', newGridHtml);
         });
       }
 
