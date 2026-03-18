@@ -3278,11 +3278,12 @@ function ganttPeriodLabel(anchorMs, endMs){
 // translateX shifts ganttInner so the visible portion is always in view
 // Re-render only when pan exceeds buffer boundary
 var GANTT_BUFFER = 2; // buffer multiplier each side
-var _ganttRenderedAnchorMs = 0, _ganttRenderedMsPerPx = 0;
+var _ganttRenderedAnchorMs = 0, _ganttRenderedMsPerPx = 0, _ganttRenderedVw = 0;
 
 function renderGantt(){
   ganttInitIfNeeded();
   var vw        = ganttViewportW();
+  _ganttRenderedVw = vw; // cache for pan/momentum transforms
   var anchorMs  = ganttAnchorMs;
   var visibleMs = ganttMsPerPx * vw;
   var endMs     = anchorMs + visibleMs;
@@ -3503,8 +3504,8 @@ function initGanttPinch(){
   mc.on('panmove', function(e){
     var newAnchor = clampGanttAnchor(panStartAnchor - e.deltaX * ganttMsPerPx);
     ganttAnchorMs = newAnchor;
-    var vw = ganttViewportW();
-    var baseOffset = -(GANTT_BUFFER * vw);
+    var vw = _ganttRenderedVw || ganttViewportW();
+    var baseOffset = -(GANTT_BUFFER * _ganttRenderedVw);
     var actualDeltaMs = panStartAnchor - newAnchor;
     var actualDeltaPx = actualDeltaMs / ganttMsPerPx;
     var tx = baseOffset + actualDeltaPx;
@@ -3552,7 +3553,7 @@ function initGanttPinch(){
       ganttAnchorMs = clampGanttAnchor(ganttAnchorMs + velocity * 16 * ganttMsPerPx);
 
       // Update translateX visually
-      var vw = ganttViewportW();
+      var vw = _ganttRenderedVw || ganttViewportW();
       var renderedAnchor = ganttAnchorMs;
       var driftMs = ganttAnchorMs - _ganttRenderedAnchorMs;
       var driftPx = driftMs / ganttMsPerPx;
