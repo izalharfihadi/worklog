@@ -1091,11 +1091,11 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
             <div id="ganttTickHdrInner" style="flex:1;overflow:hidden;position:relative;height:28px"></div>
           </div>
           <!-- Single scroll container — label + timeline scroll as one unit vertically -->
-          <div id="ganttScroller" style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative;display:flex">
+          <div id="ganttScroller" style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative;display:flex;align-items:flex-start">
             <!-- Label column — no overflow, scrolls with parent -->
-            <div id="ganttLabelRows" style="width:120px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-deep);z-index:5"></div>
+            <div id="ganttLabelRows" style="width:120px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-deep);z-index:5;min-height:100%"></div>
             <!-- Timeline — pan via translateX on ganttInner -->
-            <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative">
+            <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative;min-height:100%">
               <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
               <div id="ganttEdgeGlow" style="position:absolute;top:0;left:0;width:60px;background:linear-gradient(to right,rgba(255,45,120,0.9),transparent);pointer-events:none;z-index:20;opacity:0;transition:opacity 0.2s ease-out"></div>
             </div>
@@ -3571,7 +3571,9 @@ function initGanttPinch(){
     stopMomentum();
     pinchStartMsPerPx = ganttMsPerPx;
     pinchStartAnchor  = ganttAnchorMs;
-    var rect = wrap.getBoundingClientRect();
+    // Use ganttTickHdrInner for stable X reference — not affected by vertical scroll
+    var refEl = document.getElementById('ganttTickHdrInner') || wrap;
+    var rect = refEl.getBoundingClientRect();
     pinchMidX     = e.center.x - rect.left;
     pinchOriginMs = ganttAnchorMs + (pinchMidX + GANTT_BUFFER * ganttViewportW()) * ganttMsPerPx;
     // Reset smoothing to current values
@@ -3583,7 +3585,8 @@ function initGanttPinch(){
     if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
     _pinchRaf = requestAnimationFrame(function(){
       var vw = ganttViewportW();
-      var rect = wrap.getBoundingClientRect();
+      var refEl = document.getElementById('ganttTickHdrInner') || wrap;
+      var rect = refEl.getBoundingClientRect();
 
       // Low-pass filter — smooth out micro-jitter from touch sensor
       // 0.7 old + 0.3 new: dampens small tremors, preserves intentional movement
