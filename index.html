@@ -3452,7 +3452,8 @@ function renderGantt(){
     lucide.createIcons();
     updateEdgeGlow(0);
   });
-  initGanttPinch();
+  // Only re-init Hammer if not called from momentum/pan loop
+  if(!_ganttRenderFromMomentum) initGanttPinch();
 }
 
 
@@ -3460,6 +3461,7 @@ function renderGantt(){
 // ── Pan + Pinch — Hammer.js ──
 var _ganttHammer = null;
 var _ganttLeft = 120; // cached left offset of timeline area (label width)
+var _ganttRenderFromMomentum = false; // flag to skip initGanttPinch during momentum
 
 function initGanttPinch(){
   var wrap = document.getElementById('ganttScroller');
@@ -3523,7 +3525,10 @@ function initGanttPinch(){
     var driftPx = Math.abs(actualDeltaPx);
     if(driftPx > GANTT_BUFFER * vw * 0.5){
       if(!_panRaf) _panRaf = requestAnimationFrame(function(){
-        renderGantt(); _panRaf=null;
+        _ganttRenderFromMomentum = true;
+        renderGantt();
+        _ganttRenderFromMomentum = false;
+        _panRaf=null;
       });
     }
   });
@@ -3546,7 +3551,9 @@ function initGanttPinch(){
     function momentumStep(){
       velocity *= FRICTION;
       if(Math.abs(velocity) < MIN_VEL){
+        _ganttRenderFromMomentum = true;
         renderGantt(); // final render at rest
+        _ganttRenderFromMomentum = false;
         return;
       }
       // Move anchor by velocity * 16ms (one frame)
@@ -3570,7 +3577,9 @@ function initGanttPinch(){
 
       // Re-render if drifted more than 50% of buffer
       if(Math.abs(driftPx) > GANTT_BUFFER * vw * 0.5){
+        _ganttRenderFromMomentum = true;
         renderGantt();
+        _ganttRenderFromMomentum = false;
       }
       updateEdgeGlow(0);
       _momentumRaf = requestAnimationFrame(momentumStep);
