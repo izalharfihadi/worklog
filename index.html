@@ -3458,10 +3458,18 @@ function renderGantt(){
 
 // ── Pan + Pinch — Hammer.js ──
 var _ganttHammer = null;
+var _ganttLeft = 120; // cached left offset of timeline area (label width)
 
 function initGanttPinch(){
   var wrap = document.getElementById('ganttScroller');
   if(!wrap || typeof Hammer === 'undefined') return;
+
+  // Cache stable left offset — measured from shell left edge, not affected by scroll
+  var shellEl = document.querySelector('.shell');
+  var wrapRect = wrap.getBoundingClientRect();
+  var shellRect = shellEl ? shellEl.getBoundingClientRect() : {left:0};
+  // Timeline starts at label width (120px) from ganttScroller left
+  _ganttLeft = (wrapRect.left - shellRect.left) + 120;
 
   // Destroy previous instance so state is always fresh
   if(_ganttHammer){
@@ -3581,10 +3589,8 @@ function initGanttPinch(){
     stopMomentum();
     pinchStartMsPerPx = ganttMsPerPx;
     pinchStartAnchor  = ganttAnchorMs;
-    // Use ganttTickHdrInner for stable X reference — not affected by vertical scroll
-    var refEl = document.getElementById('ganttTickHdrInner') || wrap;
-    var rect = refEl.getBoundingClientRect();
-    pinchMidX     = e.center.x - rect.left;
+    // Use cached _ganttLeft — stable, not affected by vertical scroll
+    pinchMidX     = e.center.x - _ganttLeft;
     pinchOriginMs = ganttAnchorMs + (pinchMidX + GANTT_BUFFER * ganttViewportW()) * ganttMsPerPx;
     // Reset smoothing to current values
     _smoothScale = 1;
@@ -3595,13 +3601,9 @@ function initGanttPinch(){
     if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
     _pinchRaf = requestAnimationFrame(function(){
       var vw = ganttViewportW();
-      var refEl = document.getElementById('ganttTickHdrInner') || wrap;
-      var rect = refEl.getBoundingClientRect();
-
-      // Low-pass filter — smooth out micro-jitter from touch sensor
-      // 0.7 old + 0.3 new: dampens small tremors, preserves intentional movement
+      // Use cached _ganttLeft — stable regardless of vertical scroll position
       _smoothScale = _smoothScale * 0.7 + e.scale * 0.3;
-      _smoothMidX  = _smoothMidX  * 0.7 + (e.center.x - rect.left) * 0.3;
+      _smoothMidX  = _smoothMidX  * 0.7 + (e.center.x - _ganttLeft) * 0.3;
 
       // 1. Compute new zoom + anchor
       var liveOriginMs = pinchStartAnchor + (_smoothMidX + GANTT_BUFFER * vw) * pinchStartMsPerPx;
