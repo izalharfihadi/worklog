@@ -1088,10 +1088,10 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
           <!-- Fixed label column -->
           <div id="ganttLabels" style="width:120px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-deep);border-right:1px solid var(--border);z-index:10">
             <div id="ganttLabelHeader" style="height:28px;border-bottom:1px solid var(--border);background:var(--bg-mid);display:flex;align-items:center;padding:0 8px;font-family:var(--font-body);font-size:10px;color:var(--muted);letter-spacing:.5px;flex-shrink:0">AKTIVITAS</div>
-            <div id="ganttLabelRows" style="overflow:hidden;flex:1;background:var(--bg-deep)"></div>
+            <div id="ganttLabelRows" style="overflow-y:auto;flex:1;background:var(--bg-deep);scrollbar-width:none;-ms-overflow-style:none"></div>
           </div>
           <!-- Timeline -->
-          <div id="ganttWrap" style="flex:1;overflow:hidden;background:var(--bg-deep);touch-action:none;user-select:none;-webkit-user-select:none;position:relative">
+          <div id="ganttWrap" style="flex:1;overflow:hidden;overflow-y:auto;background:var(--bg-deep);touch-action:none;user-select:none;-webkit-user-select:none;position:relative" onscroll="syncGanttScroll(this)">
             <div id="ganttContent"><div class="gantt-empty">Belum ada data.</div></div>
             <!-- Edge glow — menyala saat mencapai batas Big Bang -->
             <div id="ganttEdgeGlow" style="
@@ -3658,15 +3658,17 @@ function initGanttPinch(){
 
   mc.on('pinchend pinchcancel', function(){
     if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
-    // Defer render ke event loop berikutnya — beri ruang gesture handler selesai dulu
-    setTimeout(function(){ renderGantt(); }, 0);
+    // Full rebuild with correct coordinates
+    renderGantt();
   });
 }
 // ── Scroll pan (horizontal scroll → move anchor) ──
 function syncGanttScroll(el){
-  // Vertical sync for label rows
+  // Sync vertical scroll: timeline → label rows
   const labelRows = document.getElementById('ganttLabelRows');
-  if(labelRows) labelRows.scrollTop = el.scrollTop;
+  if(labelRows && labelRows.scrollTop !== el.scrollTop){
+    labelRows.scrollTop = el.scrollTop;
+  }
 }
 
 // legacy compat — ganttPeriod no longer needed but keep stub
