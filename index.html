@@ -3431,6 +3431,16 @@ function renderGantt(){
   _ganttRenderedMsPerPx  = ganttMsPerPx;
 
   requestAnimationFrame(function(){
+    // Sync row heights — label rows must match timeline rows exactly
+    var tr=wrap.querySelectorAll('[data-gantt-row]');
+    var lr=labelRowsEl.querySelectorAll('[data-label-row]');
+    for(var i=0;i<tr.length;i++){
+      if(lr[i]){
+        var h=tr[i].offsetHeight;
+        lr[i].style.minHeight=h+'px';
+        lr[i].style.height=h+'px';
+      }
+    }
     lucide.createIcons();
     updateEdgeGlow(0);
   });
