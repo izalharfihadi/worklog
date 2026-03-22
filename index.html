@@ -3460,188 +3460,157 @@ function renderGantt(){
 
 // ── Pan + Pinch — Hammer.js ──
 var _ganttHammer = null;
-var _ganttLeft = 120; // cached left offset of timeline area (label width)
-var _ganttRenderFromMomentum = false; // flag to skip initGanttPinch during momentum
+var _ganttLeft = 120;
+var _ganttRenderFromMomentum = false;
+// Module-level touch handlers so they can be removed before re-adding
+var _ganttTouchStart = null, _ganttTouchMove = null, _ganttTouchEnd = null;
+// Module-level RAF handles
+var _ganttPanRaf = null, _ganttMomentumRaf = null;
 
 function initGanttPinch(){
   var el = document.getElementById('ganttScroller');
   if(!el) return;
 
-  // Cache left offset of timeline area
+  // Cache left offset
   var shellEl = document.querySelector('.shell');
   var elRect = el.getBoundingClientRect();
   var shellRect = shellEl ? shellEl.getBoundingClientRect() : {left:0};
   _ganttLeft = (elRect.left - shellRect.left) + 120;
 
-  // ── Destroy previous Hammer instance ──
-  if(_ganttHammer){ _ganttHammer.destroy(); _ganttHammer = null; }
+  // ── Remove previous listeners and cancel RAFs ──
+  if(_ganttTouchStart) el.removeEventListener('touchstart', _ganttTouchStart);
+  if(_ganttTouchMove)  el.removeEventListener('touchmove',  _ganttTouchMove);
+  if(_ganttTouchEnd)   el.removeEventListener('touchend',   _ganttTouchEnd);
+  if(_ganttPanRaf)     { cancelAnimationFrame(_ganttPanRaf); _ganttPanRaf=null; }
+  if(_ganttMomentumRaf){ cancelAnimationFrame(_ganttMomentumRaf); _ganttMomentumRaf=null; }
+  if(_ganttHammer)     { _ganttHammer.destroy(); _ganttHammer=null; }
 
-  // ── Pan: raw touch events with strict direction lock ──
-  var _panActive = false, _panStartX = 0, _panStartY = 0;
-  var _panStartAnchor = 0, _panLastX = 0, _panLastTime = 0;
-  var _velX = 0;
-  var _panRaf = null, _momentumRaf = null;
+  // ── Pan state ──
+  var _panActive=false, _panStartX=0, _panStartY=0;
+  var _panStartAnchor=0, _panLastX=0, _panLastTime=0, _velX=0;
 
   function stopMomentum(){
-    if(_momentumRaf){ cancelAnimationFrame(_momentumRaf); _momentumRaf=null; }
+    if(_ganttMomentumRaf){ cancelAnimationFrame(_ganttMomentumRaf); _ganttMomentumRaf=null; }
   }
 
   function applyTranslate(tx){
-    var scroller = document.getElementById('ganttScroller');
-    if(scroller) scroller.querySelectorAll('.gantt-row-inner').forEach(function(e){ e.style.transform='translateX('+tx+'px)'; });
-    var tickHdr = document.getElementById('ganttTickHdr');
-    if(tickHdr) tickHdr.style.transform = 'translateX('+tx+'px)';
+    var sc=document.getElementById('ganttScroller');
+    if(sc) sc.querySelectorAll('.gantt-row-inner').forEach(function(e){ e.style.transform='translateX('+tx+'px)'; });
+    var th=document.getElementById('ganttTickHdr');
+    if(th) th.style.transform='translateX('+tx+'px)';
   }
 
-  el.addEventListener('touchstart', function(e){
-    if(e.touches.length !== 1) return;
+  _ganttTouchStart = function(e){
+    if(e.touches.length!==1) return;
     stopMomentum();
-    _panActive = false;
-    _panStartX = e.touches[0].clientX;
-    _panStartY = e.touches[0].clientY;
-    _panStartAnchor = ganttAnchorMs;
-    _panLastX = _panStartX;
-    _panLastTime = Date.now();
-    _velX = 0;
-  }, {passive:true});
+    _panActive=false;
+    _panStartX=e.touches[0].clientX; _panStartY=e.touches[0].clientY;
+    _panStartAnchor=ganttAnchorMs; _panLastX=_panStartX;
+    _panLastTime=Date.now(); _velX=0;
+  };
 
-  el.addEventListener('touchmove', function(e){
-    if(e.touches.length !== 1) return;
-    var cx = e.touches[0].clientX;
-    var cy = e.touches[0].clientY;
-    var adx = Math.abs(cx - _panStartX);
-    var ady = Math.abs(cy - _panStartY);
-
-    // Strict direction lock: horizontal must be clearly dominant
+  _ganttTouchMove = function(e){
+    if(e.touches.length!==1) return;
+    var cx=e.touches[0].clientX, cy=e.touches[0].clientY;
+    var adx=Math.abs(cx-_panStartX), ady=Math.abs(cy-_panStartY);
     if(!_panActive){
-      if(ady > adx * 0.6) return; // vertical dominant → ignore
-      if(adx < 6) return;          // not enough movement yet
-      _panActive = true;
+      if(ady>adx*0.6) return;
+      if(adx<6) return;
+      _panActive=true;
     }
-
-    var now = Date.now();
-    var dt = now - _panLastTime;
-    if(dt > 0) _velX = (cx - _panLastX) / dt; // px/ms
-    _panLastX = cx; _panLastTime = now;
-
-    var dx = cx - _panStartX;
-    var newAnchor = clampGanttAnchor(_panStartAnchor - dx * ganttMsPerPx);
-    ganttAnchorMs = newAnchor;
-
-    var vw = _ganttRenderedVw || ganttViewportW();
-    var baseOffset = -(GANTT_BUFFER * vw);
-    var actualDeltaMs = _panStartAnchor - newAnchor;
-    var actualDeltaPx = actualDeltaMs / ganttMsPerPx;
-    var tx = baseOffset + actualDeltaPx;
-    applyTranslate(tx);
-
-    var overshootPx = Math.max(0, dx - actualDeltaPx);
-    updateEdgeGlow(Math.abs(overshootPx));
-
-    var driftPx = Math.abs(actualDeltaPx);
-    if(driftPx > GANTT_BUFFER * vw * 0.5){
-      if(!_panRaf) _panRaf = requestAnimationFrame(function(){
-        _ganttRenderFromMomentum = true;
-        renderGantt();
-        _ganttRenderFromMomentum = false;
-        _panRaf = null;
+    var now=Date.now(), dt=now-_panLastTime;
+    if(dt>0) _velX=(cx-_panLastX)/dt;
+    _panLastX=cx; _panLastTime=now;
+    var dx=cx-_panStartX;
+    var newAnchor=clampGanttAnchor(_panStartAnchor-dx*ganttMsPerPx);
+    ganttAnchorMs=newAnchor;
+    var vw=_ganttRenderedVw||ganttViewportW();
+    var baseOffset=-(GANTT_BUFFER*vw);
+    var actualDeltaPx=(_panStartAnchor-newAnchor)/ganttMsPerPx;
+    applyTranslate(baseOffset+actualDeltaPx);
+    updateEdgeGlow(Math.max(0,Math.abs(dx)-Math.abs(actualDeltaPx)));
+    if(Math.abs(actualDeltaPx)>GANTT_BUFFER*vw*0.5){
+      if(!_ganttPanRaf) _ganttPanRaf=requestAnimationFrame(function(){
+        _ganttRenderFromMomentum=true; renderGantt(); _ganttRenderFromMomentum=false; _ganttPanRaf=null;
       });
     }
-  }, {passive:true});
+  };
 
-  el.addEventListener('touchend', function(e){
+  _ganttTouchEnd = function(){
     if(!_panActive) return;
-    _panActive = false;
-    if(_panRaf){ cancelAnimationFrame(_panRaf); _panRaf=null; }
-    ganttAnchorMs = clampGanttAnchor(ganttAnchorMs);
-    renderGantt();
-    updateEdgeGlow(0);
-
-    // Momentum
-    var velocity = -_velX; // px/ms → positive = forward in time
-    var FRICTION = 0.95, MIN_VEL = 0.05;
-    if(Math.abs(velocity) < 0.1) return;
-
+    _panActive=false;
+    if(_ganttPanRaf){ cancelAnimationFrame(_ganttPanRaf); _ganttPanRaf=null; }
+    ganttAnchorMs=clampGanttAnchor(ganttAnchorMs);
+    renderGantt(); updateEdgeGlow(0);
+    var velocity=-_velX;
+    var FRICTION=0.75, MIN_VEL=0.5;
+    if(Math.abs(velocity)<0.1) return;
     function momentumStep(){
-      velocity *= FRICTION;
-      if(Math.abs(velocity) < MIN_VEL){
-        _ganttRenderFromMomentum = true;
-        renderGantt();
-        _ganttRenderFromMomentum = false;
-        return;
+      velocity*=FRICTION;
+      if(Math.abs(velocity)<MIN_VEL){
+        _ganttRenderFromMomentum=true; renderGantt(); _ganttRenderFromMomentum=false; return;
       }
-      ganttAnchorMs = clampGanttAnchor(ganttAnchorMs + velocity * 16 * ganttMsPerPx);
-      var vw = _ganttRenderedVw || ganttViewportW();
-      var driftMs = ganttAnchorMs - _ganttRenderedAnchorMs;
-      var driftPx = driftMs / ganttMsPerPx;
-      var tx = -(GANTT_BUFFER * vw) - driftPx;
-      applyTranslate(tx);
-      if(Math.abs(driftPx) > GANTT_BUFFER * vw * 0.5){
-        _ganttRenderFromMomentum = true;
-        renderGantt();
-        _ganttRenderFromMomentum = false;
+      ganttAnchorMs=clampGanttAnchor(ganttAnchorMs+velocity*16*ganttMsPerPx);
+      var vw=_ganttRenderedVw||ganttViewportW();
+      var driftPx=(ganttAnchorMs-_ganttRenderedAnchorMs)/ganttMsPerPx;
+      applyTranslate(-(GANTT_BUFFER*vw)-driftPx);
+      if(Math.abs(driftPx)>GANTT_BUFFER*vw*0.5){
+        _ganttRenderFromMomentum=true; renderGantt(); _ganttRenderFromMomentum=false;
       }
       updateEdgeGlow(0);
-      _momentumRaf = requestAnimationFrame(momentumStep);
+      _ganttMomentumRaf=requestAnimationFrame(momentumStep);
     }
-    _momentumRaf = requestAnimationFrame(momentumStep);
-  }, {passive:true});
+    _ganttMomentumRaf=requestAnimationFrame(momentumStep);
+  };
 
-  // ── Pinch: Hammer for pinch/zoom only ──
-  if(typeof Hammer !== 'undefined'){
-    var mc = new Hammer.Manager(el, {
-      recognizers: [[Hammer.Pinch, {enable:true}]],
-      touchAction: 'auto'
-    });
-    _ganttHammer = mc;
+  el.addEventListener('touchstart', _ganttTouchStart, {passive:true});
+  el.addEventListener('touchmove',  _ganttTouchMove,  {passive:true});
+  el.addEventListener('touchend',   _ganttTouchEnd,   {passive:true});
 
-    var pinchStartMsPerPx=0, pinchStartAnchor=0;
-    var pinchMidX=0, _pinchRaf=null;
-    var _smoothScale=1, _smoothMidX=0;
-
-    mc.on('pinchstart', function(e){
+  // ── Pinch: Hammer for zoom only ──
+  if(typeof Hammer!=='undefined'){
+    var mc=new Hammer.Manager(el,{recognizers:[[Hammer.Pinch,{enable:true}]],touchAction:'auto'});
+    _ganttHammer=mc;
+    var pinchStartMsPerPx=0,pinchStartAnchor=0,pinchMidX=0,_pinchRaf=null;
+    var _smoothScale=1,_smoothMidX=0;
+    mc.on('pinchstart',function(e){
       stopMomentum();
-      pinchStartMsPerPx = ganttMsPerPx;
-      pinchStartAnchor  = ganttAnchorMs;
-      pinchMidX     = e.center.x - _ganttLeft;
-      _smoothScale = 1; _smoothMidX = pinchMidX;
+      pinchStartMsPerPx=ganttMsPerPx; pinchStartAnchor=ganttAnchorMs;
+      pinchMidX=e.center.x-_ganttLeft; _smoothScale=1; _smoothMidX=pinchMidX;
     });
-
-    mc.on('pinchmove', function(e){
-      if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
-      _pinchRaf = requestAnimationFrame(function(){
-        var vw = ganttViewportW();
-        _smoothScale = _smoothScale*0.7 + e.scale*0.3;
-        _smoothMidX  = _smoothMidX*0.7  + (e.center.x - _ganttLeft)*0.3;
-        var liveOriginMs = pinchStartAnchor + (_smoothMidX + GANTT_BUFFER*vw)*pinchStartMsPerPx;
-        var dampedScale  = 1 + (_smoothScale-1)*0.3;
-        var newMsPerPx   = Math.max(GANTT_MS_MIN/vw, Math.min(GANTT_MS_MAX/vw, pinchStartMsPerPx/dampedScale));
-        ganttMsPerPx  = newMsPerPx;
-        ganttAnchorMs = clampGanttAnchor(liveOriginMs - (_smoothMidX+GANTT_BUFFER*vw)*newMsPerPx);
-        var visNow=newMsPerPx*vw, bufAncNow=ganttAnchorMs-GANTT_BUFFER*visNow;
+    mc.on('pinchmove',function(e){
+      if(_pinchRaf){cancelAnimationFrame(_pinchRaf);_pinchRaf=null;}
+      _pinchRaf=requestAnimationFrame(function(){
+        var vw=ganttViewportW();
+        _smoothScale=_smoothScale*0.7+e.scale*0.3;
+        _smoothMidX=_smoothMidX*0.7+(e.center.x-_ganttLeft)*0.3;
+        var liveOriginMs=pinchStartAnchor+(_smoothMidX+GANTT_BUFFER*vw)*pinchStartMsPerPx;
+        var dampedScale=1+(_smoothScale-1)*0.3;
+        var newMsPerPx=Math.max(GANTT_MS_MIN/vw,Math.min(GANTT_MS_MAX/vw,pinchStartMsPerPx/dampedScale));
+        ganttMsPerPx=newMsPerPx;
+        ganttAnchorMs=clampGanttAnchor(liveOriginMs-(_smoothMidX+GANTT_BUFFER*vw)*newMsPerPx);
+        var visNow=newMsPerPx*vw,bufAncNow=ganttAnchorMs-GANTT_BUFFER*visNow;
         var bufWNow=vw*(1+GANTT_BUFFER*2);
-        var pxNow=function(ms){ return Math.round((ms-bufAncNow)/newMsPerPx); };
+        var pxN=function(ms){return Math.round((ms-bufAncNow)/newMsPerPx);};
         var sc=document.getElementById('ganttScroller');
         if(sc){
           sc.querySelectorAll('.gantt-bar').forEach(function(b){
-            var lx=Math.max(-2,pxNow(parseFloat(b.dataset.sms)));
-            var rx=Math.min(bufWNow+2,pxNow(parseFloat(b.dataset.ems)));
-            b.style.left=lx+'px'; b.style.width=Math.max(3,rx-lx)+'px';
+            var lx=Math.max(-2,pxN(parseFloat(b.dataset.sms)));
+            var rx=Math.min(bufWNow+2,pxN(parseFloat(b.dataset.ems)));
+            b.style.left=lx+'px';b.style.width=Math.max(3,rx-lx)+'px';
           });
-          var newOffX=-(GANTT_BUFFER*vw);
-          sc.querySelectorAll('.gantt-row-inner').forEach(function(r){ r.style.width=bufWNow+'px'; r.style.transform='translateX('+newOffX+'px)'; });
-          sc.querySelectorAll('.gantt-grid-line').forEach(function(g){ g.style.left=pxNow(parseFloat(g.dataset.ms))+'px'; });
-          sc.querySelectorAll('.gantt-now-line').forEach(function(n){ n.style.left=pxNow(Date.now())+'px'; });
+          sc.querySelectorAll('.gantt-row-inner').forEach(function(r){r.style.width=bufWNow+'px';r.style.transform='translateX('+(-(GANTT_BUFFER*vw))+'px)';});
+          sc.querySelectorAll('.gantt-grid-line').forEach(function(g){g.style.left=pxN(parseFloat(g.dataset.ms))+'px';});
+          sc.querySelectorAll('.gantt-now-line').forEach(function(n){n.style.left=pxN(Date.now())+'px';});
         }
         var th=document.getElementById('ganttTickHdr');
-        if(th){ th.querySelectorAll('.gantt-tick-lbl').forEach(function(t){ t.style.left=pxNow(parseFloat(t.dataset.ms))+'px'; }); }
+        if(th){th.querySelectorAll('.gantt-tick-lbl').forEach(function(t){t.style.left=pxN(parseFloat(t.dataset.ms))+'px';});}
         document.getElementById('ganttPeriodLbl').textContent=ganttPeriodLabel(ganttAnchorMs,ganttAnchorMs+visNow);
         _pinchRaf=null;
       });
     });
-
-    mc.on('pinchend pinchcancel', function(){
-      if(_pinchRaf){ cancelAnimationFrame(_pinchRaf); _pinchRaf=null; }
+    mc.on('pinchend pinchcancel',function(){
+      if(_pinchRaf){cancelAnimationFrame(_pinchRaf);_pinchRaf=null;}
       renderGantt();
     });
   }
