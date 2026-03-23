@@ -33,10 +33,10 @@
 
   /* ── Accent Colors ── */
   --cyan:       #00e5ff;
-  --cyan-dim:   rgba(0,229,255,.15);
+  --cyan-dim:   rgba(0,229,255,.32);
   --cyan-glow:  rgba(0,229,255,.3);
   --magenta:    #ff2d78;
-  --magenta-dim:rgba(255,45,120,.15);
+  --magenta-dim:rgba(255,45,120,.32);
   --amber:      #ffb700;
   --amber-dim:  rgba(255,183,0,.15);
   --green:      #00e676;
@@ -45,10 +45,10 @@
   --purple-dim: rgba(139,92,246,.2);
 
   /* ── Category Colors ── */
-  --cat-ops: #00e676; --cat-ops-bg: rgba(0,230,118,.12);
-  --cat-adm: #00e5ff; --cat-adm-bg: rgba(0,229,255,.12);
-  --cat-mtg: #ffb700; --cat-mtg-bg: rgba(255,183,0,.12);
-  --cat-ext: #ff2d78; --cat-ext-bg: rgba(255,45,120,.12);
+  --cat-ops: #00e676; --cat-ops-bg: rgba(0,230,118,.32);
+  --cat-adm: #00e5ff; --cat-adm-bg: rgba(0,229,255,.32);
+  --cat-mtg: #ffb700; --cat-mtg-bg: rgba(255,183,0,.32);
+  --cat-ext: #ff2d78; --cat-ext-bg: rgba(255,45,120,.32);
 
   /* ── Dimensions — iPhone SE 2020 ── */
   --w: 375px;
@@ -1058,7 +1058,6 @@ body { font-family: var(--font-body); color: var(--text); font-size: 15px; -webk
       <div class="sb-name" id="sbName">—</div>
       <div class="sb-timer" id="sbTimer">00:00</div>
       <div class="sb-actions" id="sbActions">
-        <button class="sb-btn done" id="sbDoneBtn" onclick="doneActive()">✓ Selesai</button>
       </div>
     </div>
   </div>
@@ -1555,12 +1554,22 @@ function tickClock() {
 }
 function tickTimer() {
   if (currentStatus === 'task' && activeId && activeStart) {
+    // Status bar: durasi sejak task terakhir diklik (selalu reset)
     const ms = Date.now() - activeStart.getTime();
     const e = document.getElementById('sbTimer'); if (e) e.textContent = fmtMs(ms);
+    // Task card: akumulatif total
     const te = document.getElementById('el-'+activeId); if (te) te.textContent = calcElapsed(activeId);
   } else if (currentStatus === 'home' && homeStart) {
     const ms = Date.now() - homeStart.getTime();
     const e = document.getElementById('sbTimer'); if (e) e.textContent = fmtMs(ms);
+  } else if (currentStatus.startsWith('int-') ) {
+    // Poin 3: timer interrupt dari nol — hitung dari event INT terakhir
+    const intType = currentStatus.replace('int-','');
+    const lastInt = [...events].reverse().find(e => e.type==='INT' && e.intType===intType);
+    if (lastInt) {
+      const ms = Date.now() - new Date(lastInt.ts).getTime();
+      const e = document.getElementById('sbTimer'); if (e) e.textContent = fmtMs(ms);
+    }
   }
 }
 
@@ -2563,19 +2572,20 @@ async function softDeleteEmployee(id){
 // ══════════════════════════════════════════════
 //  TASK SORT & DRAG-DROP
 // ══════════════════════════════════════════════
-let taskSort = 'manual';
-let taskSortDir = 'asc'; // 'asc' | 'desc'
+let taskSort = localStorage.getItem('wl6_taskSort') || 'manual';
+let taskSortDir = localStorage.getItem('wl6_taskSortDir') || 'asc';
 let dragSrcId = null;
 
 function setTaskSort(s) {
   if(s === 'manual') {
     taskSort = 'manual'; taskSortDir = 'asc';
   } else if(taskSort === s) {
-    // Same button — toggle direction
     taskSortDir = taskSortDir === 'asc' ? 'desc' : 'asc';
   } else {
     taskSort = s; taskSortDir = 'asc';
   }
+  localStorage.setItem('wl6_taskSort', taskSort);
+  localStorage.setItem('wl6_taskSortDir', taskSortDir);
   updateSortBtns();
   renderTasks();
 }
